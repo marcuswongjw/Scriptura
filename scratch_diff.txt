@@ -1,0 +1,266 @@
+diff --git a/app.js b/app.js
+index af2034d..581844f 100644
+--- a/app.js
++++ b/app.js
+@@ -1,4 +1,4 @@
+-import { concentrations, modules } from './modules.js';
++import { concentrations, modules } from './modules.js?v=2.0.3';
+ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+ import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, setPersistence, browserSessionPersistence } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+ import { getFirestore, doc, getDoc, setDoc, collection, getDocs, onSnapshot, addDoc, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+@@ -49,6 +49,7 @@ const moduleIcons = {
+   'exodus-deliverance':     '📜',
+   'leviticus-worship':      '🐂',
+   'numbers-wilderness':     '📊',
++  'deuteronomy-intro':      '📜',
+ };
+ 
+ // ==========================================================================
+@@ -140,7 +141,6 @@ const el = {
+   chatMessageInput:         document.getElementById('chat-message-input'),
+ 
+   // Stats View
+-  statsXpVal:        document.getElementById('stats-xp-val'),
+   statsCompletedVal: document.getElementById('stats-completed-val'),
+   statsStreakVal:    document.getElementById('stats-streak-val'),
+   statsAccuracyVal:  document.getElementById('stats-accuracy-val'),
+@@ -183,7 +183,7 @@ function init() {
+       updateHeaderProfile();
+       updateStreak();
+       updateStatsDisplay();
+-      switchTab('home');
++      routeToPath(window.location.pathname, false);
+       initNetworkViewer();
+     } else {
+       el.userPill.classList.add('hidden');
+@@ -332,7 +332,7 @@ function recordActivity() {
+ // ==========================================================================
+ // Tab Router
+ // ==========================================================================
+-function switchTab(tabId) {
++function switchTab(tabId, pushState = true) {
+   currentTab = tabId;
+   document.querySelectorAll('.nav-item').forEach(item => {
+     item.classList.toggle('active', item.getAttribute('data-tab') === tabId);
+@@ -346,9 +346,45 @@ function switchTab(tabId) {
+   else if (tabId === 'stats') updateStatsDisplay();
+   else if (tabId === 'network') updateNetworkView();
+ 
++  // Reset overlay screens when switching tabs
++  el.courseOnboarding.classList.add('hidden');
++  el.lessonView.classList.add('hidden');
++  el.lessonView.classList.remove('cardquiz-mode');
++  el.bottomNav.classList.remove('hidden');
++  el.header.classList.remove('hidden');
++
++  if (pushState) {
++    const path = tabId === 'home' ? '/' : '/' + tabId;
++    history.pushState({ tabId }, '', path);
++  }
++
+   window.scrollTo({ top: 0, behavior: 'instant' });
+ }
+ 
++function routeToPath(path, pushState = true) {
++  if (!path) path = '/';
++  if (path.length > 1 && path.endsWith('/')) {
++    path = path.slice(0, -1);
++  }
++
++  if (path.startsWith('/courses/')) {
++    const moduleId = path.replace('/courses/', '');
++    switchTab('courses', false);
++    openOnboarding(moduleId, pushState);
++  } else if (path.startsWith('/learn/')) {
++    const moduleId = path.replace('/learn/', '');
++    startModule(moduleId, pushState);
++  } else if (path === '/courses') {
++    switchTab('courses', pushState);
++  } else if (path === '/network') {
++    switchTab('network', pushState);
++  } else if (path === '/stats') {
++    switchTab('stats', pushState);
++  } else {
++    switchTab('home', pushState);
++  }
++}
++
+ function switchDashboardSubtab(subtab) {
+   currentDashboardSubtab = subtab;
+   const isStudying = subtab === 'studying';
+@@ -517,7 +553,7 @@ function renderCoursesCatalog() {
+         const icon = moduleIcons[mod.id] || '📖';
+         const completedLabel = isComplete
+           ? `<div class="module-row-completed-label">✓ COMPLETED</div>`
+-          : `<div class="module-row-completed-label" style="color:var(--gray-400);">⚡ +${mod.xpReward} XP • ${mod.duration}</div>`;
++          : `<div class="module-row-completed-label" style="color:var(--gray-400);">${mod.duration}</div>`;
+ 
+         const rowHtml = `
+           <div class="module-row" data-mod-id="${mod.id}">
+@@ -543,7 +579,7 @@ function renderCoursesCatalog() {
+ // ==========================================================================
+ // Course Onboarding / Detail Overlay
+ // ==========================================================================
+-function openOnboarding(moduleId) {
++function openOnboarding(moduleId, pushState = true) {
+   const mod = modules.find(m => m.id === moduleId);
+   if (!mod) return;
+ 
+@@ -585,6 +621,10 @@ function openOnboarding(moduleId) {
+   el.startOnboardedLesson.setAttribute('data-id', moduleId);
+   el.startOnboardedLesson.textContent = isComplete ? 'REVIEW COURSE' : 'START COURSE';
+   el.courseOnboarding.classList.remove('hidden');
++
++  if (pushState) {
++    history.pushState({ moduleId }, '', `/courses/${moduleId}`);
++  }
+ }
+ 
+ // Global Network & World Map
+@@ -824,7 +864,6 @@ function renderPeopleDirectory() {
+         <div class="card-church">${u.church || 'No Fellowship Spec.'}</div>
+         <span class="card-country-tag">${countryMeta.flag} ${countryMeta.name}</span>
+         <div class="card-meta-row">
+-          <span class="card-badge">🧠 ${u.xp || 0} XP</span>
+           <span class="card-badge">🔥 ${u.streak || 0}d</span>
+           <span class="card-badge">📖 ${modCount} Modules</span>
+         </div>
+@@ -1117,7 +1156,6 @@ async function handleProfileSave(e) {
+ // Stats
+ // ==========================================================================
+ function updateStatsDisplay() {
+-  el.statsXpVal.textContent = (userState.xp || 0).toLocaleString();
+   el.statsCompletedVal.textContent = `${(userState.completedModules || []).length} / ${modules.length}`;
+   el.statsStreakVal.textContent = userState.streak || 0;
+   const accuracy = userState.quizStats && userState.quizStats.totalQuestions > 0
+@@ -1146,7 +1184,7 @@ function updateStatsDisplay() {
+ // ==========================================================================
+ // Lesson Flow
+ // ==========================================================================
+-function startModule(moduleId) {
++function startModule(moduleId, pushState = true) {
+   activeModule = modules.find(m => m.id === moduleId);
+   if (!activeModule) return;
+ 
+@@ -1169,15 +1207,19 @@ function startModule(moduleId) {
+   renderSlide();
+   el.lessonContentArea.scrollTop = 0;
+   window.scrollTo({ top: 0, behavior: 'instant' });
++
++  if (pushState) {
++    history.pushState({ moduleId, type: 'learn' }, '', `/learn/${moduleId}`);
++  }
+ }
+ 
+-function closeLesson() {
++function closeLesson(pushState = true) {
+   activeModule = null;
+   el.lessonView.classList.add('hidden');
+   el.lessonView.classList.remove('cardquiz-mode');
+   el.bottomNav.classList.remove('hidden');
+   el.header.classList.remove('hidden');
+-  switchTab('courses');
++  switchTab('courses', pushState);
+ }
+ 
+ // --------------------------------------------------------------------------
+@@ -1186,13 +1228,26 @@ function closeLesson() {
+ function renderProgressDots() {
+   if (!activeModule) return;
+   const total = activeModule.slides.length;
+-  // Show at most 20 dots; if more, just show a thinner line
+-  const dotsHtml = activeModule.slides.map((_, idx) => {
++
++  const createDot = (idx) => {
+     let cls = 'progress-dot';
++    if (total > 10) cls += ' small';
+     if (idx < currentSlideIndex) cls += ' done';
+     else if (idx === currentSlideIndex) cls += ' current';
+     return `<div class="${cls}"></div>`;
+-  }).join('');
++  };
++
++  let dotsHtml = '';
++  if (total <= 10) {
++    el.lessonDotsBar.classList.remove('two-rows');
++    dotsHtml = activeModule.slides.map((_, idx) => createDot(idx)).join('');
++  } else {
++    el.lessonDotsBar.classList.add('two-rows');
++    const half = Math.ceil(total / 2);
++    const row1 = activeModule.slides.slice(0, half).map((_, idx) => createDot(idx)).join('');
++    const row2 = activeModule.slides.slice(half).map((_, idx) => createDot(half + idx)).join('');
++    dotsHtml = `<div class="dots-row">${row1}</div><div class="dots-row staggered">${row2}</div>`;
++  }
+ 
+   el.lessonDotsBar.innerHTML = dotsHtml;
+ 
+@@ -1363,9 +1418,10 @@ function renderSlide() {
+           <button class="yn-btn yes" data-val="yes">yes</button>
+           <button class="yn-btn no" data-val="no">no</button>
+         </div>
+-        <div id="quiz-feedback-box" class="cardquiz-feedback hidden" style="display:none;">
++        <div id="quiz-feedback-box" class="cardquiz-feedback hidden" style="display:none; flex-direction: column;">
+           <div class="cardquiz-feedback-title" id="feedback-title">Correct!</div>
+           <p id="feedback-desc"></p>
++          <button id="cardquiz-continue-btn" class="cardquiz-continue-btn hidden" style="display:none;">Continue</button>
+         </div>
+       </div>
+     `;
+@@ -1382,7 +1438,6 @@ function renderSlide() {
+         <span class="summary-emoji">${slide.illustration || '🏆'}</span>
+         <h2 class="summary-title">${slide.title}</h2>
+         <p class="summary-body">${slide.content}</p>
+-        <div class="xp-badge">⚡ +${activeModule.xpReward} XP Earned</div>
+       </div>
+     `;
+     el.nextBtnText.textContent = 'COMPLETE';
+@@ -1520,15 +1575,20 @@ function checkCardQuizAnswer() {
+     isQuizAnswered = true;
+     recordActivity();
+ 
+-    // Auto-advance after 1.6s
+-    setTimeout(() => {
+-      if (currentSlideIndex < activeModule.slides.length - 1) {
+-        currentSlideIndex += 1;
+-        renderSlide();
+-      } else {
+-        completeActiveModule();
+-      }
+-    }, 1600);
++    // Show Continue button and wire click event to advance slide
++    const continueBtn = document.getElementById('cardquiz-continue-btn');
++    if (continueBtn) {
++      continueBtn.style.display = 'block';
++      continueBtn.classList.remove('hidden');
++      continueBtn.addEventListener('click', () => {
++        if (currentSlideIndex < activeModule.slides.length - 1) {
++          currentSlideIndex += 1;
++          renderSlide();
++        } else {
++          completeActiveModule();
++        }
++      });
++    }
+ 
+   } else {
+     if (selectedOptionIndex === 'yes') yesBtn.style.background = '#ef4444';
+@@ -1664,7 +1724,10 @@ function setupEventListeners() {
+   el.courseSearch.addEventListener('input', renderCoursesCatalog);
+ 
+   // Course onboarding overlay
+-  el.closeOnboarding.addEventListener('click', () => el.courseOnboarding.classList.add('hidden'));
++  el.closeOnboarding.addEventListener('click', () => {
++    el.courseOnboarding.classList.add('hidden');
++    history.pushState({ tabId: 'courses' }, '', '/courses');
++  });
+   el.startOnboardedLesson.addEventListener('click', () => {
+     startModule(el.startOnboardedLesson.getAttribute('data-id'));
+   });
+@@ -1715,3 +1778,7 @@ function setupEventListeners() {
+ // Start
+ // ==========================================================================
+ window.addEventListener('DOMContentLoaded', init);
++
++window.addEventListener('popstate', () => {
++  routeToPath(window.location.pathname, false);
++});

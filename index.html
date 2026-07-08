@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Berea — Daily Scripture Study</title>
-  <meta name="description" content="Inspired by the Bereans of Acts 17:11. An active recall Bible study platform that helps you examine the Scriptures daily with great eagerness.">
-  <link rel="stylesheet" href="style.css">
+  <title>Scriptura — Daily Scripture Study</title>
+  <meta name="description" content="An active recall Bible study platform that helps you examine the Scriptures daily with great eagerness.">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="stylesheet" href="style.css?v=2.0.10">
 </head>
 <body>
 
@@ -14,7 +15,7 @@
        ============================================================ -->
   <header id="main-header" class="app-topbar">
     <div class="topbar-inner">
-      <span class="app-logo-text">📜 Berea</span>
+      <span class="app-logo-text">📜 Scriptura</span>
       <div class="topbar-actions">
         <div id="user-pill" class="user-pill hidden">
           <div id="header-profile-trigger" class="header-profile-trigger" title="Edit Profile">
@@ -42,6 +43,13 @@
     <!-- 1. HOME / DASHBOARD VIEW -->
     <section id="view-home" class="tab-view active">
 
+      <!-- Welcome Hero -->
+      <div class="welcome-hero">
+        <p class="welcome-label">WELCOME TO</p>
+        <h1 class="welcome-title">Scriptura</h1>
+        <p class="welcome-tagline">An active recall Bible study platform that helps you examine the Scriptures daily with great eagerness.</p>
+      </div>
+
       <!-- Sub-Tabs -->
       <div class="page-tabs">
         <button id="subtab-studying" class="page-tab active">Currently Studying</button>
@@ -50,11 +58,6 @@
 
       <!-- CURRENTLY STUDYING content -->
       <div id="subcontent-studying" class="subtab-content active">
-        <div class="welcome-hero">
-          <p class="welcome-label">WELCOME TO</p>
-          <h1 class="welcome-title">Berea</h1>
-          <p class="welcome-tagline">Inspired by the Bereans of Acts 17:11 — who searched the Scriptures daily with great eagerness.</p>
-        </div>
         <div id="current-study-container" class="current-study-card">
           <!-- Dynamic content injected here -->
         </div>
@@ -63,8 +66,8 @@
       <!-- CURRICULUM content -->
       <div id="subcontent-curriculum" class="subtab-content hidden">
         <div class="curriculum-hero">
-          <h2 class="curriculum-title">Berea Curriculum</h2>
-          <p class="curriculum-subtitle">5 Concentrations • Genesis Study</p>
+          <h2 class="curriculum-title">Scriptura Curriculum</h2>
+          <p class="curriculum-subtitle">Interactive Modules & Lessons</p>
         </div>
         <div class="curriculum-card">
           <div id="concentration-grid" class="concentration-grid">
@@ -75,13 +78,31 @@
 
     </section>
 
-    <!-- 2. COURSES VIEW -->
+    <!-- 2. COURSES VIEW (Renovated Quantic UI) -->
     <section id="view-courses" class="tab-view hidden">
       <div class="courses-page-header">
-        <h2 class="page-heading">Courses</h2>
-        <input type="text" id="course-search" class="search-bar" placeholder="Search courses, lessons, key terms…">
+        <h2 class="page-heading">Course Catalog</h2>
+        <p class="section-subtitle">Premium Bible study courses and interactive lessons</p>
       </div>
-      <div id="catalog-container" class="catalog-list">
+
+      <!-- Quantic-style Search & Filter Panel -->
+      <div class="catalog-filters-panel">
+        <div class="search-input-wrapper">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="course-search" class="search-bar-new" placeholder="Search Courses, Lessons, and Key Terms">
+        </div>
+        <div class="filter-controls-row">
+          <button id="open-filters-modal-btn" class="filter-btn-wrapper topic-wrapper" style="border: 1px solid var(--gray-200); background: var(--gray-50); border-radius: var(--r-md); cursor: pointer;">
+            <span class="filter-btn-label" id="topic-btn-label">Set Filters</span>
+          </button>
+          <button id="active-status-badge" class="filter-btn-wrapper status-wrapper status-red-btn" style="cursor: pointer;">
+            <span class="filter-btn-label" id="status-btn-label">Any Status</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Responsive Grid catalog layout -->
+      <div id="catalog-grid" class="catalog-topic-groups-container">
         <!-- Rendered by JS -->
       </div>
     </section>
@@ -90,7 +111,7 @@
     <section id="view-network" class="tab-view hidden">
       <div class="network-layout">
         
-        <!-- Network Sub-Navigation (Floating Sidebar on Desktop, Horizontal Pills on Mobile) -->
+        <!-- Network Sub-Navigation -->
         <div class="network-sidebar">
           <button class="net-nav-item active" data-net-tab="map">
             <svg class="net-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
@@ -113,10 +134,10 @@
         <!-- Network Body Area -->
         <div class="network-body">
           
-          <!-- SUB-VIEW 1: MAP -->
+          <!-- SUB-VIEW 1: MAP (Renovated Detailed Outlines Map) -->
           <div id="net-subview-map" class="net-subview active">
             <div class="network-page-header">
-              <h2 class="page-heading">Berea Network Map</h2>
+              <h2 class="page-heading">Scriptura Network Map</h2>
               <p class="section-subtitle">Real-time registered users worldwide</p>
             </div>
             
@@ -127,19 +148,33 @@
                   <span class="active-count-num" id="regional-active-count">0</span>
                   <span class="active-count-label">Registered globally</span>
                 </div>
-                <svg id="world-map-svg" viewBox="0 0 1000 500" class="world-map">
-                  <!-- Background grids -->
+                <svg id="world-map-svg" viewBox="0 0 1000 500" class="world-map" xmlns="http://www.w3.org/2000/svg">
+                  <!-- Background grid -->
                   <rect width="1000" height="500" fill="none" />
+                  
+                  <!-- High-fidelity detailed outlines -->
+                  <!-- Greenland -->
+                  <path class="continent-path" d="M 290,20 C 310,15 340,15 345,25 C 350,35 335,65 315,70 C 295,75 285,60 280,45 C 275,30 280,25 290,20 Z" />
                   <!-- North America -->
-                  <path class="continent-path" d="M 100,80 L 220,50 L 320,100 L 260,250 L 180,260 L 150,220 Z" />
+                  <path class="continent-path" d="M 60,60 C 80,45 100,45 130,40 C 160,35 180,20 220,20 C 260,20 280,35 320,40 C 330,45 320,60 300,75 C 310,85 330,80 340,90 C 350,100 320,110 300,120 C 280,130 260,150 240,180 C 235,190 225,230 220,240 C 215,245 205,235 205,225 C 200,215 190,195 185,185 C 180,175 160,170 150,175 C 130,180 120,170 100,160 C 80,150 65,130 60,110 C 55,90 50,75 60,60 Z" />
                   <!-- South America -->
-                  <path class="continent-path" d="M 250,280 L 320,290 L 370,350 L 310,480 L 280,480 L 240,360 Z" />
+                  <path class="continent-path" d="M 215,245 C 225,240 240,240 250,250 C 270,270 290,290 310,310 C 330,330 340,360 325,410 C 310,460 290,480 270,480 C 260,480 250,440 245,410 C 240,380 230,340 220,310 C 210,280 205,260 215,245 Z" />
+                  <!-- Great Britain -->
+                  <path class="continent-path" d="M 485,90 C 490,85 495,90 495,95 C 495,100 490,105 485,105 C 480,105 480,95 485,90 Z" />
+                  <!-- Iceland -->
+                  <path class="continent-path" d="M 420,55 C 425,50 435,50 435,55 C 435,60 425,65 420,65 C 415,65 415,60 420,55 Z" />
                   <!-- Africa -->
-                  <path class="continent-path" d="M 450,220 L 580,210 L 610,320 L 570,450 L 510,450 L 460,330 L 420,280 Z" />
+                  <path class="continent-path" d="M 430,205 C 450,190 480,180 520,185 C 550,190 575,200 590,225 C 605,250 620,285 595,335 C 570,385 555,420 535,445 C 525,455 515,455 510,440 C 505,420 500,380 495,360 C 490,340 470,320 455,300 C 440,280 420,265 415,245 C 410,225 415,215 430,205 Z" />
+                  <!-- Madagascar -->
+                  <path class="continent-path" d="M 610,360 C 615,355 620,360 625,370 C 630,380 625,405 620,415 C 615,425 610,420 605,405 C 600,390 605,365 610,360 Z" />
                   <!-- Eurasia -->
-                  <path class="continent-path" d="M 400,60 L 650,40 L 920,80 L 880,220 L 760,280 L 680,240 L 520,230 L 450,150 Z" />
+                  <path class="continent-path" d="M 425,185 C 430,170 420,150 440,140 C 460,130 480,130 485,110 C 490,90 500,80 530,80 C 560,80 580,60 610,65 C 640,70 670,55 710,50 C 750,45 800,45 860,50 C 920,55 960,65 980,85 C 990,95 980,110 960,120 C 940,130 920,155 940,175 C 960,195 945,215 905,225 C 865,235 835,215 815,235 C 795,255 770,275 750,275 C 730,275 710,255 690,255 C 670,255 640,245 615,245 C 590,245 560,255 530,255 C 500,255 460,245 440,230 C 420,215 420,200 425,185 Z" />
+                  <!-- Japan -->
+                  <path class="continent-path" d="M 880,115 C 885,110 890,115 892,120 C 895,130 890,140 885,150 C 880,160 875,160 872,150 C 870,140 875,120 880,115 Z" />
                   <!-- Australia -->
-                  <path class="continent-path" d="M 800,340 L 910,350 L 880,420 L 790,410 Z" />
+                  <path class="continent-path" d="M 780,340 C 790,330 810,330 840,320 C 870,310 885,320 895,335 C 905,350 900,370 890,385 C 880,400 850,410 820,410 C 790,410 780,390 775,370 C 770,350 770,350 780,340 Z" />
+                  <!-- New Zealand -->
+                  <path class="continent-path" d="M 910,430 C 915,425 920,430 922,435 C 925,445 920,455 915,465 C 910,475 905,470 905,460 C 905,445 905,435 910,430 Z" />
 
                   <!-- Dynamic clusters injected here -->
                   <g id="map-clusters"></g>
@@ -159,12 +194,12 @@
           <!-- SUB-VIEW 2: PEOPLE -->
           <div id="net-subview-people" class="net-subview hidden">
             <div class="network-page-header">
-              <h2 class="page-heading">Berea Directory</h2>
+              <h2 class="page-heading">Scriptura Directory</h2>
               <p class="section-subtitle">Browse and search registered learners</p>
             </div>
             
             <div class="directory-toolbar">
-              <input type="text" id="people-search" class="search-bar" placeholder="Search by name, church, or country..." style="width: 100%;">
+              <input type="text" id="people-search" class="search-bar" placeholder="Search by name, church, occupation or country..." style="width: 100%;">
             </div>
             
             <div id="people-grid" class="people-grid">
@@ -191,7 +226,7 @@
           <div id="net-subview-messages" class="net-subview hidden">
             <div class="network-page-header">
               <h2 class="page-heading">Global Study Board</h2>
-              <p class="section-subtitle">Post thoughts, prayer requests, and notes with other Bereans</p>
+              <p class="section-subtitle">Post thoughts, prayer requests, and notes with other learners</p>
             </div>
             
             <div class="chat-container">
@@ -206,8 +241,8 @@
           </div>
 
         </div>
-
       </div>
+    </section>
 
     <!-- 4. STATS VIEW -->
     <section id="view-stats" class="tab-view hidden">
@@ -216,11 +251,6 @@
         <p class="section-subtitle">Keep studying to grow your streak and accuracy</p>
       </div>
       <div class="stats-grid">
-        <div class="stat-card highlight">
-          <div class="stat-icon">⚡</div>
-          <div id="stats-xp-val" class="stat-number">0</div>
-          <div class="stat-label">Total XP</div>
-        </div>
         <div class="stat-card">
           <div class="stat-icon">📖</div>
           <div id="stats-completed-val" class="stat-number">0 / 10</div>
@@ -231,11 +261,7 @@
           <div id="stats-streak-val" class="stat-number">0</div>
           <div class="stat-label">Day Streak</div>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon">🎯</div>
-          <div id="stats-accuracy-val" class="stat-number">100%</div>
-          <div class="stat-label">Accuracy</div>
-        </div>
+
       </div>
       <div class="stats-modules-section">
         <h3 class="stats-section-title">Module Progress</h3>
@@ -246,6 +272,208 @@
       <div class="stats-quote-card">
         <p class="stats-quote">"Now the Berean Jews were of more noble character than those in Thessalonica, for they received the message with great eagerness and examined the Scriptures every day…"</p>
         <p class="stats-quote-ref">— Acts 17:11</p>
+      </div>
+    </section>
+
+    <!-- 5. ADMIN DASHBOARD VIEW -->
+    <section id="view-admin" class="tab-view hidden">
+      <div class="stats-page-header">
+        <h2 class="page-heading">Admin Dashboard</h2>
+        <p class="section-subtitle">Manage user roles, view global stats, and schedule course release dates</p>
+      </div>
+      
+      <div class="admin-grid-layout">
+        <!-- Overview Stats -->
+        <div class="admin-panel-card">
+          <h3 class="admin-panel-title">System Overview</h3>
+          <div class="admin-stats-grid">
+            <div class="admin-stat-card">
+              <span class="admin-stat-icon">👥</span>
+              <div class="admin-stat-info">
+                <div id="admin-total-users" class="admin-stat-num">0</div>
+                <div class="admin-stat-lbl">Active Learners</div>
+              </div>
+            </div>
+            <div class="admin-stat-card">
+              <span class="admin-stat-icon">📈</span>
+              <div class="admin-stat-info">
+                <div id="admin-completion-rate" class="admin-stat-num">100%</div>
+                <div class="admin-stat-lbl">Study Completion Rate</div>
+              </div>
+            </div>
+            <div class="admin-stat-card">
+              <span class="admin-stat-icon">🔥</span>
+              <div class="admin-stat-info">
+                <div id="admin-weekly-active" class="admin-stat-num">0</div>
+                <div class="admin-stat-lbl">Weekly Active Learners</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cohort Retention & Completion Funnel Panel -->
+        <div class="admin-panel-card" style="grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+          <div>
+            <h3 class="admin-panel-title">Weekly Learner Cohorts</h3>
+            <p class="admin-panel-subtitle">Distribution of learners active within past 7 days vs past 30 days.</p>
+            <div style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
+              <div style="background: var(--gray-50); border: 1px solid var(--gray-150); border-radius: var(--r-md); padding: 0.85rem; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.85rem; font-weight: 600; color: var(--gray-700);">Daily Active to Weekly Active Ratio (DAU/WAU)</span>
+                <span id="admin-dau-wau-ratio" style="font-size: 1.1rem; font-weight: 800; color: var(--brand-coral);">0%</span>
+              </div>
+              <div style="background: var(--gray-50); border: 1px solid var(--gray-150); border-radius: var(--r-md); padding: 0.85rem; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.85rem; font-weight: 600; color: var(--gray-700);">Monthly Active Learners (MAU)</span>
+                <span id="admin-mau-count" style="font-size: 1.1rem; font-weight: 800; color: var(--brand-green);">0</span>
+              </div>
+              <div style="background: var(--gray-50); border: 1px solid var(--gray-150); border-radius: var(--r-md); padding: 0.85rem; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.85rem; font-weight: 600; color: var(--gray-700);">Avg. Modules Completed Per Active User</span>
+                <span id="admin-avg-modules-active" style="font-size: 1.1rem; font-weight: 800; color: #1e3a8a;">0</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <h3 class="admin-panel-title">Drop-out Funnel</h3>
+            <p class="admin-panel-subtitle">Breakdown of slide progress depth for active users (Started vs Completed).</p>
+            <div id="admin-dropout-funnel-container" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Manage Roles -->
+        <div class="admin-panel-card">
+          <h3 class="admin-panel-title">Learner Roles Management</h3>
+          <div class="admin-table-wrapper">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Learner</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Progress</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="admin-users-list">
+                <!-- Loaded dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Schedule Releases -->
+        <div class="admin-panel-card">
+          <h3 class="admin-panel-title">Module Release Schedule</h3>
+          <p class="admin-panel-subtitle">Set future release dates to lock modules. Leaving blank keeps it released immediately.</p>
+          <div class="admin-table-wrapper">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Module</th>
+                  <th>Topic</th>
+                  <th>Scheduled Release Date</th>
+                  <th>Current Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="admin-modules-list">
+                <!-- Loaded dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Dynamic Publisher -->
+        <div class="admin-panel-card" style="grid-column: 1 / -1;">
+          <h3 class="admin-panel-title">Dynamic Course Publisher</h3>
+          <p class="admin-panel-subtitle">Upload a new lesson or update an existing one instantly by importing its JSON schema. The lesson will automatically merge into the course catalog.</p>
+          
+          <form id="admin-publisher-form" style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
+            <div class="form-field">
+              <label for="publisher-parent-con">Select Parent Course / Topic</label>
+              <div class="select-wrapper dark">
+                <select id="publisher-parent-con" required>
+                  <option value="">-- Choose Course --</option>
+                  <option value="foundations">Foundations</option>
+                  <option value="genesis">Genesis</option>
+                  <option value="exodus">Exodus</option>
+                  <option value="leviticus">Leviticus</option>
+                  <option value="numbers">Numbers</option>
+                  <option value="deuteronomy">Deuteronomy</option>
+                  <option value="joshua">Joshua</option>
+                  <option value="judges">Judges</option>
+                  <option value="ruth">Ruth</option>
+                  <option value="1samuel">1 Samuel</option>
+                  <option value="2samuel">2 Samuel</option>
+                  <option value="1kings">1 Kings</option>
+                  <option value="2kings">2 Kings</option>
+                  <option value="joel">Joel</option>
+                  <option value="hosea">Hosea</option>
+                  <option value="psalms">Psalms</option>
+                  <option value="proverbs">Proverbs</option>
+                  <option value="1chronicles">1 Chronicles</option>
+                  <option value="2chronicles">2 Chronicles</option>
+                  <option value="ezra">Ezra</option>
+                  <option value="nehemiah">Nehemiah</option>
+                  <option value="esther">Esther</option>
+                  <option value="job">Job</option>
+                  <option value="heaven">Heaven & The New Earth</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-field">
+              <label for="publisher-file-input">Import from JSON File</label>
+              <input type="file" id="publisher-file-input" accept=".json" style="padding: 0.5rem; border: 1px dashed var(--gray-300); border-radius: var(--r-md); background: var(--gray-50); cursor: pointer;">
+            </div>
+
+            <div class="form-field">
+              <label for="publisher-json-textarea">Or Paste Module JSON Schema</label>
+              <textarea id="publisher-json-textarea" placeholder="Paste formatted JSON here..." rows="8" style="font-family: monospace; font-size: 0.82rem; padding: 0.75rem; border-radius: var(--r-md); border: 1px solid var(--gray-250); background: #f8fafc; resize: vertical;"></textarea>
+            </div>
+
+            <div id="publisher-status" class="publisher-status hidden" style="padding: 0.75rem 1rem; border-radius: var(--r-md); font-size: 0.85rem; font-weight: 600;"></div>
+
+            <div style="display: flex; gap: 1rem; align-items: center; margin-top: 0.5rem;">
+              <button type="submit" id="publisher-submit-btn" class="primary-btn" style="min-width: 140px;">Publish Module</button>
+              <button type="button" id="publisher-template-toggle" class="secondary-btn" style="background: none; border: 1px solid var(--gray-200); color: var(--gray-600); cursor: pointer; padding: 0.5rem 1rem; border-radius: var(--r-md); font-weight: 600;">Show Schema Template</button>
+            </div>
+          </form>
+
+          <!-- Toggleable JSON template helper -->
+          <div id="publisher-template-box" class="hidden" style="margin-top: 1.5rem; padding: 1.25rem; background: #0f172a; color: #cbd5e1; border-radius: var(--r-lg); border: 1px solid var(--gray-800); overflow-x: auto;">
+            <h4 style="color: #fff; margin-bottom: 0.5rem; font-family: var(--font-display);">Required Module JSON Schema</h4>
+            <pre style="font-family: monospace; font-size: 0.8rem; line-height: 1.4; margin: 0;"><code style="color: #38bdf8;">{
+  "id": "heaven-4",
+  "title": "Part 4: The Final Restoration",
+  "category": "Eschatology",
+  "duration": "12 mins",
+  "description": "Examine the culmination of cosmic renewal.",
+  "slides": [
+    {
+      "type": "info",
+      "title": "Welcome to Restoration",
+      "illustration": "🌤️",
+      "keyTakeaway": "God makes all things new.",
+      "content": "Double asterisks make text **bold**.\n\nDouble newlines start a new paragraph.",
+      "aiTutorExplanation": "Context context..."
+    },
+    {
+      "type": "card-quiz",
+      "question": "Is the new earth a physical restoration of our current world?",
+      "correctAnswer": "yes",
+      "explanation": "Yes, scripture describes a renewed physical cosmos, not an abstract spirit state."
+    },
+    {
+      "type": "summary",
+      "title": "Done!",
+      "content": "You have completed the study.",
+      "illustration": "🏆"
+    }
+  ]
+}</code></pre>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -271,26 +499,74 @@
         </div>
         <p id="onboard-desc" class="course-detail-desc"></p>
 
-        <div class="ready-box">
-          <p>Ready to begin?<br><strong>Start learning now.</strong></p>
-          <button id="start-onboarded-lesson" class="primary-btn">START COURSE</button>
+        <div class="next-up-container" id="onboard-next-up-box">
+          <div class="next-up-eyebrow" id="onboard-next-up-eyebrow">LESSON 1</div>
+          <div class="next-up-title" id="onboard-next-up-title">NEXT UP: GENESIS PART 1</div>
+          <button id="start-onboarded-lesson" class="next-up-resume-btn">START</button>
         </div>
 
         <div class="course-chapter-section">
           <div class="chapter-label-row">
-            <span class="chapter-label">CHAPTER 01</span>
-            <span id="onboard-lesson-count" class="chapter-lesson-count"></span>
+            <span class="chapter-label" id="onboard-chapter-label">CHAPTER 01</span>
+            <span id="onboard-lesson-count" class="chapter-lesson-count">0 OF 3 LESSONS</span>
           </div>
-          <h3 id="onboard-chapter-title" class="chapter-name"></h3>
           <div id="onboard-bullet-points" class="onboard-lessons-list">
-            <!-- Lesson items injected here -->
+            <!-- Lesson items injected dynamically -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       FILTERS OVERLAY MODAL (Quantic Set Filters page)
+       ============================================================ -->
+  <div id="filters-modal" class="filters-modal-overlay hidden">
+    <div class="filters-modal-sheet">
+      <div class="filters-modal-header">
+        <span class="filters-modal-title">SET FILTERS</span>
+        <button id="close-filters-modal" class="filters-close-btn">✕</button>
+      </div>
+      <div class="filters-modal-body">
+        <!-- Topic Section -->
+        <div class="filter-modal-section">
+          <h3 class="filter-modal-section-title">Filter By Topic</h3>
+          <div class="filter-tags-grid" id="topic-tags-container">
+            <button class="filter-tag-btn active" data-filter-type="topic" data-value="all">ANY TOPIC</button>
+            <button class="filter-tag-btn" data-filter-type="topic" data-value="Books of the Bible">BOOKS OF THE BIBLE</button>
+            <button class="filter-tag-btn locked" data-filter-type="topic" data-value="Bibliology" disabled>BIBLIOLOGY 🔒</button>
+            <button class="filter-tag-btn locked" data-filter-type="topic" data-value="Theology" disabled>THEOLOGY 🔒</button>
+            <button class="filter-tag-btn locked" data-filter-type="topic" data-value="Anthropology" disabled>ANTHROPOLOGY 🔒</button>
+            <button class="filter-tag-btn locked" data-filter-type="topic" data-value="Christology" disabled>CHRISTOLOGY 🔒</button>
+            <button class="filter-tag-btn locked" data-filter-type="topic" data-value="Pneumatology" disabled>PNEUMATOLOGY 🔒</button>
+            <button class="filter-tag-btn locked" data-filter-type="topic" data-value="Ecclesiology" disabled>ECCLESIOLOGY 🔒</button>
+            <button class="filter-tag-btn" data-filter-type="topic" data-value="Eschatology">ESCHATOLOGY</button>
           </div>
         </div>
 
-        <h3 class="highlights-heading">Course Highlights</h3>
-        <ul id="course-highlights-list" class="highlights-list">
-          <!-- Injected by JS -->
-        </ul>
+        <!-- Progress Section -->
+        <div class="filter-modal-section">
+          <h3 class="filter-modal-section-title">Filter By Progress</h3>
+          <div class="filter-tags-grid" id="progress-tags-container">
+            <button class="filter-tag-btn active" data-filter-type="progress" data-value="all">ANY PROGRESS</button>
+            <button class="filter-tag-btn" data-filter-type="progress" data-value="not-started">NOT STARTED</button>
+            <button class="filter-tag-btn" data-filter-type="progress" data-value="in-progress">IN PROGRESS</button>
+            <button class="filter-tag-btn" data-filter-type="progress" data-value="completed">COMPLETED</button>
+          </div>
+        </div>
+
+        <!-- Status Section -->
+        <div class="filter-modal-section">
+          <h3 class="filter-modal-section-title">Filter By Status</h3>
+          <div class="filter-tags-grid" id="status-tags-container">
+            <button class="filter-tag-btn active" data-filter-type="status" data-value="all">ANY STATUS</button>
+            <button class="filter-tag-btn" data-filter-type="status" data-value="released">RELEASED</button>
+            <button class="filter-tag-btn" data-filter-type="status" data-value="locked">LOCKED</button>
+          </div>
+        </div>
+      </div>
+      <div class="filters-modal-footer">
+        <button id="save-filters-btn" class="filters-save-btn">Save And Close</button>
       </div>
     </div>
   </div>
@@ -355,7 +631,7 @@
       <div class="tutor-header">
         <span class="tutor-avatar">✨</span>
         <div>
-          <h3>Berea AI Tutor</h3>
+          <h3>Scriptura AI Tutor</h3>
           <p>Theological & Historical Background</p>
         </div>
       </div>
@@ -368,9 +644,9 @@
        ============================================================ -->
   <div id="auth-portal" class="auth-overlay">
     <div class="auth-card">
-      <div class="auth-logo">📜 Berea</div>
+      <div class="auth-logo">📜 Scriptura</div>
       <h2 class="auth-heading">Deepen Your Study</h2>
-      <p class="auth-subtext">Inspired by the Bereans in Acts 17:11, who searched the Scriptures every day with great eagerness. Sign in to save your progress.</p>
+      <p class="auth-subtext">An active recall Bible study platform that helps you examine the Scriptures daily with great eagerness. Sign in to save your progress.</p>
 
       <div class="auth-tabs">
         <button id="tab-login" class="auth-tab active">Log In</button>
@@ -390,6 +666,19 @@
       </form>
 
       <form id="register-form" class="auth-form hidden">
+        <div class="form-field">
+          <label for="register-name">Full Name</label>
+          <input type="text" id="register-name" required placeholder="John Doe">
+        </div>
+        <div class="form-field">
+          <label for="register-country">Country</label>
+          <div class="select-wrapper dark">
+            <select id="register-country" required>
+              <option value="" disabled selected>Select country...</option>
+              <option value="AF">Afghanistan</option><option value="AL">Albania</option><option value="DZ">Algeria</option><option value="AD">Andorra</option><option value="AO">Angola</option><option value="AG">Antigua and Barbuda</option><option value="AR">Argentina</option><option value="AM">Armenia</option><option value="AU">Australia</option><option value="AT">Austria</option><option value="AZ">Azerbaijan</option><option value="BS">Bahamas</option><option value="BH">Bahrain</option><option value="BD">Bangladesh</option><option value="BB">Barbados</option><option value="BY">Belarus</option><option value="BE">Belgium</option><option value="BZ">Belize</option><option value="BJ">Benin</option><option value="BT">Bhutan</option><option value="BO">Bolivia</option><option value="BA">Bosnia and Herzegovina</option><option value="BW">Botswana</option><option value="BR">Brazil</option><option value="BN">Brunei</option><option value="BG">Bulgaria</option><option value="BF">Burkina Faso</option><option value="BI">Burundi</option><option value="CV">Cabo Verde</option><option value="KH">Cambodia</option><option value="CM">Cameroon</option><option value="CA">Canada</option><option value="CF">Central African Republic</option><option value="TD">Chad</option><option value="CL">Chile</option><option value="CN">China</option><option value="CO">Colombia</option><option value="KM">Comoros</option><option value="CG">Congo</option><option value="CD">Congo (DRC)</option><option value="CR">Costa Rica</option><option value="CI">Côte d'Ivoire</option><option value="HR">Croatia</option><option value="CU">Cuba</option><option value="CY">Cyprus</option><option value="CZ">Czech Republic</option><option value="DK">Denmark</option><option value="DJ">Djibouti</option><option value="DM">Dominica</option><option value="DO">Dominican Republic</option><option value="EC">Ecuador</option><option value="EG">Egypt</option><option value="SV">El Salvador</option><option value="GQ">Equatorial Guinea</option><option value="ER">Eritrea</option><option value="EE">Estonia</option><option value="SZ">Eswatini</option><option value="ET">Ethiopia</option><option value="FJ">Fiji</option><option value="FI">Finland</option><option value="FR">France</option><option value="GA">Gabon</option><option value="GM">Gambia</option><option value="GE">Georgia</option><option value="DE">Germany</option><option value="GH">Ghana</option><option value="GR">Greece</option><option value="GD">Grenada</option><option value="GT">Guatemala</option><option value="GN">Guinea</option><option value="GW">Guinea-Bissau</option><option value="GY">Guyana</option><option value="HT">Haiti</option><option value="HN">Honduras</option><option value="HU">Hungary</option><option value="IS">Iceland</option><option value="IN">India</option><option value="ID">Indonesia</option><option value="IR">Iran</option><option value="IQ">Iraq</option><option value="IE">Ireland</option><option value="IL">Israel</option><option value="IT">Italy</option><option value="JM">Jamaica</option><option value="JP">Japan</option><option value="JO">Jordan</option><option value="KZ">Kazakhstan</option><option value="KE">Kenya</option><option value="KI">Kiribati</option><option value="KW">Kuwait</option><option value="KG">Kyrgyzstan</option><option value="LA">Laos</option><option value="LV">Latvia</option><option value="LB">Lebanon</option><option value="LS">Lesotho</option><option value="LR">Liberia</option><option value="LY">Libya</option><option value="LI">Liechtenstein</option><option value="LT">Lithuania</option><option value="LU">Luxembourg</option><option value="MG">Madagascar</option><option value="MW">Malawi</option><option value="MY">Malaysia</option><option value="MV">Maldives</option><option value="ML">Mali</option><option value="MT">Malta</option><option value="MH">Marshall Islands</option><option value="MR">Mauritania</option><option value="MU">Mauritius</option><option value="MX">Mexico</option><option value="FM">Micronesia</option><option value="MD">Moldova</option><option value="MC">Monaco</option><option value="MN">Mongolia</option><option value="ME">Montenegro</option><option value="MA">Morocco</option><option value="MZ">Mozambique</option><option value="MM">Myanmar</option><option value="NA">Namibia</option><option value="NR">Nauru</option><option value="NP">Nepal</option><option value="NL">Netherlands</option><option value="NZ">New Zealand</option><option value="NI">Nicaragua</option><option value="NE">Niger</option><option value="NG">Nigeria</option><option value="NO">Norway</option><option value="OM">Oman</option><option value="PK">Pakistan</option><option value="PW">Palau</option><option value="PA">Panama</option><option value="PG">Papua New Guinea</option><option value="PY">Paraguay</option><option value="PE">Peru</option><option value="PH">Philippines</option><option value="PL">Poland</option><option value="PT">Portugal</option><option value="QA">Qatar</option><option value="RO">Romania</option><option value="RU">Russia</option><option value="RW">Rwanda</option><option value="KN">Saint Kitts and Nevis</option><option value="LC">Saint Lucia</option><option value="VC">Saint Vincent and the Grenadines</option><option value="WS">Samoa</option><option value="SM">San Marino</option><option value="ST">Sao Tome and Principe</option><option value="SA">Saudi Arabia</option><option value="SN">Senegal</option><option value="RS">Serbia</option><option value="SC">Seychelles</option><option value="SL">Sierra Leone</option><option value="SG">Singapore</option><option value="SK">Slovakia</option><option value="SI">Slovenia</option><option value="SB">Solomon Islands</option><option value="SO">Somalia</option><option value="ZA">South Africa</option><option value="SS">South Sudan</option><option value="ES">Spain</option><option value="LK">Sri Lanka</option><option value="SD">Sudan</option><option value="SR">Suriname</option><option value="SE">Sweden</option><option value="CH">Switzerland</option><option value="SY">Syria</option><option value="TW">Taiwan</option><option value="TJ">Tajikistan</option><option value="TZ">Tanzania</option><option value="TH">Thailand</option><option value="TL">Timor-Leste</option><option value="TG">Togo</option><option value="TO">Tonga</option><option value="TT">Trinidad and Tobago</option><option value="TN">Tunisia</option><option value="TR">Turkey</option><option value="TM">Turkmenistan</option><option value="TV">Tuvalu</option><option value="UG">Uganda</option><option value="UA">Ukraine</option><option value="AE">United Arab Emirates</option><option value="GB">United Kingdom</option><option value="US">United States</option><option value="UY">Uruguay</option><option value="UZ">Uzbekistan</option><option value="VU">Vanuatu</option><option value="VE">Venezuela</option><option value="VN">Vietnam</option><option value="YE">Yemen</option><option value="ZM">Zambia</option><option value="ZW">Zimbabwe</option>
+            </select>
+          </div>
+        </div>
         <div class="form-field">
           <label for="register-email">Email</label>
           <input type="email" id="register-email" required placeholder="you@example.com" autocomplete="email">
@@ -413,7 +702,7 @@
   </div>
 
   <!-- ============================================================
-       PROFILE EDIT MODAL
+       PROFILE EDIT MODAL (Enriched)
        ============================================================ -->
   <div id="profile-dialog" class="profile-modal-overlay hidden">
     <div class="profile-modal-card">
@@ -453,6 +742,36 @@
            <input type="text" id="profile-church-input" placeholder="e.g. Berean Community Church">
         </div>
 
+        <div class="form-field">
+          <label for="profile-headline-input">Headline / Occupation</label>
+          <input type="text" id="profile-headline-input" placeholder="e.g. Seminary Student, Software Engineer">
+        </div>
+
+        <div class="form-field">
+          <label for="profile-goals-input">Learning Goals</label>
+          <textarea id="profile-goals-input" placeholder="What are your goals for studying the Scriptures?" rows="2"></textarea>
+        </div>
+
+        <div class="form-field">
+          <label for="profile-interests-input">Interest Tags (comma-separated)</label>
+          <input type="text" id="profile-interests-input" placeholder="e.g. Genesis, Covenant, Prophecy, Hebrew">
+        </div>
+
+        <div class="form-field">
+          <label for="profile-social-input">Social / Contact Link</label>
+          <input type="url" id="profile-social-input" placeholder="e.g. https://twitter.com/username">
+        </div>
+
+        <div class="form-field">
+          <label for="profile-role-select">Account Role</label>
+          <div class="select-wrapper dark">
+            <select id="profile-role-select">
+              <option value="user">Standard Learner</option>
+              <option value="admin">Administrator</option>
+            </select>
+          </div>
+        </div>
+        
         <div class="form-field">
           <label for="profile-country-select">Country</label>
           <div class="select-wrapper dark">
@@ -494,6 +813,133 @@
       </form>
     </div>
   </div>
+  <!-- ============================================================
+       VISUAL MODULE EDITOR DIALOG
+       ============================================================ -->
+  <div id="visual-editor-dialog" class="profile-dialog-backdrop hidden" style="z-index: 10000; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div class="profile-dialog-card" style="max-height: 90vh; overflow-y: auto; width: 90%; max-width: 800px; padding: 2rem; background: #fff; border-radius: var(--r-xl); box-shadow: var(--shadow-2xl); border: 1px solid var(--gray-100); position: relative;">
+      <button id="close-visual-editor-btn" style="position: absolute; top: 1.25rem; right: 1.25rem; border: none; background: none; font-size: 1.25rem; color: var(--gray-400); cursor: pointer;">✕</button>
+      
+      <h3 style="font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; margin-bottom: 0.25rem; color: var(--gray-900);">Visual Module Editor</h3>
+      <p style="font-size: 0.88rem; color: var(--gray-500); margin-bottom: 1.5rem;">Edit course parameters and slides field-by-field. Edits will sync to Firestore with a revision backup.</p>
+      
+      <form id="visual-editor-form" style="display: flex; flex-direction: column; gap: 1.25rem;">
+        <input type="hidden" id="editor-module-id">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-field">
+            <label for="editor-title">Module Title</label>
+            <input type="text" id="editor-title" required placeholder="e.g. Part 4: The Final Restoration">
+          </div>
+          <div class="form-field">
+            <label for="editor-parent-con">Parent Course / Topic</label>
+            <div class="select-wrapper dark">
+              <select id="editor-parent-con" required>
+                <option value="">-- Choose Course --</option>
+                <option value="foundations">Foundations</option>
+                <option value="genesis">Genesis</option>
+                <option value="exodus">Exodus</option>
+                <option value="leviticus">Leviticus</option>
+                <option value="numbers">Numbers</option>
+                <option value="deuteronomy">Deuteronomy</option>
+                <option value="joshua">Joshua</option>
+                <option value="judges">Judges</option>
+                <option value="ruth">Ruth</option>
+                <option value="1samuel">1 Samuel</option>
+                <option value="2samuel">2 Samuel</option>
+                <option value="1kings">1 Kings</option>
+                <option value="2kings">2 Kings</option>
+                <option value="joel">Joel</option>
+                <option value="hosea">Hosea</option>
+                <option value="psalms">Psalms</option>
+                <option value="proverbs">Proverbs</option>
+                <option value="1chronicles">1 Chronicles</option>
+                <option value="2chronicles">2 Chronicles</option>
+                <option value="ezra">Ezra</option>
+                <option value="nehemiah">Nehemiah</option>
+                <option value="esther">Esther</option>
+                <option value="job">Job</option>
+                <option value="heaven">Heaven & The New Earth</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-field">
+            <label for="editor-category">Category</label>
+            <input type="text" id="editor-category" required placeholder="e.g. Eschatology">
+          </div>
+          <div class="form-field">
+            <label for="editor-duration">Duration</label>
+            <input type="text" id="editor-duration" required placeholder="e.g. 10 mins">
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="editor-description">Description</label>
+          <textarea id="editor-description" rows="2" required placeholder="Brief summary of the module..."></textarea>
+        </div>
+
+        <!-- Slides List Builder -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-bottom: 1px solid var(--gray-100); padding-bottom: 0.5rem;">
+            <h4 style="font-family: var(--font-display); font-weight: 700; color: var(--gray-800); margin: 0;">Course Slides</h4>
+            <button type="button" id="editor-add-slide-btn" class="primary-btn compact-btn" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">+ Add Slide</button>
+          </div>
+          <div id="editor-slides-container" style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1rem;">
+            <!-- Slides dynamically generated -->
+          </div>
+        </div>
+
+        <!-- Revision History Backups Section -->
+        <div style="margin-top: 1rem; background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--r-lg); padding: 1.25rem;">
+          <h4 style="font-family: var(--font-display); font-weight: 700; color: var(--gray-800); margin-top: 0; margin-bottom: 0.5rem; font-size: 0.95rem;">Module Revision History</h4>
+          <p style="font-size: 0.8rem; color: var(--gray-500); margin-bottom: 0.75rem;">Revert this module to any previous backup snapshot.</p>
+          <div id="editor-backups-list" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 150px; overflow-y: auto;">
+            <div style="font-size: 0.8rem; color: var(--gray-400); text-align: center; padding: 0.5rem;">No revisions saved yet.</div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem; border-top: 1px solid var(--gray-100); padding-top: 1.25rem;">
+          <button type="button" id="editor-cancel-btn" class="secondary-btn" style="border: 1px solid var(--gray-200); padding: 0.6rem 1.2rem; border-radius: var(--r-md); font-weight: 600; cursor: pointer;">Cancel</button>
+          <button type="submit" class="primary-btn" style="padding: 0.6rem 1.5rem; border-radius: var(--r-md); font-weight: 600; cursor: pointer;">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       LEARNER PROGRESS DETAIL DIALOG
+       ============================================================ -->
+  <div id="learner-progress-dialog" class="profile-dialog-backdrop hidden" style="z-index: 10000; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div class="profile-dialog-card" style="max-height: 80vh; overflow-y: auto; width: 90%; max-width: 600px; padding: 2rem; background: #fff; border-radius: var(--r-xl); box-shadow: var(--shadow-2xl); border: 1px solid var(--gray-100); position: relative;">
+      <button id="close-learner-progress-btn" style="position: absolute; top: 1.25rem; right: 1.25rem; border: none; background: none; font-size: 1.25rem; color: var(--gray-400); cursor: pointer;">✕</button>
+      
+      <h3 id="progress-learner-name" style="font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; margin-bottom: 0.25rem; color: var(--gray-900);">Learner Study Progress</h3>
+      <p id="progress-learner-email" style="font-size: 0.88rem; color: var(--gray-500); margin-bottom: 1.5rem;">email@example.com</p>
+      
+      <div style="display:flex; flex-direction:column; gap:1.25rem;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; text-align: center;">
+          <div style="background: var(--gray-50); border: 1px solid var(--gray-150); border-radius: var(--r-lg); padding: 1rem;">
+            <div style="font-size: 0.75rem; font-weight: 700; color: var(--gray-400); text-transform: uppercase;">Completed Modules</div>
+            <div id="progress-learner-completed-count" style="font-size: 2rem; font-weight: 800; color: var(--brand-green); margin-top: 0.25rem;">0</div>
+          </div>
+          <div style="background: var(--gray-50); border: 1px solid var(--gray-150); border-radius: var(--r-lg); padding: 1rem;">
+            <div style="font-size: 0.75rem; font-weight: 700; color: var(--gray-400); text-transform: uppercase;">Active Streak</div>
+            <div id="progress-learner-streak" style="font-size: 2rem; font-weight: 800; color: var(--brand-coral); margin-top: 0.25rem;">0 days</div>
+          </div>
+        </div>
+
+        <div>
+          <h4 style="font-family: var(--font-display); font-weight: 700; color: var(--gray-800); margin-bottom: 0.5rem; border-bottom: 1px solid var(--gray-100); padding-bottom: 0.25rem;">Module Progress Details</h4>
+          <div id="progress-learner-modules-list" style="display:flex; flex-direction:column; gap:0.5rem; max-height: 250px; overflow-y: auto;">
+            <!-- Dynamically populated list -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- ============================================================
        BOTTOM NAVIGATION BAR
@@ -513,10 +959,14 @@
     </button>
     <button class="nav-item" data-tab="stats">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-      <span class="nav-label">Stats</span>
+      <span class="nav-label">Progress</span>
+    </button>
+    <button id="nav-item-admin" class="nav-item hidden" data-tab="admin">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      <span class="nav-label">Admin</span>
     </button>
   </nav>
 
-  <script type="module" src="app.js?v=2.0.1"></script>
+  <script type="module" src="app.js?v=2.0.10"></script>
 </body>
 </html>

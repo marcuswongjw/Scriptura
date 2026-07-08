@@ -1,6 +1,6 @@
-# Berea Content Creation Guide
+# Scriptura Content Creation Guide
 
-This guide explains how to add new courses, concentrations, and interactive study slides to the Berea Bible Study App.
+This guide explains how to add new courses, concentrations, and interactive study slides to the Scriptura Bible Study App.
 
 ---
 
@@ -14,7 +14,7 @@ All study content is managed in two primary files inside the project directory:
 
 ## Step 2: Define a Concentration in `modules.js`
 
-At the top of [modules.js](file:///Users/marcus/.gemini/antigravity/scratch/scriptura/modules.js), locate the `concentrations` array. Each concentration represents a course topic grouping:
+At the top of [modules.js](file:///Users/marcus/.gemini/antigravity/scratch/Scriptura/modules.js), locate the `concentrations` array. Each concentration represents a course topic grouping:
 
 ```javascript
 export const concentrations = [
@@ -77,7 +77,7 @@ Presents a statement where the user immediately taps "Yes" or "No".
 ```javascript
 {
   type: "card-quiz",
-  title: "Berea Card Check",
+  title: "Scriptura Card Check",
   aiTutorExplanation: "Explanation displayed if user opens the tutor.",
   question: "The statement to evaluate.",
   correctAnswer: "yes", // Must be "yes" or "no" (all lowercase)
@@ -120,7 +120,7 @@ The final slide of the module, showing completion congratulations.
 
 ## Step 5: Configure the Module Icon in `app.js`
 
-Open [app.js](file:///Users/marcus/.gemini/antigravity/scratch/scriptura/app.js) and locate the `moduleIcons` map near the top. Add your new module ID and its display emoji icon:
+Open [app.js](file:///Users/marcus/.gemini/antigravity/scratch/Scriptura/app.js) and locate the `moduleIcons` map near the top. Add your new module ID and its display emoji icon:
 
 ```javascript
 const moduleIcons = {

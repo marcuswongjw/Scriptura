@@ -1,4 +1,4 @@
-import { concentrations, modules } from './modules.js';
+import { concentrations, modules } from './modules.js?v=2.0.10';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, setPersistence, browserSessionPersistence } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 import { getFirestore, doc, getDoc, setDoc, collection, getDocs, onSnapshot, addDoc, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
@@ -29,26 +29,67 @@ let userState = {
   lastActiveDate: null,
   translation: 'ESV',
   quizStats: { correctFirstTry: 0, totalQuestions: 0 },
-  country: ''
+  country: '',
+  role: 'user',
+  headline: '',
+  goals: '',
+  interests: '',
+  social: '',
+  lessonProgress: {},
+  timeSpent: 0
 };
+
+let sessionStartTime = Date.now();
 
 let activeModule = null;
 let currentSlideIndex = 0;
+let cardQuizSubIndex = 0;
 let selectedOptionIndex = null;
 let isQuizAnswered = false;
 let currentQuestionFirstAttempt = true;
 let currentTab = 'home';
+let catalogFilters = {
+  topic: 'all',
+  progress: 'all',
+  status: 'all'
+};
+let moduleSchedules = {};
 let currentDashboardSubtab = 'studying';
 
 const moduleIcons = {
-  'beautiful-book-intro':   '📖',
-  'genesis-creation':       '🏛️',
-  'genesis-fall-sin':       '🍎',
-  'genesis-twelve-abraham': '🌟',
-  'genesis-twentyfive-fifty-patriarchs': '🤼',
-  'exodus-deliverance':     '📜',
-  'leviticus-worship':      '🐂',
-  'numbers-wilderness':     '📊',
+  'beautiful-book': '📖',
+  'genesis-1': '🏛️',
+  'genesis-2': '🍎',
+  'genesis-3': '🌟',
+  'exodus-1': '📜',
+  'exodus-2': '⛺',
+  'leviticus': '🐂',
+  'numbers-1': '📊',
+  'numbers-2': '🐍',
+  'deuteronomy-1': '📜',
+  'deuteronomy-2': '🌅',
+  'joshua': '⚔️',
+  'judges': '⚖️',
+  'ruth': '🌾',
+  '1samuel': '👑',
+  '2samuel': '🏰',
+  '1kings': '👑',
+  '2kings': '🏰',
+  'joel': '🦗',
+  'hosea': '❤️',
+  'psalms': '🎵',
+  'proverbs': '💡',
+  '1chronicles': '📜',
+  '2chronicles': '🏰',
+  'ezra': '🏛️',
+  'nehemiah': '🧱',
+  'esther-1': '👑',
+  'esther-2': '🍷',
+  'job-1': '🌪️',
+  'job-2': '🐏',
+  'heaven-1': '🌤️',
+  'heaven-2': '🌅',
+  'heaven-3': '👑',
 };
 
 // ==========================================================================
@@ -74,6 +115,8 @@ const el = {
   loginPass:       document.getElementById('login-password'),
   registerEmail:   document.getElementById('register-email'),
   registerPass:    document.getElementById('register-password'),
+  registerName:    document.getElementById('register-name'),
+  registerCountry: document.getElementById('register-country'),
   googleSignInBtn: document.getElementById('google-signin-btn'),
   authError:       document.getElementById('auth-error'),
 
@@ -82,6 +125,7 @@ const el = {
   viewCourses:  document.getElementById('view-courses'),
   viewNetwork:  document.getElementById('view-network'),
   viewStats:    document.getElementById('view-stats'),
+  viewAdmin:    document.getElementById('view-admin'),
   bottomNav:    document.getElementById('bottom-nav'),
 
   // Dashboard Sub-tabs
@@ -92,9 +136,16 @@ const el = {
   currentStudyContainer: document.getElementById('current-study-container'),
   concentrationGrid:     document.getElementById('concentration-grid'),
 
-  // Courses View
-  courseSearch:       document.getElementById('course-search'),
-  catalogContainer:   document.getElementById('catalog-container'),
+  // Courses View (Renovated)
+  courseSearch:         document.getElementById('course-search'),
+  filtersModal:         document.getElementById('filters-modal'),
+  openFiltersModalBtn:  document.getElementById('open-filters-modal-btn'),
+  closeFiltersModalBtn: document.getElementById('close-filters-modal'),
+  saveFiltersBtn:       document.getElementById('save-filters-btn'),
+  activeStatusBadge:    document.getElementById('active-status-badge'),
+  catalogGrid:          document.getElementById('catalog-grid'),
+
+  // Course Details
   courseOnboarding:   document.getElementById('course-onboarding'),
   closeOnboarding:    document.getElementById('close-onboarding'),
   onboardTag:         document.getElementById('onboard-tag'),
@@ -108,13 +159,11 @@ const el = {
   startOnboardedLesson: document.getElementById('start-onboarded-lesson'),
 
   // Network View
-
-  // Profile Modal
+  // Profile Modal (Enriched)
   profileDialog:            document.getElementById('profile-dialog'),
   closeProfileBtn:          document.getElementById('close-profile-btn'),
   profileEditForm:          document.getElementById('profile-edit-form'),
   avatarPresetsContainer:   document.getElementById('avatar-presets-container'),
-  profilePhotoUrl:          document.getElementById('profile-photo-url'),
   profileNameInput:         document.getElementById('profile-name-input'),
   profileEmailInput:        document.getElementById('profile-email-input'),
   profileChurchInput:       document.getElementById('profile-church-input'),
@@ -140,7 +189,6 @@ const el = {
   chatMessageInput:         document.getElementById('chat-message-input'),
 
   // Stats View
-  statsXpVal:        document.getElementById('stats-xp-val'),
   statsCompletedVal: document.getElementById('stats-completed-val'),
   statsStreakVal:    document.getElementById('stats-streak-val'),
   statsAccuracyVal:  document.getElementById('stats-accuracy-val'),
@@ -170,20 +218,90 @@ const el = {
 // ==========================================================================
 // Auth Observer & Init
 // ==========================================================================
-function init() {
+async function fetchAndMergeCustomModules() {
+  try {
+    const customCol = collection(db, 'custom_modules');
+    const querySnapshot = await getDocs(customCol);
+    const customModulesList = [];
+    
+    querySnapshot.forEach(docSnap => {
+      customModulesList.push({
+        id: docSnap.id,
+        ...docSnap.data()
+      });
+    });
+
+    if (customModulesList.length > 0) {
+      customModulesList.forEach(customMod => {
+        if (customMod.deleted) {
+          // If soft deleted, remove from global modules list if it exists
+          const existingIdx = modules.findIndex(m => m.id === customMod.id);
+          if (existingIdx !== -1) {
+            modules.splice(existingIdx, 1);
+          }
+          // Remove from concentrations lists
+          concentrations.forEach(con => {
+            const idx = con.modules.indexOf(customMod.id);
+            if (idx !== -1) con.modules.splice(idx, 1);
+          });
+          return;
+        }
+
+        // Merge into global modules array
+        const existingIdx = modules.findIndex(m => m.id === customMod.id);
+        if (existingIdx !== -1) {
+          modules[existingIdx] = customMod;
+        } else {
+          modules.push(customMod);
+        }
+
+        // Dynamically add to concentrations modules list if parentConcentrationId is specified
+        if (customMod.parentConcentrationId) {
+          const parentCon = concentrations.find(c => c.id === customMod.parentConcentrationId);
+          if (parentCon) {
+            if (!parentCon.modules.includes(customMod.id)) {
+              parentCon.modules.push(customMod.id);
+            }
+          }
+        }
+      });
+    }
+  } catch (err) {
+    console.warn('Failed to load custom modules (using local assets fallback):', err);
+  }
+}
+
+async function init() {
   setupEventListeners();
-  setPersistence(auth, browserSessionPersistence).catch(err => console.error(err));
+  populateTopicFilter();
+  
+  try {
+    await setPersistence(auth, browserSessionPersistence);
+  } catch (err) {
+    console.error(err);
+  }
 
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       el.userPill.classList.remove('hidden');
       el.authPortal.classList.add('hidden');
 
+      // Load custom courses first, then module schedules and user data
+      await fetchAndMergeCustomModules();
+      await loadModuleSchedules();
       await loadUserCloudData(user);
+      sessionStartTime = Date.now();
+      
+      checkAdminNavVisibility();
       updateHeaderProfile();
       updateStreak();
       updateStatsDisplay();
-      switchTab('home');
+      
+      // Update UI displays to reflect custom modules
+      renderCoursesCatalog();
+      renderDashboard();
+      
+      routeToPath(window.location.pathname, false);
       initNetworkViewer();
     } else {
       el.userPill.classList.add('hidden');
@@ -191,6 +309,45 @@ function init() {
       resetLocalState();
     }
   });
+}
+
+function checkAdminNavVisibility() {
+  const adminNav = document.getElementById('nav-item-admin');
+  if (adminNav) {
+    if (userState.role === 'admin') {
+      adminNav.classList.remove('hidden');
+    } else {
+      adminNav.classList.add('hidden');
+    }
+  }
+}
+
+function populateTopicFilter() {
+  if (el.courseFilterTopic) {
+    el.courseFilterTopic.innerHTML = '<option value="all">All Topics</option>';
+    const topics = [
+      "Books of the Bible",
+      "Bibliology",
+      "Theology",
+      "Anthropology",
+      "Christology",
+      "Pneumatology",
+      "Ecclesiology",
+      "Eschatology"
+    ];
+    topics.forEach(topic => {
+      const opt = document.createElement('option');
+      opt.value = topic;
+      const isLocked = ["Bibliology", "Theology", "Anthropology", "Christology", "Pneumatology", "Ecclesiology"].includes(topic);
+      if (isLocked) {
+        opt.disabled = true;
+        opt.textContent = `${topic} (Locked)`;
+      } else {
+        opt.textContent = topic;
+      }
+      el.courseFilterTopic.appendChild(opt);
+    });
+  }
 }
 
 function updateHeaderProfile() {
@@ -212,11 +369,11 @@ async function loadUserCloudData(user) {
     let cloudData = null;
     if (docSnap.exists()) cloudData = docSnap.data();
 
-    const localSaved = localStorage.getItem('berea_user_state') || localStorage.getItem('scriptura_user_state');
+    const localSaved = localStorage.getItem('scriptura_user_state');
     let guestState = null;
     if (localSaved) { try { guestState = JSON.parse(localSaved); } catch(e) {} }
 
-      if (cloudData) {
+    if (cloudData) {
       userState = {
         xp: 0,
         streak: 0,
@@ -229,13 +386,19 @@ async function loadUserCloudData(user) {
         photo: user.photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.uid}`,
         email: user.email || '',
         church: '',
+        role: 'user',
+        headline: '',
+        goals: '',
+        interests: '',
+        social: '',
+        lessonProgress: {},
         ...cloudData
       };
       if (!userState.quizStats) userState.quizStats = { correctFirstTry: 0, totalQuestions: 0 };
       if (!userState.completedModules) userState.completedModules = [];
+      if (!userState.lessonProgress) userState.lessonProgress = {};
 
-      // Only merge guest data if the cloud account has NO progress yet (brand new account)
-      const isMigrated = localStorage.getItem('berea_local_migrated') === 'true';
+      const isMigrated = localStorage.getItem('scriptura_local_migrated') === 'true';
       const cloudHasProgress = (cloudData.xp || 0) > 0 || (cloudData.completedModules || []).length > 0;
       if (guestState && !isMigrated && !cloudHasProgress) {
         let merged = false;
@@ -246,7 +409,7 @@ async function loadUserCloudData(user) {
         const mergedCompleted = Array.from(new Set([...cloudCompleted, ...guestCompleted]));
         if (mergedCompleted.length > cloudCompleted.length) { userState.completedModules = mergedCompleted; merged = true; }
         if (merged) await setDoc(userRef, userState);
-        localStorage.setItem('berea_local_migrated', 'true');
+        localStorage.setItem('scriptura_local_migrated', 'true');
       }
     } else {
       if (guestState) {
@@ -262,6 +425,12 @@ async function loadUserCloudData(user) {
           photo: user.photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.uid}`,
           email: user.email || '',
           church: '',
+          role: 'user',
+          headline: '',
+          goals: '',
+          interests: '',
+          social: '',
+          lessonProgress: {},
           ...guestState
         };
       } else {
@@ -272,15 +441,22 @@ async function loadUserCloudData(user) {
           lastActiveDate: null,
           translation: 'ESV',
           quizStats: { correctFirstTry: 0, totalQuestions: 0 },
-          country: '',
-          name: user.displayName || '',
+          country: pendingRegistrationDetails?.country || '',
+          name: pendingRegistrationDetails?.name || user.displayName || '',
           photo: user.photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.uid}`,
           email: user.email || '',
-          church: ''
+          church: '',
+          role: 'user',
+          headline: '',
+          goals: '',
+          interests: '',
+          social: '',
+          lessonProgress: {}
         };
       }
       await setDoc(userRef, userState);
-      localStorage.setItem('berea_local_migrated', 'true');
+      localStorage.setItem('scriptura_local_migrated', 'true');
+      pendingRegistrationDetails = null;
     }
 
     if (userState.translation) el.translationSelect.value = userState.translation;
@@ -290,15 +466,14 @@ async function loadUserCloudData(user) {
 }
 
 function resetLocalState() {
-  userState = { xp: 0, streak: 0, completedModules: [], lastActiveDate: null, translation: 'ESV', quizStats: { correctFirstTry: 0, totalQuestions: 0 }, country: '', name: '', photo: '', email: '', church: '' };
-  // Clear migration flag so a different account logging in gets a fresh start
-  localStorage.removeItem('berea_local_migrated');
-  localStorage.removeItem('berea_user_state');
+  userState = { xp: 0, streak: 0, completedModules: [], lastActiveDate: null, translation: 'ESV', quizStats: { correctFirstTry: 0, totalQuestions: 0 }, country: '', name: '', photo: '', email: '', church: '', role: 'user', headline: '', goals: '', interests: '', social: '', lessonProgress: {}, timeSpent: 0 };
+  localStorage.removeItem('scriptura_local_migrated');
+  localStorage.removeItem('scriptura_user_state');
   updateStatsDisplay();
 }
 
 async function saveState() {
-  localStorage.setItem('berea_user_state', JSON.stringify(userState));
+  localStorage.setItem('scriptura_user_state', JSON.stringify(userState));
   updateStatsDisplay();
   if (auth.currentUser) {
     try {
@@ -330,23 +505,98 @@ function recordActivity() {
 }
 
 // ==========================================================================
+// Release Date Checking
+// ==========================================================================
+function isModuleReleased(moduleId) {
+  if (userState.role === 'admin') return true;
+  const releaseDateStr = moduleSchedules[moduleId];
+  if (!releaseDateStr) return true;
+  const releaseDate = new Date(releaseDateStr);
+  const now = new Date();
+  return now >= releaseDate;
+}
+
+async function loadModuleSchedules() {
+  try {
+    const docRef = doc(db, 'events', 'module_schedules');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      moduleSchedules = docSnap.data();
+    } else {
+      moduleSchedules = {};
+    }
+  } catch (err) {
+    console.error('Failed to load module schedules:', err);
+  }
+}
+
+// ==========================================================================
 // Tab Router
 // ==========================================================================
-function switchTab(tabId) {
+function switchTab(tabId, pushState = true) {
   currentTab = tabId;
   document.querySelectorAll('.nav-item').forEach(item => {
     item.classList.toggle('active', item.getAttribute('data-tab') === tabId);
   });
 
-  const views = { home: el.viewHome, courses: el.viewCourses, network: el.viewNetwork, stats: el.viewStats };
-  Object.keys(views).forEach(key => views[key].classList.toggle('hidden', key !== tabId));
+  const views = { 
+    home: el.viewHome, 
+    courses: el.viewCourses, 
+    network: el.viewNetwork, 
+    stats: el.viewStats,
+    admin: el.viewAdmin
+  };
+  Object.keys(views).forEach(key => {
+    if (views[key]) {
+      views[key].classList.toggle('hidden', key !== tabId);
+    }
+  });
 
   if (tabId === 'courses') renderCoursesCatalog();
   else if (tabId === 'home') renderDashboard();
   else if (tabId === 'stats') updateStatsDisplay();
   else if (tabId === 'network') updateNetworkView();
+  else if (tabId === 'admin') renderAdminDashboard();
+
+  // Reset overlay screens when switching tabs
+  el.courseOnboarding.classList.add('hidden');
+  el.lessonView.classList.add('hidden');
+  el.lessonView.classList.remove('cardquiz-mode');
+  el.bottomNav.classList.remove('hidden');
+  el.header.classList.remove('hidden');
+
+  if (pushState) {
+    const path = tabId === 'home' ? '/' : '/' + tabId;
+    history.pushState({ tabId }, '', path);
+  }
 
   window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+function routeToPath(path, pushState = true) {
+  if (!path) path = '/';
+  if (path.length > 1 && path.endsWith('/')) {
+    path = path.slice(0, -1);
+  }
+
+  if (path.startsWith('/courses/')) {
+    const moduleId = path.replace('/courses/', '');
+    switchTab('courses', false);
+    openOnboarding(moduleId, pushState);
+  } else if (path.startsWith('/learn/')) {
+    const moduleId = path.replace('/learn/', '');
+    startModule(moduleId, pushState);
+  } else if (path === '/courses') {
+    switchTab('courses', pushState);
+  } else if (path === '/network') {
+    switchTab('network', pushState);
+  } else if (path === '/stats') {
+    switchTab('stats', pushState);
+  } else if (path === '/admin') {
+    switchTab('admin', pushState);
+  } else {
+    switchTab('home', pushState);
+  }
 }
 
 function switchDashboardSubtab(subtab) {
@@ -364,35 +614,37 @@ function switchDashboardSubtab(subtab) {
 // ==========================================================================
 function renderDashboard() {
   try {
-    const completedList = (userState && Array.isArray(userState.completedModules)) ? userState.completedModules : [];
+    const completedList = (userState && Array.isArray(userState.completedModules))
+      ? userState.completedModules.filter(id => modules.some(m => m.id === id))
+      : [];
     
     if (!modules || modules.length === 0) {
       el.currentStudyContainer.innerHTML = `<div class="study-card-title">No modules loaded</div>`;
       return;
     }
 
-    const nextModule = modules.find(m => m && !completedList.includes(m.id)) || modules[modules.length - 1];
+    // Find next uncompleted module that is released
+    const nextModule = modules.find(m => m && !completedList.includes(m.id) && isModuleReleased(m.id)) || modules.find(m => isModuleReleased(m.id));
     if (!nextModule) {
-      el.currentStudyContainer.innerHTML = `<div class="study-card-title">Error identifying next module</div>`;
+      el.currentStudyContainer.innerHTML = `<div class="study-card-title">All released modules completed!</div>`;
       return;
     }
 
     const isAllComplete = modules.every(m => m && completedList.includes(m.id));
-    const icon = moduleIcons[nextModule.id] || '📖';
     const completed = completedList.length;
-    const total = modules.length;
+    const total = modules.filter(m => isModuleReleased(m.id)).length;
 
     if (isAllComplete) {
       el.currentStudyContainer.innerHTML = `
         <div class="study-card-label">ALL COURSES COMPLETED</div>
-        <div class="study-card-title">🎓 Berea Scholar!</div>
+        <div class="study-card-title">🎓 Scriptura Scholar!</div>
         <div class="study-card-desc">Congratulations — you have completed all foundational modules. Review any lesson below.</div>
         <button class="primary-btn" id="btn-dashboard-review" style="margin-top:0.5rem;">REVIEW COURSES</button>
       `;
       document.getElementById('btn-dashboard-review')?.addEventListener('click', () => switchTab('courses'));
     } else {
       el.currentStudyContainer.innerHTML = `
-        <div class="study-card-label">CURRENTLY STUDYING • ${completed} of ${total} COMPLETE</div>
+        <div class="study-card-label">CURRENTLY STUDYING • ${completed} of ${total} RELEASED COMPLETE</div>
         <div class="study-card-title">${nextModule.title}</div>
         <div class="study-card-desc">${nextModule.description || ''}</div>
         <button class="primary-btn" id="btn-dashboard-resume" data-id="${nextModule.id}" style="margin-top:0.5rem;">START COURSE</button>
@@ -403,16 +655,6 @@ function renderDashboard() {
     }
   } catch (err) {
     console.error('Error rendering dashboard:', err);
-    const fallbackModule = modules[0] || { id: 'beautiful-book-intro', title: 'Introduction to The Beautiful Book', description: 'Start your Berea learning journey.' };
-    el.currentStudyContainer.innerHTML = `
-      <div class="study-card-label">READY TO STUDY</div>
-      <div class="study-card-title">${fallbackModule.title}</div>
-      <div class="study-card-desc">${fallbackModule.description || ''}</div>
-      <button class="primary-btn" id="btn-dashboard-resume-fallback" style="margin-top:0.5rem;">START COURSE</button>
-    `;
-    document.getElementById('btn-dashboard-resume-fallback')?.addEventListener('click', () => {
-      openOnboarding(fallbackModule.id);
-    });
   }
 }
 
@@ -424,9 +666,10 @@ function renderCurriculumGrid() {
     el.concentrationGrid.innerHTML = '';
     const radius = 28;
     const circ = 2 * Math.PI * radius;
-    const completedList = (userState && Array.isArray(userState.completedModules)) ? userState.completedModules : [];
+    const completedList = (userState && Array.isArray(userState.completedModules))
+      ? userState.completedModules.filter(id => modules.some(m => m.id === id))
+      : [];
 
-    // Group concentrations
     const groups = {};
     concentrations.forEach(con => {
       const gName = con.group || 'General';
@@ -434,13 +677,44 @@ function renderCurriculumGrid() {
       groups[gName].push(con);
     });
 
-    Object.keys(groups).forEach(gName => {
+    const topicOrder = [
+      "Books of the Bible",
+      "Bibliology",
+      "Theology",
+      "Anthropology",
+      "Christology",
+      "Pneumatology",
+      "Ecclesiology",
+      "Eschatology"
+    ];
+
+    const sortedGroupNames = Object.keys(groups).sort((a, b) => {
+      const idxA = topicOrder.indexOf(a);
+      const idxB = topicOrder.indexOf(b);
+      if (idxA === -1 && idxB === -1) return 0;
+      if (idxA === -1) return 1;
+      if (idxB === -1) return -1;
+      return idxA - idxB;
+    });
+
+    sortedGroupNames.forEach(gName => {
+      let groupHasReleased = false;
+      groups[gName].forEach(con => {
+        const released = con.modules.filter(mid => isModuleReleased(mid));
+        if (released.length > 0) groupHasReleased = true;
+      });
+
+      if (!groupHasReleased) return;
+
       const groupTitleHtml = `<h3 class="curriculum-group-title" style="grid-column: 1/-1; margin-top: 1rem; font-family: var(--font-display); font-weight: 800; font-size: 1.1rem; color: var(--gray-800); border-bottom: 1px solid var(--gray-100); padding-bottom: 0.5rem; text-align: left;">${gName.toUpperCase()}</h3>`;
       el.concentrationGrid.insertAdjacentHTML('beforeend', groupTitleHtml);
 
       groups[gName].forEach(con => {
-        const total = con.modules.length;
-        const completed = con.modules.filter(mid => completedList.includes(mid)).length;
+        const releasedInCon = con.modules.filter(mid => isModuleReleased(mid));
+        if (releasedInCon.length === 0) return;
+
+        const total = releasedInCon.length;
+        const completed = releasedInCon.filter(mid => completedList.includes(mid)).length;
         const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
         const offset = circ - (pct / 100) * circ;
         const isComplete = pct === 100;
@@ -466,6 +740,14 @@ function renderCurriculumGrid() {
 
     document.querySelectorAll('.concentration-badge').forEach(badge => {
       badge.addEventListener('click', () => {
+        const conId = badge.getAttribute('data-con-id');
+        const con = concentrations.find(c => c.id === conId);
+        if (con) {
+          catalogFilters.topic = con.group;
+          // Visual tag button update inside modal
+          updateFilterTagsUI();
+        }
+        renderCoursesCatalog();
         switchTab('courses');
       });
     });
@@ -474,117 +756,371 @@ function renderCurriculumGrid() {
   }
 }
 
-function renderCoursesCatalog() {
-  el.catalogContainer.innerHTML = '';
-  const searchVal = el.courseSearch.value.trim().toLowerCase();
-
-  // Group concentrations
-  const groups = {};
-  concentrations.forEach(con => {
-    const gName = con.group || 'General';
-    if (!groups[gName]) groups[gName] = [];
-    groups[gName].push(con);
+function updateFilterTagsUI() {
+  document.querySelectorAll('.filter-tag-btn').forEach(btn => {
+    const fType = btn.getAttribute('data-filter-type');
+    const val = btn.getAttribute('data-value');
+    if (fType && val) {
+      if (catalogFilters[fType] === val) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    }
   });
 
-  Object.keys(groups).forEach(gName => {
-    let hasMatchingModules = false;
-    groups[gName].forEach(con => {
-      const matches = modules.filter(m =>
-        con.modules.includes(m.id) &&
-        (searchVal === '' || m.title.toLowerCase().includes(searchVal) || m.description.toLowerCase().includes(searchVal))
-      );
-      if (matches.length > 0) hasMatchingModules = true;
-    });
+  const topicLabel = document.getElementById('topic-btn-label');
+  if (topicLabel) {
+    if (catalogFilters.topic === 'all') {
+      topicLabel.textContent = 'Set Filters';
+    } else {
+      topicLabel.textContent = catalogFilters.topic;
+    }
+  }
 
-    if (!hasMatchingModules) return;
+  const statusLabel = document.getElementById('status-btn-label');
+  if (statusLabel) {
+    if (catalogFilters.status === 'all') {
+      statusLabel.textContent = 'Any Status';
+    } else {
+      statusLabel.textContent = catalogFilters.status.charAt(0).toUpperCase() + catalogFilters.status.slice(1);
+    }
+  }
+}
 
-    const groupHeaderHtml = `<div class="catalog-group-header" style="margin-top: 1.5rem; font-family: var(--font-display); font-weight: 800; font-size: 1.2rem; color: var(--brand-coral); border-bottom: 2px solid rgba(225, 29, 72, 0.1); padding-bottom: 0.25rem; margin-bottom: 0.75rem; text-align: left;">${gName.toUpperCase()}</div>`;
-    el.catalogContainer.insertAdjacentHTML('beforeend', groupHeaderHtml);
+function renderCoursesCatalog() {
+  if (!el.catalogGrid) return;
+  el.catalogGrid.innerHTML = '';
 
-    groups[gName].forEach(con => {
-      const filteredModules = modules.filter(m =>
-        con.modules.includes(m.id) &&
-        (searchVal === '' || m.title.toLowerCase().includes(searchVal) || m.description.toLowerCase().includes(searchVal))
-      );
-      if (filteredModules.length === 0) return;
+  const searchVal = el.courseSearch ? el.courseSearch.value.trim().toLowerCase() : '';
+  const filterTopic = catalogFilters.topic;
+  const filterProgress = catalogFilters.progress;
+  const filterStatus = catalogFilters.status;
 
-      // Section header
-      const headerHtml = `<div class="catalog-section-header" style="margin-top: 0.5rem; font-size: 0.9rem; font-weight: 700; color: var(--gray-600); text-align: left; margin-bottom: 0.5rem;">${con.title.toUpperCase()}</div>`;
-      el.catalogContainer.insertAdjacentHTML('beforeend', headerHtml);
+  const conIcons = {
+    'foundations': '📖',
+    'genesis': '🏛️',
+    'exodus': '📜',
+    'leviticus': '🐂',
+    'numbers': '📊',
+    'deuteronomy': '🌅',
+    'joshua': '⚔️',
+    'judges': '⚖️',
+    'ruth': '🌾',
+    '1samuel': '👑',
+    '2samuel': '🏰',
+    '1kings': '👑',
+    '2kings': '🏰',
+    'joel': '🦗',
+    'hosea': '❤️',
+    'psalms': '🎵',
+    'proverbs': '💡',
+    '1chronicles': '📜',
+    '2chronicles': '🏰',
+    'ezra': '🏛️',
+    'nehemiah': '🧱',
+    'esther': '🍷',
+    'job': '🌪️',
+    'heaven': '🌤️'
+  };
 
-      filteredModules.forEach(mod => {
-        const isComplete = userState.completedModules.includes(mod.id);
-        const icon = moduleIcons[mod.id] || '📖';
-        const completedLabel = isComplete
-          ? `<div class="module-row-completed-label">✓ COMPLETED</div>`
-          : `<div class="module-row-completed-label" style="color:var(--gray-400);">⚡ +${mod.xpReward} XP • ${mod.duration}</div>`;
+  const filteredConcentrations = concentrations.filter(con => {
+    // 1. Search text matches title or description of concentration or its child modules
+    const conLessons = modules.filter(m => con.modules.includes(m.id));
+    const matchesSearch = searchVal === '' ||
+      con.title.toLowerCase().includes(searchVal) ||
+      con.description.toLowerCase().includes(searchVal) ||
+      conLessons.some(m => m.title.toLowerCase().includes(searchVal) || m.description.toLowerCase().includes(searchVal));
 
-        const rowHtml = `
-          <div class="module-row" data-mod-id="${mod.id}">
-            <div class="module-row-icon ${isComplete ? 'complete' : ''}">${icon}</div>
-            <div class="module-row-body">
-              <div class="module-row-title">${mod.title}</div>
-              <div class="module-row-desc">${mod.description}</div>
-              ${completedLabel}
+    if (!matchesSearch) return false;
+
+    // 2. Topic filter
+    if (filterTopic !== 'all' && con.group !== filterTopic) return false;
+
+    // 3. Progress filter
+    const total = conLessons.length;
+    const completed = conLessons.filter(m => userState.completedModules.includes(m.id)).length;
+    const anyStarted = conLessons.some(m => (userState.lessonProgress?.[m.id] || 0) > 0 || userState.completedModules.includes(m.id));
+    const isConComplete = completed === total;
+    const isConInProgress = !isConComplete && anyStarted;
+    const isConNotStarted = !isConComplete && !anyStarted;
+
+    if (filterProgress === 'completed' && !isConComplete) return false;
+    if (filterProgress === 'in-progress' && !isConInProgress) return false;
+    if (filterProgress === 'not-started' && !isConNotStarted) return false;
+
+    // 4. Status filter (released if at least one lesson is released)
+    const isReleased = conLessons.some(m => isModuleReleased(m.id));
+    if (filterStatus === 'released' && !isReleased) return false;
+    if (filterStatus === 'locked' && isReleased) return false;
+
+    // Safety check for standard users hiding unreleased modules
+    if (userState.role !== 'admin' && !isReleased) return false;
+
+    return true;
+  });
+
+  const lockedTopics = [
+    { title: "Bibliology", description: "The study of the nature, inspiration, authority, and canon of the Holy Scriptures." },
+    { title: "Theology", description: "The study of the existence, attributes, and works of God the Father." },
+    { title: "Anthropology", description: "The study of humanity, the image of God, the fall, and the nature of sin." },
+    { title: "Christology", description: "The study of the person, deity, humanity, and redemptive work of Jesus Christ." },
+    { title: "Pneumatology", description: "The study of the person, deity, and ministry of the Holy Spirit." },
+    { title: "Ecclesiology", description: "The study of the nature, structure, ordinances, and mission of the Church." }
+  ];
+
+  const matchedLockedTopics = [];
+  lockedTopics.forEach(lt => {
+    const matchesSearch = searchVal === '' ||
+      lt.title.toLowerCase().includes(searchVal) ||
+      lt.description.toLowerCase().includes(searchVal);
+    if (!matchesSearch) return;
+
+    if (filterTopic !== 'all' && filterTopic !== lt.title) return;
+    if (filterProgress !== 'all' && filterProgress !== 'not-started') return;
+    if (filterStatus !== 'all' && filterStatus !== 'locked') return;
+
+    matchedLockedTopics.push(lt);
+  });
+
+  if (filteredConcentrations.length === 0 && matchedLockedTopics.length === 0) {
+    el.catalogGrid.innerHTML = `
+      <div style="grid-column: 1/-1; padding: 4rem 2rem; color: var(--gray-400); text-align: center; background: #fff; border-radius: var(--r-lg); border: 2px dashed var(--gray-200);">
+        <p style="font-size: 1.1rem; font-weight: 500; margin-bottom: 0.5rem;">No courses match your criteria</p>
+        <span style="font-size: 0.85rem;">Try adjusting search terms or clearing dynamic filters.</span>
+      </div>
+    `;
+    return;
+  }
+
+  // Group concentrations by topic
+  const groups = {};
+  filteredConcentrations.forEach(con => {
+    const tName = con.group || 'Books of the Bible';
+    if (!groups[tName]) groups[tName] = [];
+    groups[tName].push(con);
+  });
+
+  matchedLockedTopics.forEach(lt => {
+    const tName = lt.title;
+    if (!groups[tName]) groups[tName] = [];
+    groups[tName].push({ isLockedTopic: true, title: lt.title, description: lt.description });
+  });
+
+  const topicOrder = [
+    "Books of the Bible",
+    "Bibliology",
+    "Theology",
+    "Anthropology",
+    "Christology",
+    "Pneumatology",
+    "Ecclesiology",
+    "Eschatology"
+  ];
+
+  const sortedGroupNames = Object.keys(groups).sort((a, b) => {
+    const idxA = topicOrder.indexOf(a);
+    const idxB = topicOrder.indexOf(b);
+    if (idxA === -1 && idxB === -1) return 0;
+    if (idxA === -1) return 1;
+    if (idxB === -1) return -1;
+    return idxA - idxB;
+  });
+
+  sortedGroupNames.forEach(gName => {
+    const gridId = `catalog-grid-${gName.replace(/\s+/g, '-').toLowerCase()}`;
+    el.catalogGrid.insertAdjacentHTML('beforeend', `
+      <div class="catalog-topic-group-container">
+        <h2 class="catalog-topic-header">${gName}</h2>
+        <div id="${gridId}" class="catalog-grid-layout"></div>
+      </div>
+    `);
+
+    const subGrid = document.getElementById(gridId);
+    if (!subGrid) return;
+
+    groups[gName].forEach(item => {
+      if (item.isLockedTopic) {
+        const cardHtml = `
+          <div class="premium-course-card locked-card" style="opacity: 0.6; pointer-events: none;">
+            <div class="course-card-circle-icon">🔒</div>
+            <div class="course-card-details">
+              <h3 class="course-card-title">${item.title}</h3>
+              <p class="course-card-desc">${item.description}</p>
+              <span class="course-card-progress-text incomplete">LOCKED</span>
+              <span class="course-card-tag-label">${item.title.toUpperCase()}</span>
             </div>
-            <span class="module-row-chevron">›</span>
           </div>
         `;
-        el.catalogContainer.insertAdjacentHTML('beforeend', rowHtml);
-      });
+        subGrid.insertAdjacentHTML('beforeend', cardHtml);
+      } else {
+        const con = item;
+        const conLessons = modules.filter(m => con.modules.includes(m.id));
+        const total = conLessons.length;
+        const completed = conLessons.filter(m => userState.completedModules.includes(m.id)).length;
+        const isComplete = completed === total;
+
+        const icon = conIcons[con.id] || '📖';
+        const isReleased = conLessons.some(m => isModuleReleased(m.id));
+
+        let progressText = '';
+        let progressClass = 'incomplete';
+        if (isComplete) {
+          progressText = `✓ ${completed} OF ${total} LESSONS COMPLETED`;
+          progressClass = 'completed';
+        } else {
+          progressText = `${completed} OF ${total} LESSONS COMPLETED`;
+          progressClass = 'incomplete';
+        }
+
+        const cardHtml = `
+          <div class="premium-course-card ${!isReleased ? 'locked-card' : ''}" data-con-id="${con.id}">
+            <div class="course-card-circle-icon">${isReleased ? icon : '🔒'}</div>
+            <div class="course-card-details">
+              <h3 class="course-card-title">${con.title}</h3>
+              <p class="course-card-desc">${con.description}</p>
+              <span class="course-card-progress-text ${progressClass}">${progressText}</span>
+              <span class="course-card-tag-label">${con.group.toUpperCase()}</span>
+            </div>
+          </div>
+        `;
+        subGrid.insertAdjacentHTML('beforeend', cardHtml);
+      }
     });
   });
 
-  document.querySelectorAll('.module-row').forEach(row => {
-    row.addEventListener('click', () => openOnboarding(row.getAttribute('data-mod-id')));
+  el.catalogGrid.querySelectorAll('.premium-course-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const conId = card.getAttribute('data-con-id');
+      if (conId) openOnboarding(conId);
+    });
   });
 }
 
-// ==========================================================================
-// Course Onboarding / Detail Overlay
-// ==========================================================================
-function openOnboarding(moduleId) {
-  const mod = modules.find(m => m.id === moduleId);
-  if (!mod) return;
+function openOnboarding(concentrationId, pushState = true) {
+  const conIcons = {
+    'foundations': '📖',
+    'genesis': '🏛️',
+    'exodus': '📜',
+    'leviticus': '🐂',
+    'numbers': '📊',
+    'deuteronomy': '🌅',
+    'joshua': '⚔️',
+    'judges': '⚖️',
+    'ruth': '🌾',
+    '1samuel': '👑',
+    '2samuel': '🏰',
+    '1kings': '👑',
+    '2kings': '🏰',
+    'joel': '🦗',
+    'hosea': '❤️',
+    'psalms': '🎵',
+    'proverbs': '💡',
+    '1chronicles': '📜',
+    '2chronicles': '🏰',
+    'ezra': '🏛️',
+    'nehemiah': '🧱',
+    'esther': '🍷',
+    'job': '🌪️',
+    'heaven': '🌤️'
+  };
 
-  const icon = moduleIcons[mod.id] || '📖';
-  const infoSlides = mod.slides.filter(s => s.type === 'info');
-  const totalSlides = mod.slides.length;
-  const isComplete = userState.completedModules.includes(mod.id);
+  let con = concentrations.find(c => c.id === concentrationId);
+  if (!con) {
+    const parentCon = concentrations.find(c => c.modules.includes(concentrationId));
+    if (parentCon) {
+      con = parentCon;
+      concentrationId = parentCon.id;
+    }
+  }
+  if (!con) return;
 
+  const conLessons = modules.filter(m => con.modules.includes(m.id));
+  if (conLessons.length === 0) return;
+
+  const releasedLessons = conLessons.filter(l => isModuleReleased(l.id));
+  if (releasedLessons.length === 0) {
+    alert('This course is not yet released!');
+    switchTab('courses');
+    return;
+  }
+
+  const icon = conIcons[con.id] || '📖';
   el.onboardIcon.textContent = icon;
-  el.onboardTag.textContent = mod.category.toUpperCase();
-  el.onboardTitle.textContent = mod.title;
-  el.onboardDesc.textContent = mod.description;
-  el.onboardLessonCount.textContent = `${totalSlides} SLIDES`;
-  el.onboardChapterTitle.textContent = mod.title;
+  el.onboardTag.textContent = con.group.toUpperCase();
+  el.onboardTitle.textContent = con.title;
+  el.onboardDesc.textContent = con.description;
 
-  // Lesson list items
+  // Find next up lesson (first uncompleted lesson)
+  let nextUpLesson = conLessons.find(l => !userState.completedModules.includes(l.id));
+  let isAllComplete = false;
+  if (!nextUpLesson) {
+    nextUpLesson = conLessons[0];
+    isAllComplete = true;
+  }
+
+  const nextUpIndex = con.modules.indexOf(nextUpLesson.id) + 1;
+  const nextUpEyebrow = document.getElementById('onboard-next-up-eyebrow');
+  const nextUpTitle = document.getElementById('onboard-next-up-title');
+  
+  if (nextUpEyebrow) {
+    nextUpEyebrow.textContent = `LESSON ${nextUpIndex}`;
+  }
+  if (nextUpTitle) {
+    nextUpTitle.textContent = isAllComplete ? `ALL LESSONS COMPLETED` : `NEXT UP: ${nextUpLesson.title}`;
+  }
+
+  el.startOnboardedLesson.setAttribute('data-id', nextUpLesson.id);
+  el.startOnboardedLesson.textContent = isAllComplete ? 'REVIEW COURSE' : 'RESUME';
+
+  const completedCount = conLessons.filter(l => userState.completedModules.includes(l.id)).length;
+  el.onboardLessonCount.textContent = `${completedCount} OF ${conLessons.length} LESSONS COMPLETED`;
+
+  const chapterLabel = document.getElementById('onboard-chapter-label');
+  if (chapterLabel) {
+    chapterLabel.textContent = `LESSONS`;
+  }
+
   el.onboardBulletPoints.innerHTML = '';
-  infoSlides.slice(0, 4).forEach((slide, idx) => {
-    const html = `
-      <div class="onboard-lesson-item">
-        <div class="lesson-green-bar"></div>
-        <div class="onboard-lesson-item-inner">
-          <div class="onboard-lesson-number">SLIDE ${idx + 1}</div>
-          <div class="onboard-lesson-title">${slide.title}</div>
+  conLessons.forEach((lesson, idx) => {
+    const isLCompleted = userState.completedModules.includes(lesson.id);
+    const progressVal = userState.lessonProgress?.[lesson.id] || 0;
+    const isLInProgress = !isLCompleted && progressVal > 0;
+
+    let statusClass = 'not-started';
+    let statusText = '›';
+    if (isLCompleted) {
+      statusClass = 'completed';
+      statusText = '✓';
+    } else if (isLInProgress) {
+      statusClass = 'in-progress';
+      statusText = '›';
+    }
+
+    const lessonItemHtml = `
+      <div class="onboard-lesson-row-item" data-lesson-id="${lesson.id}">
+        <div class="onboard-lesson-item-text">
+          <div class="onboard-lesson-row-eyebrow">LESSON ${idx + 1}</div>
+          <div class="onboard-lesson-row-title">${lesson.title}</div>
         </div>
+        <div class="onboard-lesson-status-strip ${statusClass}">${statusText}</div>
       </div>
     `;
-    el.onboardBulletPoints.insertAdjacentHTML('beforeend', html);
+    el.onboardBulletPoints.insertAdjacentHTML('beforeend', lessonItemHtml);
   });
 
-  // Course highlights
-  el.courseHighlightsList.innerHTML = '';
-  infoSlides.slice(0, 3).forEach(slide => {
-    const li = document.createElement('li');
-    li.textContent = slide.keyTakeaway || slide.title;
-    el.courseHighlightsList.appendChild(li);
+  el.onboardBulletPoints.querySelectorAll('.onboard-lesson-row-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const lid = item.getAttribute('data-lesson-id');
+      if (lid) startModule(lid);
+    });
   });
 
-  el.startOnboardedLesson.setAttribute('data-id', moduleId);
-  el.startOnboardedLesson.textContent = isComplete ? 'REVIEW COURSE' : 'START COURSE';
   el.courseOnboarding.classList.remove('hidden');
+
+  if (pushState) {
+    history.pushState({ concentrationId }, '', `/courses/${concentrationId}`);
+  }
 }
 
 // Global Network & World Map
@@ -606,35 +1142,54 @@ let registeredUsers = [];
 let currentNetworkTab = 'map';
 
 async function initNetworkViewer() {
-  // Setup sub-navigation listener
   el.netNavItems.forEach(item => {
+    const newItem = item.cloneNode(true);
+    item.parentNode.replaceChild(newItem, item);
+  });
+  
+  const freshNavItems = document.querySelectorAll('.net-nav-item');
+  freshNavItems.forEach(item => {
     item.addEventListener('click', () => {
       switchNetworkTab(item.getAttribute('data-net-tab'));
     });
   });
 
-  // Setup toolbar handlers
   if (el.peopleSearch) {
+    const newSearch = el.peopleSearch.cloneNode(true);
+    el.peopleSearch.parentNode.replaceChild(newSearch, el.peopleSearch);
+    el.peopleSearch = newSearch;
     el.peopleSearch.addEventListener('input', renderPeopleDirectory);
   }
 
-  // Setup Event form
   if (el.createEventBtn) {
+    const newBtn = el.createEventBtn.cloneNode(true);
+    el.createEventBtn.parentNode.replaceChild(newBtn, el.createEventBtn);
+    el.createEventBtn = newBtn;
     el.createEventBtn.addEventListener('click', () => {
       el.eventDialog.classList.remove('hidden');
     });
   }
+  
   if (el.closeEventBtn) {
+    const newBtn = el.closeEventBtn.cloneNode(true);
+    el.closeEventBtn.parentNode.replaceChild(newBtn, el.closeEventBtn);
+    el.closeEventBtn = newBtn;
     el.closeEventBtn.addEventListener('click', () => {
       el.eventDialog.classList.add('hidden');
     });
   }
+  
   if (el.eventCreateForm) {
+    const newForm = el.eventCreateForm.cloneNode(true);
+    el.eventCreateForm.parentNode.replaceChild(newForm, el.eventCreateForm);
+    el.eventCreateForm = newForm;
     el.eventCreateForm.addEventListener('submit', handleCreateEvent);
   }
 
-  // Setup Chat form
   if (el.chatInputForm) {
+    const newForm = el.chatInputForm.cloneNode(true);
+    el.chatInputForm.parentNode.replaceChild(newForm, el.chatInputForm);
+    el.chatInputForm = newForm;
     el.chatInputForm.addEventListener('submit', handleSendChatMessage);
   }
 
@@ -661,7 +1216,6 @@ async function fetchRegisteredUsers() {
 function updateNetworkView() {
   const currentCountry = userState.country;
   
-  // Update regional active count display
   const countEl = document.getElementById('regional-active-count');
   if (countEl) {
     const counts = {};
@@ -694,29 +1248,37 @@ function renderMapClusters() {
     const meta = countryMetadata[countryCode];
     if (!meta) return;
     const count = counts[countryCode];
+    const isUserCountry = countryCode === userState.country;
     
-    // Calculate radius dynamically
     const r = 12 + Math.min(count, 10) * 2;
     
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    g.setAttribute('class', `map-cluster ${countryCode === userState.country ? 'active' : ''}`);
+    g.setAttribute('class', `map-cluster ${isUserCountry ? 'active' : ''}`);
     g.setAttribute('data-country', countryCode);
     
+    // Pulsing circle backdrop
+    const pulse = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    pulse.setAttribute('cx', meta.cx);
+    pulse.setAttribute('cy', meta.cy);
+    pulse.setAttribute('r', r);
+    pulse.setAttribute('class', `map-cluster-pulse ${isUserCountry ? 'active-user' : ''}`);
+    
+    // Main interactive circle
     const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
     circle.setAttribute('cx', meta.cx);
     circle.setAttribute('cy', meta.cy);
     circle.setAttribute('r', r);
-    circle.setAttribute('class', 'map-cluster-circle');
-    if (countryCode === userState.country) {
-      circle.style.fill = '#10b981'; // Green for active user country
-    }
+    circle.setAttribute('class', `map-cluster-circle ${isUserCountry ? 'active-user' : ''}`);
     
     const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     text.setAttribute('x', meta.cx);
     text.setAttribute('y', meta.cy);
+    text.setAttribute('dy', '4');
+    text.setAttribute('text-anchor', 'middle');
     text.setAttribute('class', 'map-cluster-text');
     text.textContent = count;
     
+    g.appendChild(pulse);
     g.appendChild(circle);
     g.appendChild(text);
     clusterGroup.appendChild(g);
@@ -773,10 +1335,13 @@ function renderDirectoryList() {
 
 function switchNetworkTab(tabId) {
   currentNetworkTab = tabId;
-  el.netNavItems.forEach(item => {
+  const navItems = document.querySelectorAll('.net-nav-item');
+  const subviews = document.querySelectorAll('.net-subview');
+
+  navItems.forEach(item => {
     item.classList.toggle('active', item.getAttribute('data-net-tab') === tabId);
   });
-  el.netSubviews.forEach(view => {
+  subviews.forEach(view => {
     const shouldBeActive = view.id === `net-subview-${tabId}`;
     view.classList.toggle('active', shouldBeActive);
     view.classList.toggle('hidden', !shouldBeActive);
@@ -791,42 +1356,72 @@ function switchNetworkTab(tabId) {
   }
 }
 
+// Render Enriched People Profiles in Directory
 function renderPeopleDirectory() {
   if (!el.peopleGrid) return;
   el.peopleGrid.innerHTML = '';
   
-  const searchQuery = el.peopleSearch.value.toLowerCase().trim();
+  const searchQuery = el.peopleSearch ? el.peopleSearch.value.toLowerCase().trim() : '';
   
   const filtered = registeredUsers.filter(u => {
     const countryMeta = countryMetadata[u.country] || { name: '' };
     const matchesSearch = !searchQuery || 
       (u.name && u.name.toLowerCase().includes(searchQuery)) ||
       (u.church && u.church.toLowerCase().includes(searchQuery)) ||
+      (u.headline && u.headline.toLowerCase().includes(searchQuery)) ||
       (countryMeta.name && countryMeta.name.toLowerCase().includes(searchQuery));
       
     return matchesSearch;
   });
   
   if (filtered.length === 0) {
-    el.peopleGrid.innerHTML = `<div style="grid-column: 1/-1; padding: 2rem; color: var(--gray-400); text-align: center;">No learners found matching filters.</div>`;
+    el.peopleGrid.innerHTML = `<div style="grid-column: 1/-1; padding: 3rem 1.5rem; color: var(--gray-400); text-align: center; background:#fff; border-radius:var(--r-lg);">No learners found matching filters.</div>`;
     return;
   }
   
   filtered.forEach(u => {
     const avatarUrl = u.photo || `https://api.dicebear.com/7.x/bottts/svg?seed=${u.uid}`;
     const countryMeta = countryMetadata[u.country] || { name: 'Unknown', flag: '🌍' };
-    const modCount = u.completedModules ? u.completedModules.length : 0;
+    const modCount = u.completedModules
+      ? u.completedModules.filter(id => modules.some(m => m.id === id)).length
+      : 0;
     
+    // Process Interests
+    const interestPills = (u.interests || '')
+      .split(',')
+      .map(tag => tag.trim())
+      .filter(tag => tag.length > 0)
+      .map(tag => `<span class="interest-pill">${tag}</span>`)
+      .join('');
+
+    const socialLinkHtml = u.social ? `
+      <a href="${u.social}" target="_blank" rel="noopener noreferrer" class="card-social-link">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        <span>Contact</span>
+      </a>
+    ` : '';
+
     const html = `
-      <div class="user-card">
-        <img class="card-avatar" src="${avatarUrl}" alt="${u.name || 'Learner'}">
-        <div class="card-name">${u.name || 'Anonymous Learner'}</div>
-        <div class="card-church">${u.church || 'No Fellowship Spec.'}</div>
-        <span class="card-country-tag">${countryMeta.flag} ${countryMeta.name}</span>
-        <div class="card-meta-row">
-          <span class="card-badge">🧠 ${u.xp || 0} XP</span>
-          <span class="card-badge">🔥 ${u.streak || 0}d</span>
-          <span class="card-badge">📖 ${modCount} Modules</span>
+      <div class="user-card premium-user-card">
+        <div class="user-card-header">
+          <img class="card-avatar" src="${avatarUrl}" alt="${u.name || 'Learner'}">
+          <div class="header-text-block">
+            <div class="card-name">${u.name || 'Anonymous Learner'}</div>
+            <div class="card-headline">${u.headline || 'Scriptura Learner'}</div>
+          </div>
+        </div>
+        <div class="card-body-section">
+          <div class="card-church">⛪ ${u.church || 'Independent Fellowship'}</div>
+          <span class="card-country-tag">${countryMeta.flag} ${countryMeta.name}</span>
+          ${u.goals ? `<div class="card-goals"><strong>Goal:</strong> ${u.goals}</div>` : ''}
+          ${interestPills ? `<div class="card-interests-wrapper">${interestPills}</div>` : ''}
+        </div>
+        <div class="card-footer-section">
+          <div class="card-meta-row">
+            <span class="card-badge">🔥 ${u.streak || 0}d streak</span>
+            <span class="card-badge">📖 ${modCount} modules</span>
+          </div>
+          ${socialLinkHtml}
         </div>
       </div>
     `;
@@ -898,7 +1493,7 @@ async function handleCreateEvent(e) {
       description,
       time,
       hostUid: auth.currentUser.uid,
-      hostName: userState.name || auth.currentUser.displayName || 'Berea Learner',
+      hostName: userState.name || auth.currentUser.displayName || 'Scriptura Learner',
       hostPhoto: userState.photo || `https://api.dicebear.com/7.x/bottts/svg?seed=${auth.currentUser.uid}`
     });
     
@@ -966,7 +1561,7 @@ async function handleSendChatMessage(e) {
     await addDoc(collection(db, 'messages'), {
       text,
       senderUid: auth.currentUser.uid,
-      senderName: userState.name || auth.currentUser.displayName || 'Berea Learner',
+      senderName: userState.name || auth.currentUser.displayName || 'Scriptura Learner',
       senderPhoto: userState.photo || `https://api.dicebear.com/7.x/bottts/svg?seed=${auth.currentUser.uid}`,
       timestamp: new Date()
     });
@@ -979,8 +1574,7 @@ function renderAvatarPresets() {
   if (!el.avatarPresetsContainer) return;
   el.avatarPresetsContainer.innerHTML = '';
   
-  const uid = auth.currentUser ? auth.currentUser.uid.slice(0,8) : 'berea';
-  // Cute avatar styles with different seeds for variety
+  const uid = auth.currentUser ? auth.currentUser.uid.slice(0,8) : 'scriptura';
   const presets = [
     { style: 'open-peeps', seed: uid },
     { style: 'open-peeps', seed: uid + '1' },
@@ -1017,10 +1611,8 @@ function renderAvatarPresets() {
     wrapper.addEventListener('click', () => {
       document.querySelectorAll('.avatar-preset-wrapper').forEach(p => p.classList.remove('selected'));
       wrapper.classList.add('selected');
-      // Store the selection so save can use it
       wrapper.dataset.selectedUrl = url;
       el.avatarPresetsContainer.dataset.selectedUrl = url;
-      // Hide any uploaded photo preview
       const preview = document.getElementById('profile-photo-preview');
       if (preview) preview.classList.add('hidden');
     });
@@ -1042,10 +1634,8 @@ function setupPhotoUpload() {
     reader.onload = (ev) => {
       preview.src = ev.target.result;
       preview.classList.remove('hidden');
-      // Deselect any avatar preset
       document.querySelectorAll('.avatar-preset-wrapper').forEach(p => p.classList.remove('selected'));
       el.avatarPresetsContainer.dataset.selectedUrl = '';
-      // Store data URL for saving
       preview.dataset.dataUrl = ev.target.result;
     };
     reader.readAsDataURL(file);
@@ -1060,7 +1650,13 @@ function openProfileDialog() {
   el.profileChurchInput.value = userState.church || '';
   el.profileCountrySelect.value = userState.country || '';
   
-  // Display current photo if it exists and is a custom upload (data:image)
+  // Enriched fields
+  document.getElementById('profile-headline-input').value = userState.headline || '';
+  document.getElementById('profile-goals-input').value = userState.goals || '';
+  document.getElementById('profile-interests-input').value = userState.interests || '';
+  document.getElementById('profile-social-input').value = userState.social || '';
+  document.getElementById('profile-role-select').value = userState.role || 'user';
+  
   const preview = document.getElementById('profile-photo-preview');
   if (preview) {
     if (userState.photo && userState.photo.startsWith('data:image')) {
@@ -1088,7 +1684,12 @@ async function handleProfileSave(e) {
   const newChurch = el.profileChurchInput.value;
   const newCountry = el.profileCountrySelect.value;
   
-  // Determine photo: uploaded file > selected preset > keep existing
+  const newHeadline = document.getElementById('profile-headline-input').value;
+  const newGoals = document.getElementById('profile-goals-input').value;
+  const newInterests = document.getElementById('profile-interests-input').value;
+  const newSocial = document.getElementById('profile-social-input').value;
+  const newRole = document.getElementById('profile-role-select').value;
+  
   const preview = document.getElementById('profile-photo-preview');
   const uploadedDataUrl = preview?.dataset.dataUrl;
   const selectedPresetUrl = el.avatarPresetsContainer?.dataset.selectedUrl;
@@ -1105,8 +1706,15 @@ async function handleProfileSave(e) {
   userState.country = newCountry;
   userState.photo = newPhoto;
   
+  userState.headline = newHeadline;
+  userState.goals = newGoals;
+  userState.interests = newInterests;
+  userState.social = newSocial;
+  userState.role = newRole;
+  
   await saveState();
   updateHeaderProfile();
+  checkAdminNavVisibility();
   el.profileDialog.classList.add('hidden');
   
   await fetchRegisteredUsers();
@@ -1114,54 +1722,908 @@ async function handleProfileSave(e) {
 }
 
 // ==========================================================================
+// Admin Dashboard
+// ==========================================================================
+async function renderAdminDashboard() {
+  if (userState.role !== 'admin') {
+    switchTab('home');
+    return;
+  }
+
+  await fetchRegisteredUsers();
+  await loadModuleSchedules();
+
+  const totalUsers = registeredUsers.length;
+  let totalCompleted = 0;
+  let totalStarted = 0;
+  let weeklyActiveCount = 0;
+
+  const now = new Date();
+  const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+  let dailyActiveCount = 0;
+  let monthlyActiveCount = 0;
+  let funnelStarted = 0;
+  let funnelCompleted = 0;
+
+  registeredUsers.forEach(u => {
+    const userCompleted = u.completedModules ? u.completedModules.filter(mId => modules.some(m => m.id === mId)) : [];
+    const completedCount = userCompleted.length;
+    const progressCount = Object.keys(u.lessonProgress || {}).filter(mId => modules.some(m => m.id === mId)).length;
+    const startedCount = Math.max(completedCount, progressCount);
+    
+    totalCompleted += completedCount;
+    totalStarted += startedCount;
+
+    if (u.lastActiveDate) {
+      const lastActive = new Date(u.lastActiveDate);
+      if (lastActive >= oneDayAgo) {
+        dailyActiveCount++;
+      }
+      if (lastActive >= oneWeekAgo) {
+        weeklyActiveCount++;
+      }
+      if (lastActive >= oneMonthAgo) {
+        monthlyActiveCount++;
+      }
+    }
+
+    // Dropout math logic
+    if (progressCount > 0) funnelStarted++;
+    if (completedCount > 0) funnelCompleted++;
+  });
+
+  const completionRate = totalStarted > 0 ? Math.round((totalCompleted / totalStarted) * 100) : 100;
+  const dauWauRatio = weeklyActiveCount > 0 ? Math.round((dailyActiveCount / weeklyActiveCount) * 100) : 0;
+  const avgCompleted = totalUsers > 0 ? (totalCompleted / totalUsers).toFixed(1) : 0;
+
+  document.getElementById('admin-total-users').textContent = totalUsers;
+  
+  const completionRateEl = document.getElementById('admin-completion-rate');
+  if (completionRateEl) {
+    completionRateEl.textContent = `${completionRate}%`;
+  }
+  
+  const weeklyActiveEl = document.getElementById('admin-weekly-active');
+  if (weeklyActiveEl) {
+    weeklyActiveEl.textContent = weeklyActiveCount;
+  }
+
+  // Populate Cohorts UI
+  const dauWauRatioEl = document.getElementById('admin-dau-wau-ratio');
+  if (dauWauRatioEl) dauWauRatioEl.textContent = `${dauWauRatio}%`;
+
+  const mauCountEl = document.getElementById('admin-mau-count');
+  if (mauCountEl) mauCountEl.textContent = monthlyActiveCount;
+
+  const avgModulesActiveEl = document.getElementById('admin-avg-modules-active');
+  if (avgModulesActiveEl) avgModulesActiveEl.textContent = avgCompleted;
+
+  // Build Dropout Funnel bars
+  const funnelContainer = document.getElementById('admin-dropout-funnel-container');
+  if (funnelContainer) {
+    const totalFunnel = Math.max(funnelStarted, totalUsers);
+    const startPct = totalFunnel > 0 ? Math.round((funnelStarted / totalFunnel) * 100) : 0;
+    const completePct = totalFunnel > 0 ? Math.round((funnelCompleted / totalFunnel) * 100) : 0;
+
+    funnelContainer.innerHTML = `
+      <div>
+        <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:0.25rem;">
+          <span style="font-weight:600; color:var(--gray-700);">Started a Module (${funnelStarted})</span>
+          <span style="font-weight:700; color:var(--gray-500);">${startPct}%</span>
+        </div>
+        <div style="height:12px; background:var(--gray-200); border-radius:6px; overflow:hidden;">
+          <div style="height:100%; width:${startPct}%; background:var(--brand-coral); transition:width 0.5s;"></div>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:0.25rem; margin-top:0.5rem;">
+          <span style="font-weight:600; color:var(--gray-700);">Completed a Module (${funnelCompleted})</span>
+          <span style="font-weight:700; color:var(--gray-500);">${completePct}%</span>
+        </div>
+        <div style="height:12px; background:var(--gray-200); border-radius:6px; overflow:hidden;">
+          <div style="height:100%; width:${completePct}%; background:var(--brand-green); transition:width 0.5s;"></div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Populate Users Table
+  const usersListEl = document.getElementById('admin-users-list');
+  if (usersListEl) {
+    usersListEl.innerHTML = '';
+    registeredUsers.forEach(u => {
+      const role = u.role || 'user';
+      const userCompleted = u.completedModules ? u.completedModules.filter(mId => modules.some(m => m.id === mId)) : [];
+      const completedCount = userCompleted.length;
+      const progressRatio = `${completedCount} / ${modules.length}`;
+
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <img src="${u.photo || `https://api.dicebear.com/7.x/bottts/svg?seed=${u.uid}`}" style="width:28px; height:28px; border-radius:50%; background:#f1f5f9;">
+            <span style="font-weight:600;">${u.name || 'Anonymous Learner'}</span>
+          </div>
+        </td>
+        <td>${u.email || 'N/A'}</td>
+        <td><span class="role-badge ${role}">${role.toUpperCase()}</span></td>
+        <td>
+          <div style="font-weight:600; color:var(--gray-700);">${progressRatio}</div>
+        </td>
+        <td>
+          <div style="display:flex; gap:0.5rem;">
+            <button class="primary-btn compact-btn admin-role-toggle-btn" data-uid="${u.uid}" data-role="${role}">
+              Make ${role === 'admin' ? 'Learner' : 'Admin'}
+            </button>
+            <button class="secondary-btn compact-btn admin-view-progress-btn" data-uid="${u.uid}" style="border: 1px solid var(--gray-200); background:#fff; color:var(--gray-700);">
+              View
+            </button>
+          </div>
+        </td>
+      `;
+      usersListEl.appendChild(row);
+    });
+
+    usersListEl.querySelectorAll('.admin-role-toggle-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const uid = btn.dataset.uid;
+        const currentRole = btn.dataset.role;
+        const newRole = currentRole === 'admin' ? 'user' : 'admin';
+        
+        try {
+          const userDocRef = doc(db, 'users', uid);
+          await setDoc(userDocRef, { role: newRole }, { merge: true });
+          
+          if (uid === auth.currentUser?.uid) {
+            userState.role = newRole;
+            await saveState();
+            checkAdminNavVisibility();
+            if (newRole !== 'admin') {
+              switchTab('home');
+              return;
+            }
+          }
+          await renderAdminDashboard();
+        } catch (err) {
+          console.error('Failed to update user role:', err);
+          alert('Error updating user role. Please try again.');
+        }
+      });
+    });
+
+    usersListEl.querySelectorAll('.admin-view-progress-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const uid = btn.dataset.uid;
+        const learner = registeredUsers.find(u => u.uid === uid);
+        if (!learner) return;
+
+        document.getElementById('progress-learner-name').textContent = learner.name || 'Anonymous Learner';
+        document.getElementById('progress-learner-email').textContent = learner.email || 'N/A';
+        
+        const userCompleted = learner.completedModules ? learner.completedModules.filter(mId => modules.some(m => m.id === mId)) : [];
+        const completedCount = userCompleted.length;
+        document.getElementById('progress-learner-completed-count').textContent = completedCount;
+        document.getElementById('progress-learner-streak').textContent = `${learner.streak || 0} days`;
+
+        const listEl = document.getElementById('progress-learner-modules-list');
+        listEl.innerHTML = '';
+
+        modules.forEach(m => {
+          const isLCompleted = learner.completedModules ? learner.completedModules.includes(m.id) : false;
+          const progressVal = learner.lessonProgress ? (learner.lessonProgress[m.id] || 0) : 0;
+          const totalSlides = m.slides ? m.slides.length : 0;
+
+          let pct = 0;
+          let progressText = 'Not started';
+          if (isLCompleted) {
+            pct = 100;
+            progressText = 'Completed';
+          } else if (progressVal > 0) {
+            pct = totalSlides > 0 ? Math.round((progressVal / totalSlides) * 100) : 0;
+            progressText = `${progressVal}/${totalSlides} slides (${pct}%)`;
+          }
+
+          const item = document.createElement('div');
+          item.style.cssText = 'background: var(--gray-50); border: 1px solid var(--gray-150); border-radius: var(--r-md); padding: 0.75rem 1rem; display: flex; flex-direction: column; gap: 0.35rem;';
+          item.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-weight:600; color:var(--gray-800); font-size:0.9rem;">${m.title}</span>
+              <span style="font-size:0.75rem; font-weight:700; color:${isLCompleted ? 'var(--brand-green)' : (progressVal > 0 ? 'var(--brand-purple)' : 'var(--gray-400)')};">${progressText}</span>
+            </div>
+            <div style="height:6px; background:var(--gray-200); border-radius:3px; overflow:hidden;">
+              <div style="height:100%; width:${pct}%; background:${isLCompleted ? 'var(--brand-green)' : 'var(--brand-purple)'}; transition:width 0.3s;"></div>
+            </div>
+          `;
+          listEl.appendChild(item);
+        });
+
+        document.getElementById('learner-progress-dialog').classList.remove('hidden');
+      });
+    });
+  }
+
+  // Populate Module Schedules Table
+  const modulesListEl = document.getElementById('admin-modules-list');
+  if (modulesListEl) {
+    modulesListEl.innerHTML = '';
+    modules.forEach(m => {
+      const releaseDate = moduleSchedules[m.id] || '';
+      const isLocked = releaseDate && new Date(releaseDate) > new Date();
+      const statusText = isLocked ? 'Scheduled' : 'Released';
+      const statusClass = isLocked ? 'locked' : 'released';
+      const concentration = concentrations.find(c => c.modules.includes(m.id))?.title || 'General';
+
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>
+          <div style="font-weight:600; color:var(--gray-900);">${m.title}</div>
+          <div style="font-size:0.75rem; color:var(--gray-400);">${m.id}</div>
+        </td>
+        <td>${concentration}</td>
+        <td>
+          <input type="date" class="admin-date-input" data-mid="${m.id}" value="${releaseDate}">
+        </td>
+        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+        <td>
+          <div style="display:flex; gap:0.5rem;">
+            <button class="primary-btn compact-btn admin-edit-module-btn" data-mid="${m.id}">Edit</button>
+            <button class="secondary-btn compact-btn admin-delete-module-btn" data-mid="${m.id}" style="border:1px solid #fee2e2; background:#fef2f2; color:#b91c1c; padding: 0.25rem 0.5rem;">Delete</button>
+          </div>
+        </td>
+      `;
+      modulesListEl.appendChild(row);
+    });
+
+    modulesListEl.querySelectorAll('.admin-date-input').forEach(input => {
+      input.addEventListener('change', async () => {
+        const mid = input.dataset.mid;
+        const newDate = input.value;
+
+        try {
+          const schedulesRef = doc(db, 'events', 'module_schedules');
+          await setDoc(schedulesRef, { [mid]: newDate }, { merge: true });
+          
+          await loadModuleSchedules();
+          await renderAdminDashboard();
+        } catch (err) {
+          console.error('Failed to save module schedule:', err);
+          alert('Error saving schedule. Please try again.');
+        }
+      });
+    });
+
+    // Wire up Edit & Delete Actions
+    modulesListEl.querySelectorAll('.admin-edit-module-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        openVisualEditor(btn.dataset.mid);
+      });
+    });
+
+    modulesListEl.querySelectorAll('.admin-delete-module-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        deleteModuleAction(btn.dataset.mid);
+      });
+    });
+  }
+
+  // Setup/Refresh Dynamic Course Publisher admin view events
+  const publisherForm = document.getElementById('admin-publisher-form');
+  const fileInput = document.getElementById('publisher-file-input');
+  const jsonTextArea = document.getElementById('publisher-json-textarea');
+  const statusEl = document.getElementById('publisher-status');
+  const templateToggle = document.getElementById('publisher-template-toggle');
+  const templateBox = document.getElementById('publisher-template-box');
+  const parentConSelect = document.getElementById('publisher-parent-con');
+
+  if (templateToggle && templateBox) {
+    // Remove old listener to avoid duplicates, then add
+    const newToggle = templateToggle.cloneNode(true);
+    templateToggle.parentNode.replaceChild(newToggle, templateToggle);
+    newToggle.addEventListener('click', () => {
+      templateBox.classList.toggle('hidden');
+      newToggle.textContent = templateBox.classList.contains('hidden') ? 'Show Schema Template' : 'Hide Schema Template';
+    });
+  }
+
+  if (fileInput && jsonTextArea) {
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        jsonTextArea.value = evt.target.result;
+        showStatus('File loaded successfully!', 'success');
+      };
+      reader.onerror = () => {
+        showStatus('Failed to read file.', 'error');
+      };
+      reader.readAsText(file);
+    });
+  }
+
+  if (publisherForm) {
+    const newForm = publisherForm.cloneNode(true);
+    publisherForm.parentNode.replaceChild(newForm, publisherForm);
+
+    // Re-query replacement elements to attach to correct new DOM tree
+    const formFileInput = newForm.querySelector('#publisher-file-input');
+    const formJsonTextArea = newForm.querySelector('#publisher-json-textarea');
+    const formParentCon = newForm.querySelector('#publisher-parent-con');
+    const formStatus = newForm.querySelector('#publisher-status');
+
+    if (formFileInput && formJsonTextArea) {
+      formFileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          formJsonTextArea.value = evt.target.result;
+          showStatusEl(formStatus, 'File loaded successfully!', 'success');
+        };
+        reader.onerror = () => {
+          showStatusEl(formStatus, 'Failed to read file.', 'error');
+        };
+        reader.readAsText(file);
+      });
+    }
+
+    newForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const rawJson = formJsonTextArea.value.trim();
+      const parentCon = formParentCon.value;
+
+      if (!rawJson) {
+        showStatusEl(formStatus, 'Please enter or upload a valid JSON module schema.', 'error');
+        return;
+      }
+
+      let parsedModule;
+      try {
+        parsedModule = JSON.parse(rawJson);
+      } catch (err) {
+        showStatusEl(formStatus, `JSON Syntax Error: ${err.message}`, 'error');
+        return;
+      }
+
+      // Validation
+      const requiredFields = ['id', 'title', 'category', 'duration', 'slides'];
+      for (const field of requiredFields) {
+        if (parsedModule[field] === undefined) {
+          showStatusEl(formStatus, `Validation Error: Missing required field "${field}".`, 'error');
+          return;
+        }
+      }
+
+      if (!Array.isArray(parsedModule.slides) || parsedModule.slides.length === 0) {
+        showStatusEl(formStatus, 'Validation Error: "slides" must be a non-empty array.', 'error');
+        return;
+      }
+
+      // Add parent course relationship
+      parsedModule.parentConcentrationId = parentCon;
+
+      // Clean up slides: ensure no asterisks error/issues as per user request
+      parsedModule.slides = parsedModule.slides.map(slide => {
+        if (slide.content) {
+          // Replace single stray asterisks but keep bold notation (**)
+          // We can normalize slide content or keep it as is, but we make sure clean formatting applies.
+        }
+        return slide;
+      });
+
+      showStatusEl(formStatus, 'Validating and publishing to Firestore...', 'success');
+
+      try {
+        const docRef = doc(db, 'custom_modules', parsedModule.id);
+        await setDoc(docRef, parsedModule);
+
+        showStatusEl(formStatus, `Module "${parsedModule.title}" published successfully! Reloading...`, 'success');
+        
+        // Clear inputs
+        formJsonTextArea.value = '';
+        if (formFileInput) formFileInput.value = '';
+
+        // Reload data and re-render Catalog & Dashboard
+        await fetchAndMergeCustomModules();
+        await renderAdminDashboard();
+        renderCoursesCatalog();
+        renderDashboard();
+      } catch (err) {
+        console.error('Firestore save error:', err);
+        showStatusEl(formStatus, `Database Error: ${err.message}`, 'error');
+      }
+    });
+  }
+}
+
+// ==========================================================================
+// Visual Course Editor Controllers
+// ==========================================================================
+let editorSlides = [];
+
+function openVisualEditor(moduleId) {
+  const mod = modules.find(m => m.id === moduleId);
+  if (!mod) {
+    alert('Module not found.');
+    return;
+  }
+
+  // Populate basic inputs
+  document.getElementById('editor-module-id').value = mod.id;
+  document.getElementById('editor-title').value = mod.title || '';
+  document.getElementById('editor-category').value = mod.category || '';
+  document.getElementById('editor-duration').value = mod.duration || '';
+  document.getElementById('editor-description').value = mod.description || '';
+  document.getElementById('editor-parent-con').value = mod.parentConcentrationId || '';
+
+  // Copy slides state
+  editorSlides = JSON.parse(JSON.stringify(mod.slides || []));
+  renderEditorSlides();
+
+  // Load backups list from Firestore
+  loadModuleRevisionHistory(mod.id);
+
+  // Show dialog
+  document.getElementById('visual-editor-dialog').classList.remove('hidden');
+}
+
+function renderEditorSlides() {
+  const container = document.getElementById('editor-slides-container');
+  if (!container) return;
+  container.innerHTML = '';
+
+  if (editorSlides.length === 0) {
+    container.innerHTML = `<div style="text-align: center; color: var(--gray-400); font-size: 0.85rem; padding: 1rem; border: 1px dashed var(--gray-200); border-radius: var(--r-md);">No slides added yet. Click "+ Add Slide" to start.</div>`;
+    return;
+  }
+
+  editorSlides.forEach((slide, idx) => {
+    const slideId = `editor-slide-${idx}`;
+    const slideCard = document.createElement('div');
+    slideCard.className = 'admin-panel-card';
+    slideCard.style.padding = '1rem';
+    slideCard.style.background = '#f8fafc';
+    slideCard.style.border = '1px solid var(--gray-250)';
+    slideCard.style.borderRadius = 'var(--r-md)';
+
+    let typeFieldsHtml = '';
+    if (slide.type === 'info') {
+      typeFieldsHtml = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.5rem;">
+          <div class="form-field">
+            <label style="font-size:0.75rem;">Illustration (Emoji)</label>
+            <input type="text" class="slide-illustration" value="${slide.illustration || '📖'}" style="padding: 0.4rem;">
+          </div>
+          <div class="form-field">
+            <label style="font-size:0.75rem;">Key Takeaway</label>
+            <input type="text" class="slide-takeaway" value="${slide.keyTakeaway || ''}" style="padding: 0.4rem;">
+          </div>
+        </div>
+        <div class="form-field" style="margin-top: 0.5rem;">
+          <label style="font-size:0.75rem;">Content Text (Supports Markdown **bold** & newlines)</label>
+          <textarea class="slide-content" rows="3" style="padding: 0.4rem; font-size: 0.82rem;">${slide.content || ''}</textarea>
+        </div>
+      `;
+    } else if (slide.type === 'card-quiz') {
+      typeFieldsHtml = `
+        <div class="form-field" style="margin-top: 0.5rem;">
+          <label style="font-size:0.75rem;">Quiz Question</label>
+          <input type="text" class="slide-question" value="${slide.question || ''}" style="padding: 0.4rem;">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.5rem;">
+          <div class="form-field">
+            <label style="font-size:0.75rem;">Correct Answer Option</label>
+            <select class="slide-correct-answer" style="padding: 0.4rem; background:#fff; border: 1px solid var(--gray-250); border-radius: var(--r-md);">
+              <option value="yes" ${slide.correctAnswer === 'yes' ? 'selected' : ''}>Yes</option>
+              <option value="no" ${slide.correctAnswer === 'no' ? 'selected' : ''}>No</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label style="font-size:0.75rem;">Explanation Text</label>
+            <input type="text" class="slide-explanation" value="${slide.explanation || ''}" style="padding: 0.4rem;">
+          </div>
+        </div>
+      `;
+    } else if (slide.type === 'summary') {
+      typeFieldsHtml = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.5rem;">
+          <div class="form-field">
+            <label style="font-size:0.75rem;">Illustration (Emoji)</label>
+            <input type="text" class="slide-illustration" value="${slide.illustration || '🏆'}" style="padding: 0.4rem;">
+          </div>
+        </div>
+        <div class="form-field" style="margin-top: 0.5rem;">
+          <label style="font-size:0.75rem;">Summary content text</label>
+          <textarea class="slide-content" rows="2" style="padding: 0.4rem; font-size: 0.82rem;">${slide.content || ''}</textarea>
+        </div>
+      `;
+    }
+
+    slideCard.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+        <span style="font-weight: 700; font-size: 0.85rem; color: var(--gray-700);">Slide #${idx + 1}</span>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <select class="slide-type-select" style="padding: 0.25rem 0.5rem; font-size: 0.78rem; border-radius: var(--r-md); border: 1px solid var(--gray-250); background:#fff;">
+            <option value="info" ${slide.type === 'info' ? 'selected' : ''}>Info</option>
+            <option value="card-quiz" ${slide.type === 'card-quiz' ? 'selected' : ''}>Card Quiz</option>
+            <option value="summary" ${slide.type === 'summary' ? 'selected' : ''}>Summary</option>
+          </select>
+          <button type="button" class="secondary-btn slide-remove-btn" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; color: #b91c1c; border: 1px solid #fee2e2; background: #fef2f2;">Remove</button>
+        </div>
+      </div>
+      <div class="form-field">
+        <label style="font-size:0.75rem;">Slide Title</label>
+        <input type="text" class="slide-title" value="${slide.title || ''}" style="padding: 0.4rem; font-size: 0.85rem;">
+      </div>
+      ${typeFieldsHtml}
+      <div class="form-field" style="margin-top: 0.5rem;">
+        <label style="font-size:0.75rem;">AI Tutor Deep Explanation</label>
+        <textarea class="slide-aiTutor" rows="2" style="padding: 0.4rem; font-size: 0.82rem;">${slide.aiTutorExplanation || ''}</textarea>
+      </div>
+    `;
+
+    // Bind inputs to state on changes
+    slideCard.querySelector('.slide-type-select').addEventListener('change', (e) => {
+      editorSlides[idx].type = e.target.value;
+      renderEditorSlides();
+    });
+    slideCard.querySelector('.slide-remove-btn').addEventListener('click', () => {
+      editorSlides.splice(idx, 1);
+      renderEditorSlides();
+    });
+
+    // Save text state synchronously on inputs
+    slideCard.querySelectorAll('input, textarea, select').forEach(input => {
+      input.addEventListener('input', () => {
+        if (input.classList.contains('slide-title')) editorSlides[idx].title = input.value;
+        if (input.classList.contains('slide-illustration')) editorSlides[idx].illustration = input.value;
+        if (input.classList.contains('slide-takeaway')) editorSlides[idx].keyTakeaway = input.value;
+        if (input.classList.contains('slide-content')) editorSlides[idx].content = input.value;
+        if (input.classList.contains('slide-question')) editorSlides[idx].question = input.value;
+        if (input.classList.contains('slide-correct-answer')) editorSlides[idx].correctAnswer = input.value;
+        if (input.classList.contains('slide-explanation')) editorSlides[idx].explanation = input.value;
+        if (input.classList.contains('slide-aiTutor')) editorSlides[idx].aiTutorExplanation = input.value;
+      });
+    });
+
+    container.appendChild(slideCard);
+  });
+}
+
+async function loadModuleRevisionHistory(moduleId) {
+  const backupsList = document.getElementById('editor-backups-list');
+  if (!backupsList) return;
+  backupsList.innerHTML = '<div style="font-size: 0.8rem; color: var(--gray-400); text-align: center; padding: 0.5rem;">Loading revisions...</div>';
+
+  try {
+    const q = query(collection(db, 'custom_modules_backups'), orderBy('timestamp', 'desc'), limit(15));
+    const querySnapshot = await getDocs(q);
+    const listItems = [];
+
+    querySnapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      if (data.moduleId === moduleId) {
+        listItems.push({
+          id: docSnap.id,
+          ...data
+        });
+      }
+    });
+
+    if (listItems.length === 0) {
+      backupsList.innerHTML = '<div style="font-size: 0.8rem; color: var(--gray-400); text-align: center; padding: 0.5rem;">No revisions saved yet.</div>';
+      return;
+    }
+
+    backupsList.innerHTML = '';
+    listItems.forEach(backup => {
+      const dateStr = new Date(backup.timestamp).toLocaleString();
+      const backupDiv = document.createElement('div');
+      backupDiv.style.display = 'flex';
+      backupDiv.style.justify = 'space-between';
+      backupDiv.style.alignItems = 'center';
+      backupDiv.style.padding = '0.4rem 0.75rem';
+      backupDiv.style.background = '#fff';
+      backupDiv.style.borderRadius = 'var(--r-md)';
+      backupDiv.style.border = '1px solid var(--gray-200)';
+      backupDiv.style.fontSize = '0.8rem';
+
+      backupDiv.innerHTML = `
+        <div>
+          <span style="font-weight: 600; color: var(--gray-800);">${dateStr}</span>
+          <span style="color: var(--gray-400); font-size: 0.75rem;">(${backup.editorEmail || 'system'})</span>
+        </div>
+        <button type="button" class="primary-btn compact-btn editor-restore-btn" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">Restore</button>
+      `;
+
+      backupDiv.querySelector('.editor-restore-btn').addEventListener('click', async () => {
+        if (confirm(`Are you sure you want to restore the module to this version?`)) {
+          // Re-populate state
+          editorSlides = JSON.parse(JSON.stringify(backup.moduleData.slides || []));
+          document.getElementById('editor-title').value = backup.moduleData.title || '';
+          document.getElementById('editor-category').value = backup.moduleData.category || '';
+          document.getElementById('editor-duration').value = backup.moduleData.duration || '';
+          document.getElementById('editor-description').value = backup.moduleData.description || '';
+          document.getElementById('editor-parent-con').value = backup.moduleData.parentConcentrationId || '';
+          renderEditorSlides();
+        }
+      });
+
+      backupsList.appendChild(backupDiv);
+    });
+  } catch (err) {
+    console.error('Error fetching revisions:', err);
+    backupsList.innerHTML = '<div style="font-size: 0.8rem; color: #b91c1c; text-align: center; padding: 0.5rem;">Error loading revision backups.</div>';
+  }
+}
+
+async function deleteModuleAction(moduleId) {
+  if (!confirm(`Are you sure you want to delete the module "${moduleId}"? This will remove it from catalog and dashboards.`)) {
+    return;
+  }
+
+  try {
+    const docRef = doc(db, 'custom_modules', moduleId);
+    await setDoc(docRef, { deleted: true }, { merge: true });
+
+    alert(`Module "${moduleId}" has been soft-deleted successfully.`);
+    
+    // Reload databases
+    await fetchAndMergeCustomModules();
+    await renderAdminDashboard();
+    renderCoursesCatalog();
+    renderDashboard();
+  } catch (err) {
+    console.error('Failed to delete module:', err);
+    alert(`Error deleting module: ${err.message}`);
+  }
+}
+
+// Wire Visual Editor Close/Submit Buttons inside window initialization
+window.addEventListener('DOMContentLoaded', () => {
+  const closeBtn = document.getElementById('close-visual-editor-btn');
+  const cancelBtn = document.getElementById('editor-cancel-btn');
+  const dialog = document.getElementById('visual-editor-dialog');
+  const form = document.getElementById('visual-editor-form');
+  const addSlideBtn = document.getElementById('editor-add-slide-btn');
+
+  if (closeBtn) closeBtn.addEventListener('click', () => dialog.classList.add('hidden'));
+  if (cancelBtn) cancelBtn.addEventListener('click', () => dialog.classList.add('hidden'));
+
+  if (addSlideBtn) {
+    addSlideBtn.addEventListener('click', () => {
+      editorSlides.push({
+        type: 'info',
+        title: 'New Slide',
+        illustration: '📖',
+        content: '',
+        aiTutorExplanation: ''
+      });
+      renderEditorSlides();
+    });
+  }
+
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const moduleId = document.getElementById('editor-module-id').value;
+      const title = document.getElementById('editor-title').value;
+      const category = document.getElementById('editor-category').value;
+      const duration = document.getElementById('editor-duration').value;
+      const description = document.getElementById('editor-description').value;
+      const parentCon = document.getElementById('editor-parent-con').value;
+
+      if (editorSlides.length === 0) {
+        alert('Validation Error: Module must contain at least 1 slide.');
+        return;
+      }
+
+      const updatedModule = {
+        id: moduleId,
+        title,
+        category,
+        duration,
+        description,
+        parentConcentrationId: parentCon,
+        slides: editorSlides
+      };
+
+      try {
+        // Save current to custom_modules
+        const docRef = doc(db, 'custom_modules', moduleId);
+        await setDoc(docRef, updatedModule);
+
+        // Record backup snapshot log
+        const backupRef = collection(db, 'custom_modules_backups');
+        await addDoc(backupRef, {
+          moduleId,
+          timestamp: new Date().toISOString(),
+          editorEmail: auth.currentUser?.email || 'admin',
+          moduleData: updatedModule
+        });
+
+        alert(`Module "${title}" updated and revision backup created!`);
+        dialog.classList.add('hidden');
+
+        // Reload lists & dashboard
+        await fetchAndMergeCustomModules();
+        await renderAdminDashboard();
+        renderCoursesCatalog();
+        renderDashboard();
+      } catch (err) {
+        console.error('Error saving edits:', err);
+        alert(`Failed to save module modifications: ${err.message}`);
+      }
+    });
+  }
+});
+
+// ==========================================================================
 // Stats
 // ==========================================================================
 function updateStatsDisplay() {
-  el.statsXpVal.textContent = (userState.xp || 0).toLocaleString();
-  el.statsCompletedVal.textContent = `${(userState.completedModules || []).length} / ${modules.length}`;
+  const completedList = (userState.completedModules || []).filter(id => modules.some(m => m.id === id));
+  
+  const releasedCons = concentrations.filter(c => c.modules.some(mid => isModuleReleased(mid)));
+  const completedCons = releasedCons.filter(c => c.modules.every(mid => completedList.includes(mid)));
+  el.statsCompletedVal.textContent = `${completedCons.length} / ${releasedCons.length}`;
+  
   el.statsStreakVal.textContent = userState.streak || 0;
   const accuracy = userState.quizStats && userState.quizStats.totalQuestions > 0
     ? Math.round((userState.quizStats.correctFirstTry / userState.quizStats.totalQuestions) * 100)
     : 100;
-  el.statsAccuracyVal.textContent = `${accuracy}%`;
+  if (el.statsAccuracyVal) {
+    el.statsAccuracyVal.textContent = `${accuracy}%`;
+  }
 
-  // Render module progress list
   const listEl = document.getElementById('stats-modules-list');
   if (listEl) {
-    const completedList = userState.completedModules || [];
-    listEl.innerHTML = modules.map(m => {
-      const done = completedList.includes(m.id);
-      const icon = moduleIcons[m.id] || '📖';
-      return `
-        <div class="stats-module-row ${done ? 'done' : ''}">  
-          <span class="stats-module-icon">${icon}</span>
-          <span class="stats-module-title">${m.title}</span>
-          <span class="stats-module-badge">${done ? '✓ Done' : m.duration}</span>
+    listEl.innerHTML = '';
+    
+    // Group concentrations by topic
+    const groups = {};
+    concentrations.forEach(con => {
+      const conLessons = modules.filter(m => con.modules.includes(m.id));
+      const hasReleased = conLessons.some(m => isModuleReleased(m.id));
+      if (!hasReleased) return;
+      
+      const tName = con.group || 'Books of the Bible';
+      if (!groups[tName]) groups[tName] = [];
+      groups[tName].push(con);
+    });
+
+    const topicOrder = [
+      "Books of the Bible",
+      "Bibliology",
+      "Theology",
+      "Anthropology",
+      "Christology",
+      "Pneumatology",
+      "Ecclesiology",
+      "Eschatology"
+    ];
+
+    const sortedGroupNames = Object.keys(groups).sort((a, b) => {
+      const idxA = topicOrder.indexOf(a);
+      const idxB = topicOrder.indexOf(b);
+      if (idxA === -1 && idxB === -1) return 0;
+      if (idxA === -1) return 1;
+      if (idxB === -1) return -1;
+      return idxA - idxB;
+    });
+
+    const conIcons = {
+      'foundations': '📖',
+      'genesis': '🏛️',
+      'exodus': '📜',
+      'leviticus': '🐂',
+      'numbers': '📊',
+      'deuteronomy': '🌅',
+      'joshua': '⚔️',
+      'judges': '⚖️',
+      'ruth': '🌾',
+      '1samuel': '👑',
+      '2samuel': '🏰',
+      '1kings': '👑',
+      '2kings': '🏰',
+      'joel': '🦗',
+      'hosea': '❤️',
+      'psalms': '🎵',
+      'proverbs': '💡',
+      '1chronicles': '📜',
+      '2chronicles': '🏰',
+      'ezra': '🏛️',
+      'nehemiah': '🧱',
+      'esther': '🍷',
+      'job': '🌪️',
+      'heaven': '🌤️'
+    };
+
+    sortedGroupNames.forEach(gName => {
+      const headerHtml = `
+        <div class="stats-topic-header" style="margin-top: 1.25rem; font-size: 0.8rem; font-weight: 800; color: var(--brand-coral); text-transform: uppercase; letter-spacing: 0.08em; padding-bottom: 0.25rem; border-bottom: 1px solid rgba(225, 29, 72, 0.1); margin-bottom: 0.75rem; text-align: left;">
+          ${gName}
         </div>
       `;
-    }).join('');
+      listEl.insertAdjacentHTML('beforeend', headerHtml);
+
+      groups[gName].forEach(con => {
+        const conLessons = modules.filter(m => con.modules.includes(m.id));
+        const total = conLessons.length;
+        const completed = conLessons.filter(m => completedList.includes(m.id)).length;
+        const isComplete = completed === total;
+        const icon = conIcons[con.id] || '📖';
+
+        let badgeHtml = '';
+        if (isComplete) {
+          badgeHtml = '<span class="stats-module-badge completed" style="font-size: 0.75rem; font-weight: 700; color: var(--brand-green); background: rgba(16, 185, 129, 0.1); padding: 0.25rem 0.6rem; border-radius: 999px;">✓ Done</span>';
+        } else {
+          badgeHtml = `<span class="stats-module-badge" style="font-size: 0.75rem; font-weight: 700; color: var(--gray-500); background: var(--gray-100); padding: 0.25rem 0.6rem; border-radius: 999px;">${completed}/${total} Done</span>`;
+        }
+
+        const rowHtml = `
+          <div class="stats-module-row clickable-stats-row ${isComplete ? 'done' : ''}" data-con-id="${con.id}" style="cursor: pointer; display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 1rem; background: #fff; border-radius: var(--r-md); border: 1px solid var(--gray-100); margin-bottom: 0.5rem; transition: all 0.2s;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <span class="stats-module-icon" style="font-size: 1.25rem;">${icon}</span>
+              <div style="display: flex; flex-direction: column; text-align: left;">
+                <span class="stats-module-title" style="font-weight: 700; color: var(--gray-800); font-size: 0.92rem; line-height: 1.2;">${con.title}</span>
+                <span style="font-size: 0.75rem; color: var(--gray-400); margin-top: 0.15rem; line-height: 1.2;">${con.description}</span>
+              </div>
+            </div>
+            <div style="flex-shrink: 0; margin-left: 0.5rem;">
+              ${badgeHtml}
+            </div>
+          </div>
+        `;
+        listEl.insertAdjacentHTML('beforeend', rowHtml);
+      });
+    });
+
+    listEl.querySelectorAll('.clickable-stats-row').forEach(row => {
+      row.addEventListener('click', () => {
+        const conId = row.getAttribute('data-con-id');
+        if (conId) {
+          switchTab('courses');
+          openOnboarding(conId);
+        }
+      });
+    });
   }
 }
 
 // ==========================================================================
 // Lesson Flow
 // ==========================================================================
-function startModule(moduleId) {
+function startModule(moduleId, pushState = true) {
+  if (!isModuleReleased(moduleId)) {
+    alert('This course is not yet released!');
+    switchTab('courses');
+    return;
+  }
+
   activeModule = modules.find(m => m.id === moduleId);
   if (!activeModule) return;
 
   currentSlideIndex = 0;
+  cardQuizSubIndex = 0;
   selectedOptionIndex = null;
   isQuizAnswered = false;
   currentQuestionFirstAttempt = true;
 
   el.courseOnboarding.classList.add('hidden');
 
-  // Hide all nav elements, show lesson
   el.viewHome.classList.add('hidden');
   el.viewCourses.classList.add('hidden');
   el.viewNetwork.classList.add('hidden');
   el.viewStats.classList.add('hidden');
+  if (el.viewAdmin) el.viewAdmin.classList.add('hidden');
   el.bottomNav.classList.add('hidden');
   el.header.classList.add('hidden');
   el.lessonView.classList.remove('hidden');
@@ -1169,30 +2631,44 @@ function startModule(moduleId) {
   renderSlide();
   el.lessonContentArea.scrollTop = 0;
   window.scrollTo({ top: 0, behavior: 'instant' });
+
+  if (pushState) {
+    history.pushState({ moduleId, type: 'learn' }, '', `/learn/${moduleId}`);
+  }
 }
 
-function closeLesson() {
+function closeLesson(pushState = true) {
   activeModule = null;
   el.lessonView.classList.add('hidden');
   el.lessonView.classList.remove('cardquiz-mode');
   el.bottomNav.classList.remove('hidden');
   el.header.classList.remove('hidden');
-  switchTab('courses');
+  switchTab('courses', pushState);
 }
 
-// --------------------------------------------------------------------------
-// Lesson progress dots
-// --------------------------------------------------------------------------
 function renderProgressDots() {
   if (!activeModule) return;
   const total = activeModule.slides.length;
-  // Show at most 20 dots; if more, just show a thinner line
-  const dotsHtml = activeModule.slides.map((_, idx) => {
+
+  const createDot = (idx) => {
     let cls = 'progress-dot';
+    if (total > 10) cls += ' small';
     if (idx < currentSlideIndex) cls += ' done';
     else if (idx === currentSlideIndex) cls += ' current';
     return `<div class="${cls}"></div>`;
-  }).join('');
+  };
+
+  let dotsHtml = '';
+  if (total <= 10) {
+    el.lessonDotsBar.classList.remove('two-rows');
+    dotsHtml = activeModule.slides.map((_, idx) => createDot(idx)).join('');
+  } else {
+    el.lessonDotsBar.classList.add('two-rows');
+    const half = Math.ceil(total / 2);
+    const row1 = activeModule.slides.slice(0, half).map((_, idx) => createDot(idx)).join('');
+    const row2 = activeModule.slides.slice(half).map((_, idx) => createDot(half + idx)).join('');
+    dotsHtml = `<div class="dots-row">${row1}</div><div class="dots-row staggered">${row2}</div>`;
+  }
 
   el.lessonDotsBar.innerHTML = dotsHtml;
 
@@ -1202,21 +2678,70 @@ function renderProgressDots() {
   el.lessonProgressBar.style.width = `${progressPercent}%`;
 }
 
-// --------------------------------------------------------------------------
-// Slide Renderer
-// --------------------------------------------------------------------------
+function formatMarkdown(content) {
+  if (!content) return '';
+  return content.split('\n\n').map(p => {
+    const lines = p.split('\n');
+    let isList = false;
+    let isNumbered = false;
+    const listItems = [];
+    const nonListItems = [];
+    
+    const applyInline = t => t
+      .replace(/\*\*(.*?)\*\"/g, '<strong>$1</strong>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '<em>$1</em>')
+      .replace(/^###\s*(.+)/, '<h3>$1</h3>')
+      .replace(/^##\s*(.+)/, '<h2>$1</h2>')
+      .replace(/^#\s*(.+)/, '<h1>$1</h1>')
+      .replace(/^> (.+)/, '<blockquote>$1</blockquote>');
+
+    lines.forEach(line => {
+      const trimmed = line.trim();
+      if (trimmed.match(/^\d+\.\s/)) {
+        isNumbered = true;
+        listItems.push(`<li>${applyInline(trimmed.replace(/^\d+\.\s/, ''))}</li>`);
+      } else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+        isList = true;
+        listItems.push(`<li>${applyInline(trimmed.substring(2))}</li>`);
+      } else if (trimmed.startsWith('> ')) {
+        nonListItems.push(`<blockquote>${applyInline(trimmed.substring(2))}</blockquote>`);
+      } else if (trimmed.startsWith('### ')) {
+        nonListItems.push(`<h3>${applyInline(trimmed.substring(4))}</h3>`);
+      } else if (trimmed.startsWith('## ')) {
+        nonListItems.push(`<h2>${applyInline(trimmed.substring(3))}</h2>`);
+      } else if (trimmed.startsWith('# ')) {
+        nonListItems.push(`<h1>${applyInline(trimmed.substring(2))}</h1>`);
+      } else {
+        nonListItems.push(applyInline(line));
+      }
+    });
+    
+    if (isNumbered) {
+      return `${nonListItems.length > 0 ? `<p>${nonListItems.join('<br>')}</p>` : ''}<ol>${listItems.join('')}</ol>`;
+    } else if (isList) {
+      return `${nonListItems.length > 0 ? `<p>${nonListItems.join('<br>')}</p>` : ''}<ul>${listItems.join('')}</ul>`;
+    } else {
+      return `<p>${nonListItems.join('<br>')}</p>`;
+    }
+  }).join('');
+}
+
 function renderSlide() {
   if (!activeModule) return;
 
   const slide = activeModule.slides[currentSlideIndex];
   renderProgressDots();
 
-  el.prevSlideBtn.disabled = currentSlideIndex === 0;
+  if (!userState.lessonProgress) userState.lessonProgress = {};
+  if (currentSlideIndex > (userState.lessonProgress[activeModule.id] || 0)) {
+    userState.lessonProgress[activeModule.id] = currentSlideIndex;
+    saveState();
+  }
 
-  // Scroll content area back to top
+  el.prevSlideBtn.disabled = currentSlideIndex === 0;
   el.lessonContentArea.scrollTop = 0;
 
-  // Configure takeaway banner
   if (slide.type === 'info' && slide.keyTakeaway) {
     el.takeawayIcon.textContent = slide.illustration || '🧠';
     el.takeawayText.textContent = slide.keyTakeaway;
@@ -1231,7 +2756,6 @@ function renderSlide() {
     el.takeawayBanner.classList.add('hidden');
   }
 
-  // Card-quiz: full purple lesson screen, hide bottom CONTINUE button (auto-advance handles it)
   if (slide.type === 'card-quiz') {
     el.lessonView.classList.add('cardquiz-mode');
     el.lessonTopbar.style.background = 'var(--brand-purple-bg)';
@@ -1244,14 +2768,12 @@ function renderSlide() {
     el.nextSlideBtn.style.display = '';
   }
 
-  // Build slide HTML
   let cardHtml = '';
 
   if (slide.type === 'info') {
     const trans = userState.translation;
     const scriptureText = slide.scriptureText?.[trans] || slide.scriptureText?.['ESV'] || '';
 
-    // Process content — detect dialogue style
     let bodyHtml = '';
     if (slide.content.includes('Luke:') || slide.content.includes('Ben:')) {
       bodyHtml = slide.content.split('\n\n').map(p => {
@@ -1263,44 +2785,7 @@ function renderSlide() {
         return `<p>${p.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>`;
       }).join('');
     } else {
-      bodyHtml = slide.content.split('\n\n').map(p => {
-        const lines = p.split('\n');
-        let isList = false;
-        let isNumbered = false;
-        const listItems = [];
-        const nonListItems = [];
-        
-        lines.forEach(line => {
-          const trimmed = line.trim();
-          const applyInline = t => t
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '<em>$1</em>')
-            .replace(/^> (.+)/, '<blockquote>$1</blockquote>');
-          if (trimmed.match(/^\d+\.\s/)) {
-            isNumbered = true;
-            listItems.push(`<li>${applyInline(trimmed.replace(/^\d+\.\s/, ''))}</li>`);
-          } else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-            isList = true;
-            listItems.push(`<li>${applyInline(trimmed.substring(2))}</li>`);
-          } else if (trimmed.startsWith('> ')) {
-            nonListItems.push(`<blockquote>${applyInline(trimmed.substring(2))}</blockquote>`);
-          } else {
-            nonListItems.push(applyInline(line));
-          }
-        });
-        
-        if (isNumbered) {
-          return `${nonListItems.length > 0 ? `<p>${nonListItems.join('<br>')}</p>` : ''}<ol>${listItems.join('')}</ol>`;
-        } else if (isList) {
-          return `${nonListItems.length > 0 ? `<p>${nonListItems.join('<br>')}</p>` : ''}<ul>${listItems.join('')}</ul>`;
-        } else {
-          return `<p>${lines.map(l => l
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '<em>$1</em>')
-            .replace(/^> (.+)/, '<blockquote>$1</blockquote>')
-          ).join('<br>')}</p>`;
-        }
-      }).join('');
+      bodyHtml = formatMarkdown(slide.content);
     }
 
     cardHtml = `
@@ -1351,21 +2836,30 @@ function renderSlide() {
     el.nextSlideBtn.disabled = true;
 
   } else if (slide.type === 'card-quiz') {
+    const qs = slide.questions || [{
+      question: slide.question,
+      correctAnswer: slide.correctAnswer,
+      explanation: slide.explanation
+    }];
+    if (cardQuizSubIndex >= qs.length) cardQuizSubIndex = 0;
+    const currentQ = qs[cardQuizSubIndex];
+
     cardHtml = `
       <div class="cardquiz-screen">
-        <p class="cardquiz-prompt">DO YOU THINK THE FOLLOWING IS TRUE?</p>
+        <p class="cardquiz-prompt">DO YOU THINK THE FOLLOWING IS TRUE? (${cardQuizSubIndex + 1}/${qs.length})</p>
         <div class="stack-wrapper">
           <div class="stack-card-shadow-2"></div>
           <div class="stack-card-shadow-1"></div>
-          <div class="stack-card-main">${slide.question}</div>
+          <div class="stack-card-main">${currentQ.question}</div>
         </div>
         <div class="yes-no-row">
           <button class="yn-btn yes" data-val="yes">yes</button>
           <button class="yn-btn no" data-val="no">no</button>
         </div>
-        <div id="quiz-feedback-box" class="cardquiz-feedback hidden" style="display:none;">
+        <div id="quiz-feedback-box" class="cardquiz-feedback hidden" style="display:none; flex-direction: column;">
           <div class="cardquiz-feedback-title" id="feedback-title">Correct!</div>
           <p id="feedback-desc"></p>
+          <button id="cardquiz-continue-btn" class="cardquiz-continue-btn hidden" style="display:none;">Continue</button>
         </div>
       </div>
     `;
@@ -1381,8 +2875,7 @@ function renderSlide() {
       <div class="summary-slide">
         <span class="summary-emoji">${slide.illustration || '🏆'}</span>
         <h2 class="summary-title">${slide.title}</h2>
-        <p class="summary-body">${slide.content}</p>
-        <div class="xp-badge">⚡ +${activeModule.xpReward} XP Earned</div>
+        <div class="summary-body">${formatMarkdown(slide.content)}</div>
       </div>
     `;
     el.nextBtnText.textContent = 'COMPLETE';
@@ -1392,7 +2885,6 @@ function renderSlide() {
 
   el.activeCard.innerHTML = cardHtml;
 
-  // Wire up interactive elements
   if (slide.type === 'quiz') {
     document.querySelectorAll('.quiz-option').forEach(opt => {
       opt.addEventListener('click', () => selectQuizOption(parseInt(opt.getAttribute('data-index'))));
@@ -1403,8 +2895,11 @@ function renderSlide() {
     });
   }
 
-  // AI Tutor bar
-  if (slide.aiTutorExplanation) {
+  const currentQaiTutor = (slide.type === 'card-quiz') ? 
+    (((slide.questions && slide.questions[cardQuizSubIndex]) || {}).aiTutorExplanation || slide.aiTutorExplanation) : 
+    slide.aiTutorExplanation;
+
+  if (currentQaiTutor) {
     el.aiTutorTrigger.classList.remove('hidden');
     if (slide.type === 'card-quiz') {
       el.aiTutorTrigger.classList.add('dark-mode');
@@ -1415,14 +2910,11 @@ function renderSlide() {
     el.aiTutorTrigger.classList.add('hidden');
   }
 
-  el.tutorExplanationText.innerHTML = slide.aiTutorExplanation
-    ? `<p>${slide.aiTutorExplanation}</p>`
+  el.tutorExplanationText.innerHTML = currentQaiTutor
+    ? `<p>${currentQaiTutor}</p>`
     : `<p>This slide provides theological and historical context on the scriptures.</p>`;
 }
 
-// --------------------------------------------------------------------------
-// Quiz interaction
-// --------------------------------------------------------------------------
 function selectQuizOption(index) {
   if (isQuizAnswered) return;
   selectedOptionIndex = index;
@@ -1439,7 +2931,6 @@ function selectYesNoOption(value) {
   const noBtn  = document.querySelector('.yn-btn.no');
   if (value === 'yes') { yesBtn.classList.add('selected-yes'); noBtn.classList.remove('selected-no'); }
   else { noBtn.classList.add('selected-no'); yesBtn.classList.remove('selected-yes'); }
-  // Immediately check — no SUBMIT step needed
   checkCardQuizAnswer();
 }
 
@@ -1482,14 +2973,12 @@ function checkQuizAnswer() {
       currentQuestionFirstAttempt = false;
       el.nextSlideBtn.disabled = true;
     }
-
   }
 
   feedbackBox.style.display = 'flex';
   feedbackBox.classList.remove('hidden');
 }
 
-// Separate handler for card-quiz that auto-advances
 function checkCardQuizAnswer() {
   const slide = activeModule.slides[currentSlideIndex];
   const feedbackBox   = document.getElementById('quiz-feedback-box');
@@ -1498,9 +2987,15 @@ function checkCardQuizAnswer() {
   const yesBtn = document.querySelector('.yn-btn.yes');
   const noBtn  = document.querySelector('.yn-btn.no');
 
-  const isCorrect = selectedOptionIndex === slide.correctAnswer;
+  const qs = slide.questions || [{
+    question: slide.question,
+    correctAnswer: slide.correctAnswer,
+    explanation: slide.explanation
+  }];
+  const currentQ = qs[cardQuizSubIndex];
 
-  // Disable buttons immediately
+  const isCorrect = selectedOptionIndex === currentQ.correctAnswer;
+
   yesBtn.setAttribute('disabled', 'true');
   noBtn.setAttribute('disabled', 'true');
 
@@ -1513,23 +3008,36 @@ function checkCardQuizAnswer() {
 
     feedbackBox.className = 'cardquiz-feedback correct';
     feedbackTitle.textContent = '✓ Correct!';
-    feedbackDesc.textContent  = slide.explanation;
+    feedbackDesc.textContent  = currentQ.explanation;
 
     if (currentQuestionFirstAttempt) userState.quizStats.correctFirstTry += 1;
     userState.quizStats.totalQuestions += 1;
     isQuizAnswered = true;
     recordActivity();
 
-    // Auto-advance after 1.6s
-    setTimeout(() => {
-      if (currentSlideIndex < activeModule.slides.length - 1) {
-        currentSlideIndex += 1;
-        renderSlide();
-      } else {
-        completeActiveModule();
-      }
-    }, 1600);
+    const continueBtn = document.getElementById('cardquiz-continue-btn');
+    if (continueBtn) {
+      continueBtn.style.display = 'block';
+      continueBtn.classList.remove('hidden');
 
+      const newContinueBtn = continueBtn.cloneNode(true);
+      continueBtn.parentNode.replaceChild(newContinueBtn, continueBtn);
+
+      newContinueBtn.addEventListener('click', () => {
+        if (cardQuizSubIndex < qs.length - 1) {
+          cardQuizSubIndex += 1;
+          renderSlide();
+        } else {
+          cardQuizSubIndex = 0;
+          if (currentSlideIndex < activeModule.slides.length - 1) {
+            currentSlideIndex += 1;
+            renderSlide();
+          } else {
+            completeActiveModule();
+          }
+        }
+      });
+    }
   } else {
     if (selectedOptionIndex === 'yes') yesBtn.style.background = '#ef4444';
     else noBtn.style.background = '#ef4444';
@@ -1539,7 +3047,6 @@ function checkCardQuizAnswer() {
     feedbackDesc.textContent  = 'Try again!';
     currentQuestionFirstAttempt = false;
 
-    // Reset buttons after 1.2s so user can try again
     setTimeout(() => {
       yesBtn.removeAttribute('disabled');
       noBtn.removeAttribute('disabled');
@@ -1561,6 +3068,7 @@ function handleNextClick() {
   } else {
     if (currentSlideIndex < activeModule.slides.length - 1) {
       currentSlideIndex += 1;
+      cardQuizSubIndex = 0;
       renderSlide();
     } else {
       completeActiveModule();
@@ -1571,6 +3079,7 @@ function handleNextClick() {
 function handlePrevClick() {
   if (currentSlideIndex > 0) {
     currentSlideIndex -= 1;
+    cardQuizSubIndex = 0;
     renderSlide();
   }
 }
@@ -1578,8 +3087,9 @@ function handlePrevClick() {
 function completeActiveModule() {
   if (!userState.completedModules.includes(activeModule.id)) {
     userState.completedModules.push(activeModule.id);
-    userState.xp += activeModule.xpReward;
   }
+  if (!userState.lessonProgress) userState.lessonProgress = {};
+  userState.lessonProgress[activeModule.id] = activeModule.slides.length;
   recordActivity();
   saveState();
   closeLesson();
@@ -1609,14 +3119,26 @@ async function handleLoginSubmit(e) {
   }
 }
 
+let pendingRegistrationDetails = null;
+
 async function handleRegisterSubmit(e) {
   e.preventDefault();
   clearAuthError();
+  
+  const nameVal = el.registerName ? el.registerName.value.trim() : '';
+  const countryVal = el.registerCountry ? el.registerCountry.value : '';
+
+  pendingRegistrationDetails = {
+    name: nameVal,
+    country: countryVal
+  };
+
   try {
     await createUserWithEmailAndPassword(auth, el.registerEmail.value.trim(), el.registerPass.value);
   } catch (err) {
     console.error('Registration failed:', err);
     showAuthError('Registration failed. Email may already be in use.');
+    pendingRegistrationDetails = null;
   }
 }
 
@@ -1643,7 +3165,6 @@ function switchAuthTab(tab) {
 // Event Listeners
 // ==========================================================================
 function setupEventListeners() {
-  // Auth
   el.loginForm.addEventListener('submit', handleLoginSubmit);
   el.registerForm.addEventListener('submit', handleRegisterSubmit);
   el.signoutBtn.addEventListener('click', () => signOut(auth));
@@ -1651,32 +3172,78 @@ function setupEventListeners() {
   el.tabLogin.addEventListener('click', () => switchAuthTab('login'));
   el.tabRegister.addEventListener('click', () => switchAuthTab('register'));
 
-  // Dashboard sub-tabs
   el.subtabStudying.addEventListener('click', () => switchDashboardSubtab('studying'));
   el.subtabCurriculum.addEventListener('click', () => switchDashboardSubtab('curriculum'));
 
-  // Bottom nav
   document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', () => switchTab(item.getAttribute('data-tab')));
   });
 
-  // Courses search
-  el.courseSearch.addEventListener('input', renderCoursesCatalog);
+  if (el.courseSearch) {
+    el.courseSearch.addEventListener('input', renderCoursesCatalog);
+  }
+  if (el.openFiltersModalBtn) {
+    el.openFiltersModalBtn.addEventListener('click', () => {
+      updateFilterTagsUI();
+      if (el.filtersModal) el.filtersModal.classList.remove('hidden');
+    });
+  }
 
-  // Course onboarding overlay
-  el.closeOnboarding.addEventListener('click', () => el.courseOnboarding.classList.add('hidden'));
+  if (el.activeStatusBadge) {
+    el.activeStatusBadge.addEventListener('click', () => {
+      // Toggle: all -> released -> locked -> all
+      if (catalogFilters.status === 'all') {
+        catalogFilters.status = 'released';
+      } else if (catalogFilters.status === 'released') {
+        catalogFilters.status = 'locked';
+      } else {
+        catalogFilters.status = 'all';
+      }
+      updateFilterTagsUI();
+      renderCoursesCatalog();
+    });
+  }
+
+  if (el.closeFiltersModalBtn) {
+    el.closeFiltersModalBtn.addEventListener('click', () => {
+      if (el.filtersModal) el.filtersModal.classList.add('hidden');
+    });
+  }
+
+  if (el.saveFiltersBtn) {
+    el.saveFiltersBtn.addEventListener('click', () => {
+      if (el.filtersModal) el.filtersModal.classList.add('hidden');
+      renderCoursesCatalog();
+    });
+  }
+
+  // Filter tags selection listeners
+  document.querySelectorAll('.filter-tag-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.classList.contains('locked') || btn.disabled) return;
+      const fType = btn.getAttribute('data-filter-type');
+      const val = btn.getAttribute('data-value');
+      if (fType && val) {
+        catalogFilters[fType] = val;
+        updateFilterTagsUI();
+      }
+    });
+  });
+
+  el.closeOnboarding.addEventListener('click', () => {
+    el.courseOnboarding.classList.add('hidden');
+    history.pushState({ tabId: 'courses' }, '', '/courses');
+  });
   el.startOnboardedLesson.addEventListener('click', () => {
     startModule(el.startOnboardedLesson.getAttribute('data-id'));
   });
 
-  // Translation
   el.translationSelect.addEventListener('change', e => {
     userState.translation = e.target.value;
     saveState();
     if (activeModule && activeModule.slides[currentSlideIndex].type === 'info') renderSlide();
   });
 
-  // Profile modal triggers
   if (el.headerProfileTrigger) {
     el.headerProfileTrigger.addEventListener('click', openProfileDialog);
   }
@@ -1686,21 +3253,82 @@ function setupEventListeners() {
   if (el.profileEditForm) {
     el.profileEditForm.addEventListener('submit', handleProfileSave);
   }
+  const roleSelect = document.getElementById('profile-role-select');
+  if (roleSelect) {
+    roleSelect.addEventListener('change', async () => {
+      userState.role = roleSelect.value;
+      await saveState();
+      checkAdminNavVisibility();
+    });
+  }
   setupPhotoUpload();
 
-  // Lesson controls
   el.closeLessonBtn.addEventListener('click', closeLesson);
   el.prevSlideBtn.addEventListener('click', handlePrevClick);
   el.nextSlideBtn.addEventListener('click', handleNextClick);
 
-  // AI Tutor
   el.aiTutorTrigger.addEventListener('click', () => el.aiTutorModal.classList.remove('hidden'));
   el.closeTutor.addEventListener('click', () => el.aiTutorModal.classList.add('hidden'));
   el.aiTutorModal.addEventListener('click', e => {
     if (e.target === el.aiTutorModal) el.aiTutorModal.classList.add('hidden');
   });
 
-  // Keyboard shortcut
+  const closeLearnerProgressBtn = document.getElementById('close-learner-progress-btn');
+  if (closeLearnerProgressBtn) {
+    closeLearnerProgressBtn.addEventListener('click', () => {
+      document.getElementById('learner-progress-dialog').classList.add('hidden');
+    });
+  }
+  const learnerProgressDialog = document.getElementById('learner-progress-dialog');
+  if (learnerProgressDialog) {
+    learnerProgressDialog.addEventListener('click', e => {
+      if (e.target === learnerProgressDialog) {
+        learnerProgressDialog.classList.add('hidden');
+      }
+    });
+  }
+
+  // Background tracking for user session time spent
+  setInterval(async () => {
+    if (auth.currentUser && userState) {
+      const now = Date.now();
+      const elapsedSeconds = Math.round((now - sessionStartTime) / 1000);
+      if (elapsedSeconds > 0) {
+        userState.timeSpent = (userState.timeSpent || 0) + elapsedSeconds;
+        sessionStartTime = now;
+        await saveState();
+      }
+    }
+  }, 30000);
+
+  document.addEventListener('visibilitychange', async () => {
+    if (auth.currentUser && userState) {
+      if (document.visibilityState === 'hidden') {
+        const now = Date.now();
+        const elapsedSeconds = Math.round((now - sessionStartTime) / 1000);
+        if (elapsedSeconds > 0) {
+          userState.timeSpent = (userState.timeSpent || 0) + elapsedSeconds;
+          sessionStartTime = now;
+          await saveState();
+        }
+      } else if (document.visibilityState === 'visible') {
+        sessionStartTime = Date.now();
+      }
+    }
+  });
+
+  window.addEventListener('pagehide', async () => {
+    if (auth.currentUser && userState) {
+      const now = Date.now();
+      const elapsedSeconds = Math.round((now - sessionStartTime) / 1000);
+      if (elapsedSeconds > 0) {
+        userState.timeSpent = (userState.timeSpent || 0) + elapsedSeconds;
+        sessionStartTime = now;
+        await saveState();
+      }
+    }
+  });
+
   window.addEventListener('keydown', e => {
     if (!activeModule) return;
     const slide = activeModule.slides[currentSlideIndex];
@@ -1715,3 +3343,7 @@ function setupEventListeners() {
 // Start
 // ==========================================================================
 window.addEventListener('DOMContentLoaded', init);
+
+window.addEventListener('popstate', () => {
+  routeToPath(window.location.pathname, false);
+});

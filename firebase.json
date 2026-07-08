@@ -4,7 +4,7 @@
     "indexes": "firestore.indexes.json"
   },
   "hosting": {
-    "site": "berea",
+    "site": "scriptura-study-2026",
     "public": ".",
     "ignore": [
       "firebase.json",
