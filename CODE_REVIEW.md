@@ -209,9 +209,19 @@ The following admin-dashboard improvements were implemented:
 
 > **Note:** This is a client-side aggregation trigger. For a production app with many users, replace this with a Cloud Function or scheduled job that writes `stats/aggregated` server-side, so the admin dashboard never needs to scan user documents.
 
-## 12. Conclusion
+## 12. Daily Reading / Devotional Feature (Implemented)
+
+A daily devotional card was added to the Home view to drive daily engagement:
+
+1. **Content source** — New `daily_readings.js` file with 30 daily readings. Each reading includes a title, verse, reference, reflection, and optional reflection question. The content is a mix of key verses from existing modules and original devotional reflections.
+2. **Daily selection** — `getTodaysReading()` selects the reading deterministically by day of year, cycling through the 30 entries. Every user sees the same reading on the same day.
+3. **Completion tracking** — `userState.dailyReadingsCompleted` and `lastDailyReadingDate` track which readings the user has completed.
+4. **XP & streak integration** — Marking a reading complete awards +15 XP, logs `daily_reading_completed` to the activity log, and calls `recordActivity()` to maintain the streak.
+5. **UI placement** — The daily reading card appears above the "Currently Studying" section on the Home view.
+
+## 13. Conclusion
 
 Scriptura is a solid, feature-complete application. The biggest return on investment will come from **modularizing `app.js`**, **centralizing state**, and **hardening Firestore security rules**. These changes will make the codebase easier to extend, test, and maintain without requiring a rewrite of the UI.
 
-If you want, I can start implementing Phase 1 (constants + helpers + Firebase config extraction) as a safe, behavior-preserving next step, or move on to Phase C (Firestore security with custom claims).
+If you want, I can start implementing Phase 1 (constants + helpers + Firebase config extraction) as a safe, behavior-preserving next step, move on to Phase C (Firestore security with custom claims), or continue adding more daily readings and features.
 
