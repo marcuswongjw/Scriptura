@@ -154,8 +154,6 @@ const el = {
   onboardIcon:        document.getElementById('onboard-icon'),
   onboardBulletPoints: document.getElementById('onboard-bullet-points'),
   onboardLessonCount: document.getElementById('onboard-lesson-count'),
-  onboardChapterTitle: document.getElementById('onboard-chapter-title'),
-  courseHighlightsList: document.getElementById('course-highlights-list'),
   startOnboardedLesson: document.getElementById('start-onboarded-lesson'),
 
   // Network View
@@ -273,7 +271,6 @@ async function fetchAndMergeCustomModules() {
 
 async function init() {
   setupEventListeners();
-  populateTopicFilter();
   
   try {
     await setPersistence(auth, browserSessionPersistence);
@@ -319,34 +316,6 @@ function checkAdminNavVisibility() {
     } else {
       adminNav.classList.add('hidden');
     }
-  }
-}
-
-function populateTopicFilter() {
-  if (el.courseFilterTopic) {
-    el.courseFilterTopic.innerHTML = '<option value="all">All Topics</option>';
-    const topics = [
-      "Books of the Bible",
-      "Bibliology",
-      "Theology",
-      "Anthropology",
-      "Christology",
-      "Pneumatology",
-      "Ecclesiology",
-      "Eschatology"
-    ];
-    topics.forEach(topic => {
-      const opt = document.createElement('option');
-      opt.value = topic;
-      const isLocked = ["Bibliology", "Theology", "Anthropology", "Christology", "Pneumatology", "Ecclesiology"].includes(topic);
-      if (isLocked) {
-        opt.disabled = true;
-        opt.textContent = `${topic} (Locked)`;
-      } else {
-        opt.textContent = topic;
-      }
-      el.courseFilterTopic.appendChild(opt);
-    });
   }
 }
 
@@ -3063,8 +3032,10 @@ function checkCardQuizAnswer() {
 
 function handleNextClick() {
   const slide = activeModule.slides[currentSlideIndex];
-  if ((slide.type === 'quiz' || slide.type === 'card-quiz') && !isQuizAnswered) {
+  if (slide.type === 'quiz' && !isQuizAnswered) {
     checkQuizAnswer();
+  } else if (slide.type === 'card-quiz' && !isQuizAnswered) {
+    checkCardQuizAnswer();
   } else {
     if (currentSlideIndex < activeModule.slides.length - 1) {
       currentSlideIndex += 1;
