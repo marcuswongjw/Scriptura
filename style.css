@@ -234,6 +234,12 @@ img { display: block; max-width: 100%; }
   margin: 0 auto;
 }
 
+@media (min-width: 1024px) {
+  #main-content {
+    max-width: 960px;
+  }
+}
+
 .tab-view {
   display: flex;
   flex-direction: column;
@@ -821,10 +827,9 @@ img { display: block; max-width: 100%; }
    PRIMARY BUTTON
    -------------------------------------------------------------------------- */
 .primary-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
   background: var(--brand-green);
   color: #fff;
   font-family: var(--font-display);
@@ -1153,7 +1158,7 @@ img { display: block; max-width: 100%; }
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 0 0 1rem 0;
+  padding: 0 0 5rem 0;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -2005,6 +2010,36 @@ img { display: block; max-width: 100%; }
   .lesson-bottom-bar { padding-bottom: calc(0.85rem + env(safe-area-inset-bottom)); }
 }
 
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Only apply hover effects on devices that support hover */
+@media (hover: hover) {
+  .current-study-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: rgba(225, 29, 72, 0.15);
+  }
+  .module-row:hover { background: var(--gray-50); }
+  .module-row:hover .module-row-chevron { color: var(--brand-coral); transform: translateX(2px); }
+  .premium-course-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: rgba(225, 29, 72, 0.2);
+  }
+  .concentration-badge:hover { transform: translateY(-2px); }
+  .user-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.08);
+  }
+}
+
 /* ==========================================================================
    PROFILE EDITING AND REVAMPED NETWORK VIEW STYLES
    ========================================================================== */
@@ -2379,7 +2414,7 @@ img { display: block; max-width: 100%; }
   border-radius: var(--r-xl);
   display: flex;
   flex-direction: column;
-  height: 500px;
+  height: min(500px, 60dvh);
   overflow: hidden;
   box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
 }
@@ -2530,6 +2565,12 @@ img { display: block; max-width: 100%; }
   grid-template-columns: repeat(2, 1fr);
   gap: 1rem;
   padding: 1rem 1.5rem;
+}
+
+@media (min-width: 600px) {
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 .stat-card {
   background: #fff;

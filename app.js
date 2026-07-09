@@ -2,6 +2,7 @@ import { concentrations, modules } from './modules.js?v=2.0.10';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, setPersistence, browserSessionPersistence } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 import { getFirestore, doc, getDoc, setDoc, collection, getDocs, onSnapshot, addDoc, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js';
 
 // ==========================================================================
 // Firebase Initialization
@@ -18,6 +19,30 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const messaging = getMessaging(app);
+const VAPID_KEY = "BO-hBNUqSqDpYLSE8Oz2c0nNKtUDyK27fyzjoTdoiBMLZUGIENy9qcZzegNRFcGE-G_KVPwKC-zcNxnh6dan0xE";
+
+
+// ==========================================================================
+// Utility: HTML sanitization helper
+// ==========================================================================
+function sanitizeHTML(str) {
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ==========================================================================
+// Utility: Debounce helper
+// ==========================================================================
+function debounce(fn, delay = 300) {
+  let timer;
+  return function (...args) {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn.apply(this, args), delay);
+  };
+}
 
 // ==========================================================================
 // Application State
@@ -40,6 +65,7 @@ let userState = {
 };
 
 let sessionStartTime = Date.now();
+let swRegistration = null;
 
 let activeModule = null;
 let currentSlideIndex = 0;
@@ -90,6 +116,34 @@ const moduleIcons = {
   'heaven-1': '🌤️',
   'heaven-2': '🌅',
   'heaven-3': '👑',
+};
+
+// Shared concentration icons map (used by catalog, onboarding, and stats)
+const conIcons = {
+  'foundations': '📖',
+  'genesis': '🏛️',
+  'exodus': '📜',
+  'leviticus': '🐂',
+  'numbers': '📊',
+  'deuteronomy': '🌅',
+  'joshua': '⚔️',
+  'judges': '⚖️',
+  'ruth': '🌾',
+  '1samuel': '👑',
+  '2samuel': '🏰',
+  '1kings': '👑',
+  '2kings': '🏰',
+  'joel': '🦗',
+  'hosea': '❤️',
+  'psalms': '🎵',
+  'proverbs': '💡',
+  '1chronicles': '📜',
+  '2chronicles': '🏰',
+  'ezra': '🏛️',
+  'nehemiah': '🧱',
+  'esther': '🍷',
+  'job': '🌪️',
+  'heaven': '🌤️'
 };
 
 // ==========================================================================
@@ -166,6 +220,8 @@ const el = {
   profileEmailInput:        document.getElementById('profile-email-input'),
   profileChurchInput:       document.getElementById('profile-church-input'),
   profileCountrySelect:     document.getElementById('profile-country-select'),
+  btnToggleNotifications:   document.getElementById('btn-toggle-notifications'),
+  pushStatusText:           document.getElementById('push-status-text'),
 
   // Event Modal
   eventDialog:              document.getElementById('event-dialog'),
@@ -271,6 +327,7 @@ async function fetchAndMergeCustomModules() {
 
 async function init() {
   setupEventListeners();
+  registerServiceWorker();
   
   try {
     await setPersistence(auth, browserSessionPersistence);
@@ -300,6 +357,11 @@ async function init() {
       
       routeToPath(window.location.pathname, false);
       initNetworkViewer();
+      
+      // Sync push token if permission was previously granted
+      if (Notification.permission === 'granted') {
+        checkAndSyncPushToken();
+      }
     } else {
       el.userPill.classList.add('hidden');
       el.authPortal.classList.remove('hidden');
@@ -434,6 +496,29 @@ async function loadUserCloudData(user) {
   }
 }
 
+// ==========================================================================
+// Utility: Show status helper for publisher form
+// ==========================================================================
+function showStatus(msg, type) {
+  const el = document.getElementById('publisher-status');
+  if (!el) return;
+  showStatusEl(el, msg, type);
+}
+
+function showStatusEl(el, msg, type) {
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'publisher-status';
+  if (type === 'success') {
+    el.style.color = 'var(--brand-green)';
+  } else if (type === 'error') {
+    el.style.color = '#b91c1c';
+  } else {
+    el.style.color = 'var(--gray-600)';
+  }
+  el.classList.remove('hidden');
+}
+
 function resetLocalState() {
   userState = { xp: 0, streak: 0, completedModules: [], lastActiveDate: null, translation: 'ESV', quizStats: { correctFirstTry: 0, totalQuestions: 0 }, country: '', name: '', photo: '', email: '', church: '', role: 'user', headline: '', goals: '', interests: '', social: '', lessonProgress: {}, timeSpent: 0 };
   localStorage.removeItem('scriptura_local_migrated');
@@ -441,14 +526,24 @@ function resetLocalState() {
   updateStatsDisplay();
 }
 
+let stateDirty = false;
+let stateSaveTimer = null;
+
 async function saveState() {
   localStorage.setItem('scriptura_user_state', JSON.stringify(userState));
   updateStatsDisplay();
-  if (auth.currentUser) {
-    try {
-      const userRef = doc(db, 'users', auth.currentUser.uid);
-      await setDoc(userRef, userState);
-    } catch (err) { console.error('Failed to sync progress:', err); }
+  stateDirty = true;
+  if (auth.currentUser && !stateSaveTimer) {
+    stateSaveTimer = setTimeout(async () => {
+      if (stateDirty && auth.currentUser) {
+        try {
+          const userRef = doc(db, 'users', auth.currentUser.uid);
+          await setDoc(userRef, userState);
+          stateDirty = false;
+        } catch (err) { console.error('Failed to sync progress:', err); }
+      }
+      stateSaveTimer = null;
+    }, 2000);
   }
 }
 
@@ -766,33 +861,6 @@ function renderCoursesCatalog() {
   const filterProgress = catalogFilters.progress;
   const filterStatus = catalogFilters.status;
 
-  const conIcons = {
-    'foundations': '📖',
-    'genesis': '🏛️',
-    'exodus': '📜',
-    'leviticus': '🐂',
-    'numbers': '📊',
-    'deuteronomy': '🌅',
-    'joshua': '⚔️',
-    'judges': '⚖️',
-    'ruth': '🌾',
-    '1samuel': '👑',
-    '2samuel': '🏰',
-    '1kings': '👑',
-    '2kings': '🏰',
-    'joel': '🦗',
-    'hosea': '❤️',
-    'psalms': '🎵',
-    'proverbs': '💡',
-    '1chronicles': '📜',
-    '2chronicles': '🏰',
-    'ezra': '🏛️',
-    'nehemiah': '🧱',
-    'esther': '🍷',
-    'job': '🌪️',
-    'heaven': '🌤️'
-  };
-
   const filteredConcentrations = concentrations.filter(con => {
     // 1. Search text matches title or description of concentration or its child modules
     const conLessons = modules.filter(m => con.modules.includes(m.id));
@@ -967,33 +1035,6 @@ function renderCoursesCatalog() {
 }
 
 function openOnboarding(concentrationId, pushState = true) {
-  const conIcons = {
-    'foundations': '📖',
-    'genesis': '🏛️',
-    'exodus': '📜',
-    'leviticus': '🐂',
-    'numbers': '📊',
-    'deuteronomy': '🌅',
-    'joshua': '⚔️',
-    'judges': '⚖️',
-    'ruth': '🌾',
-    '1samuel': '👑',
-    '2samuel': '🏰',
-    '1kings': '👑',
-    '2kings': '🏰',
-    'joel': '🦗',
-    'hosea': '❤️',
-    'psalms': '🎵',
-    'proverbs': '💡',
-    '1chronicles': '📜',
-    '2chronicles': '🏰',
-    'ezra': '🏛️',
-    'nehemiah': '🧱',
-    'esther': '🍷',
-    'job': '🌪️',
-    'heaven': '🌤️'
-  };
-
   let con = concentrations.find(c => c.id === concentrationId);
   if (!con) {
     const parentCon = concentrations.find(c => c.modules.includes(concentrationId));
@@ -1127,7 +1168,7 @@ async function initNetworkViewer() {
     const newSearch = el.peopleSearch.cloneNode(true);
     el.peopleSearch.parentNode.replaceChild(newSearch, el.peopleSearch);
     el.peopleSearch = newSearch;
-    el.peopleSearch.addEventListener('input', renderPeopleDirectory);
+    el.peopleSearch.addEventListener('input', debounce(renderPeopleDirectory, 250));
   }
 
   if (el.createEventBtn) {
@@ -1360,7 +1401,7 @@ function renderPeopleDirectory() {
       .split(',')
       .map(tag => tag.trim())
       .filter(tag => tag.length > 0)
-      .map(tag => `<span class="interest-pill">${tag}</span>`)
+      .map(tag => `<span class="interest-pill">${sanitizeHTML(tag)}</span>`)
       .join('');
 
     const socialLinkHtml = u.social ? `
@@ -1375,14 +1416,14 @@ function renderPeopleDirectory() {
         <div class="user-card-header">
           <img class="card-avatar" src="${avatarUrl}" alt="${u.name || 'Learner'}">
           <div class="header-text-block">
-            <div class="card-name">${u.name || 'Anonymous Learner'}</div>
-            <div class="card-headline">${u.headline || 'Scriptura Learner'}</div>
+            <div class="card-name">${sanitizeHTML(u.name) || 'Anonymous Learner'}</div>
+            <div class="card-headline">${sanitizeHTML(u.headline) || 'Scriptura Learner'}</div>
           </div>
         </div>
         <div class="card-body-section">
-          <div class="card-church">⛪ ${u.church || 'Independent Fellowship'}</div>
+          <div class="card-church">⛪ ${sanitizeHTML(u.church) || 'Independent Fellowship'}</div>
           <span class="card-country-tag">${countryMeta.flag} ${countryMeta.name}</span>
-          ${u.goals ? `<div class="card-goals"><strong>Goal:</strong> ${u.goals}</div>` : ''}
+          ${u.goals ? `<div class="card-goals"><strong>Goal:</strong> ${sanitizeHTML(u.goals)}</div>` : ''}
           ${interestPills ? `<div class="card-interests-wrapper">${interestPills}</div>` : ''}
         </div>
         <div class="card-footer-section">
@@ -1504,7 +1545,7 @@ function loadChatMessages() {
               <span class="chat-msg-author">${msg.senderName || 'Anonymous'}</span>
               <span class="chat-msg-time">${timeStr}</span>
             </div>
-            <div class="chat-msg-bubble">${msg.text}</div>
+            <div class="chat-msg-bubble">${sanitizeHTML(msg.text)}</div>
           </div>
         </div>
       `;
@@ -2488,33 +2529,6 @@ function updateStatsDisplay() {
       return idxA - idxB;
     });
 
-    const conIcons = {
-      'foundations': '📖',
-      'genesis': '🏛️',
-      'exodus': '📜',
-      'leviticus': '🐂',
-      'numbers': '📊',
-      'deuteronomy': '🌅',
-      'joshua': '⚔️',
-      'judges': '⚖️',
-      'ruth': '🌾',
-      '1samuel': '👑',
-      '2samuel': '🏰',
-      '1kings': '👑',
-      '2kings': '🏰',
-      'joel': '🦗',
-      'hosea': '❤️',
-      'psalms': '🎵',
-      'proverbs': '💡',
-      '1chronicles': '📜',
-      '2chronicles': '🏰',
-      'ezra': '🏛️',
-      'nehemiah': '🧱',
-      'esther': '🍷',
-      'job': '🌪️',
-      'heaven': '🌤️'
-    };
-
     sortedGroupNames.forEach(gName => {
       const headerHtml = `
         <div class="stats-topic-header" style="margin-top: 1.25rem; font-size: 0.8rem; font-weight: 800; color: var(--brand-coral); text-transform: uppercase; letter-spacing: 0.08em; padding-bottom: 0.25rem; border-bottom: 1px solid rgba(225, 29, 72, 0.1); margin-bottom: 0.75rem; text-align: left;">
@@ -2657,7 +2671,6 @@ function formatMarkdown(content) {
     const nonListItems = [];
     
     const applyInline = t => t
-      .replace(/\*\*(.*?)\*\"/g, '<strong>$1</strong>')
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '<em>$1</em>')
       .replace(/^###\s*(.+)/, '<h3>$1</h3>')
@@ -2940,7 +2953,9 @@ function checkQuizAnswer() {
       feedbackTitle.textContent = 'Try Again';
       feedbackDesc.textContent  = 'That option is incorrect. Select a different answer.';
       currentQuestionFirstAttempt = false;
-      el.nextSlideBtn.disabled = true;
+      el.nextBtnText.textContent = 'SUBMIT';
+      el.nextSlideBtn.disabled = false;
+      selectedOptionIndex = null;
     }
   }
 
@@ -3151,7 +3166,7 @@ function setupEventListeners() {
   });
 
   if (el.courseSearch) {
-    el.courseSearch.addEventListener('input', renderCoursesCatalog);
+    el.courseSearch.addEventListener('input', debounce(renderCoursesCatalog, 250));
   }
   if (el.openFiltersModalBtn) {
     el.openFiltersModalBtn.addEventListener('click', () => {
@@ -3308,6 +3323,125 @@ function setupEventListeners() {
     }
     if (e.key === 'ArrowLeft' && currentSlideIndex > 0) handlePrevClick();
   });
+}
+
+// ==========================================================================
+// PWA & Push Notification Helpers
+// ==========================================================================
+function registerServiceWorker() {
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/firebase-messaging-sw.js')
+        .then(reg => {
+          console.log('ServiceWorker registered with scope:', reg.scope);
+          swRegistration = reg;
+          initPushNotifications(reg);
+        })
+        .catch(err => {
+          console.error('ServiceWorker registration failed:', err);
+        });
+    });
+  }
+}
+
+async function initPushNotifications(registration) {
+  if (!el.btnToggleNotifications || !el.pushStatusText) return;
+
+  // Sync initial toggle UI
+  updatePushToggleUI(Notification.permission);
+
+  // Wire up click event for the custom profile toggle button
+  el.btnToggleNotifications.addEventListener('click', async () => {
+    try {
+      if (Notification.permission === 'default') {
+        const permission = await Notification.requestPermission();
+        updatePushToggleUI(permission);
+        if (permission === 'granted') {
+          await requestAndSaveToken(registration);
+        }
+      } else if (Notification.permission === 'granted') {
+        // Toggle refresh/resync
+        await requestAndSaveToken(registration);
+        alert('Notification token is active and has been refreshed.');
+      } else {
+        alert('Notifications are blocked by your browser settings. Please enable notifications manually in your browser settings.');
+      }
+    } catch (err) {
+      console.error('Error toggling push notifications:', err);
+    }
+  });
+
+  // Handle messages in the foreground (when user is active in the app)
+  onMessage(messaging, (payload) => {
+    console.log('Foreground push notification received: ', payload);
+    const body = payload.notification?.body || '';
+    const title = payload.notification?.title || 'Scriptura';
+    alert(`[Push Notification]\n\n${title}\n${body}`);
+  });
+}
+
+function updatePushToggleUI(permission) {
+  if (!el.btnToggleNotifications || !el.pushStatusText) return;
+
+  if (permission === 'granted') {
+    el.pushStatusText.textContent = 'Enabled';
+    el.btnToggleNotifications.textContent = 'Active';
+    el.btnToggleNotifications.style.background = '#d1fae5';
+    el.btnToggleNotifications.style.color = '#065f46';
+    el.btnToggleNotifications.style.borderColor = 'rgba(6, 95, 70, 0.2)';
+  } else if (permission === 'denied') {
+    el.pushStatusText.textContent = 'Blocked';
+    el.btnToggleNotifications.textContent = 'Blocked';
+    el.btnToggleNotifications.style.background = '#fee2e2';
+    el.btnToggleNotifications.style.color = '#991b1b';
+    el.btnToggleNotifications.style.borderColor = 'rgba(153, 27, 27, 0.2)';
+  } else {
+    el.pushStatusText.textContent = 'Disabled';
+    el.btnToggleNotifications.textContent = 'Enable';
+    el.btnToggleNotifications.style.background = 'var(--brand-coral-light)';
+    el.btnToggleNotifications.style.color = 'var(--brand-coral)';
+    el.btnToggleNotifications.style.borderColor = 'rgba(225, 29, 72, 0.2)';
+  }
+}
+
+async function requestAndSaveToken(registration) {
+  try {
+    const currentToken = await getToken(messaging, {
+      vapidKey: VAPID_KEY,
+      serviceWorkerRegistration: registration || swRegistration
+    });
+    if (currentToken) {
+      console.log('FCM Token received:', currentToken);
+      if (auth.currentUser) {
+        const userRef = doc(db, 'users', auth.currentUser.uid);
+        const userDoc = await getDoc(userRef);
+        let fcmTokens = [];
+        if (userDoc.exists()) {
+          fcmTokens = userDoc.data().fcmTokens || [];
+        }
+        if (!fcmTokens.includes(currentToken)) {
+          fcmTokens.push(currentToken);
+          await setDoc(userRef, { fcmTokens }, { merge: true });
+        }
+        console.log('FCM Token successfully synced with Firestore profile.');
+      }
+    } else {
+      console.warn('No token retrieved. Ensure notifications are allowed.');
+    }
+  } catch (err) {
+    console.error('Error retrieving FCM token:', err);
+  }
+}
+
+async function checkAndSyncPushToken() {
+  if (swRegistration) {
+    await requestAndSaveToken(swRegistration);
+  } else if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then(async (reg) => {
+      swRegistration = reg;
+      await requestAndSaveToken(reg);
+    });
+  }
 }
 
 // ==========================================================================

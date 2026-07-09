@@ -6,6 +6,8 @@
   <title>Scriptura — Daily Scripture Study</title>
   <meta name="description" content="An active recall Bible study platform that helps you examine the Scriptures daily with great eagerness.">
   <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#e11d48">
   <link rel="stylesheet" href="style.css?v=2.0.10">
 </head>
 <body>
@@ -786,6 +788,20 @@
           </div>
         </div>
         
+        <!-- Push Notifications settings toggle -->
+        <div class="form-field" style="margin-top: 1.25rem; border-top: 1px solid var(--gray-200); padding-top: 1.25rem;">
+          <label class="field-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--gray-700); margin-bottom: 0.25rem;">App Settings</label>
+          <div style="display: flex; align-items: center; justify-content: space-between; background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--r-md); padding: 0.75rem 1rem; margin-top: 0.5rem;">
+            <div>
+              <span style="font-size: 0.85rem; font-weight: 600; color: var(--gray-800); display: block;">Push Notifications</span>
+              <span id="push-status-text" style="font-size: 0.75rem; color: var(--gray-500); display: block; margin-top: 0.1rem;">Disabled</span>
+            </div>
+            <button type="button" id="btn-toggle-notifications" style="background: var(--brand-coral-light); color: var(--brand-coral); border: 1px solid rgba(225, 29, 72, 0.2); border-radius: var(--r-md); padding: 0.5rem 1rem; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.15s ease;">
+              Enable
+            </button>
+          </div>
+        </div>
+
         <button type="submit" class="auth-submit-btn">Save Profile</button>
       </form>
     </div>
