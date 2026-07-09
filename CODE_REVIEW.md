@@ -198,9 +198,20 @@ The following stats-collection improvements were implemented in `app.js`:
 5. **Quiz history** — Added `quizHistory` array with question, selected/correct answers, correctness, first-attempt flag, and timestamp, capped at 50 entries.
 6. **Time spent displayed** — `updateStatsDisplay()` now dynamically adds stat cards for Total XP, Longest Streak, and Time Studied.
 
-## 11. Conclusion
+## 11. Phase B — Admin Dashboard Aggregation (Implemented)
+
+The following admin-dashboard improvements were implemented:
+
+1. **Centralized stats aggregation** — Added `computeAdminStats()` and `loadAdminStats()` in `app.js`. The dashboard now reads from a cached `stats/aggregated` Firestore document and only recomputes when the cache is missing or older than 24 hours.
+2. **Aggregated metrics** — The cached document stores: total users, DAU, WAU, MAU, total completed/started modules, completion rate, DAU/WAU ratio, average modules completed per user, and funnel counts.
+3. **Module engagement table** — Added a new "Module Engagement" panel in the admin dashboard showing started count, completed count, and completion rate per module, sorted by completion rate to surface struggling modules.
+4. **Firestore rules** — Added a `match /stats/{docId}` rule allowing authenticated reads/writes. This is intentionally permissive for Phase B; Phase C should restrict writes to admin-only.
+
+> **Note:** This is a client-side aggregation trigger. For a production app with many users, replace this with a Cloud Function or scheduled job that writes `stats/aggregated` server-side, so the admin dashboard never needs to scan user documents.
+
+## 12. Conclusion
 
 Scriptura is a solid, feature-complete application. The biggest return on investment will come from **modularizing `app.js`**, **centralizing state**, and **hardening Firestore security rules**. These changes will make the codebase easier to extend, test, and maintain without requiring a rewrite of the UI.
 
-If you want, I can start implementing Phase 1 (constants + helpers + Firebase config extraction) as a safe, behavior-preserving next step.
+If you want, I can start implementing Phase 1 (constants + helpers + Firebase config extraction) as a safe, behavior-preserving next step, or move on to Phase C (Firestore security with custom claims).
 

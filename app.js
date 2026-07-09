@@ -1967,6 +1967,121 @@ function handlePublisherSubmit(e) {
   })();
 }
 
+async function computeAdminStats() {
+  // Compute aggregate stats from the fetched registered users and write them
+  // to a central `stats/aggregated` document so future dashboard loads are fast.
+  const now = new Date();
+  const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+  const totalUsers = registeredUsers.length;
+  let totalCompleted = 0;
+  let totalStarted = 0;
+  let dailyActiveCount = 0;
+  let weeklyActiveCount = 0;
+  let monthlyActiveCount = 0;
+  let funnelStarted = 0;
+  let funnelCompleted = 0;
+
+  const moduleEngagement = {};
+  modules.forEach(m => {
+    moduleEngagement[m.id] = {
+      moduleId: m.id,
+      title: m.title,
+      startedCount: 0,
+      completedCount: 0
+    };
+  });
+
+  registeredUsers.forEach(u => {
+    const userCompleted = u.completedModules
+      ? u.completedModules.filter(mId => modules.some(m => m.id === mId))
+      : [];
+    const completedCount = userCompleted.length;
+    const progressKeys = Object.keys(u.lessonProgress || {}).filter(mId => modules.some(m => m.id === mId));
+    const progressCount = progressKeys.length;
+    const startedCount = Math.max(completedCount, progressCount);
+
+    totalCompleted += completedCount;
+    totalStarted += startedCount;
+
+    if (u.lastActiveDate) {
+      const lastActive = new Date(u.lastActiveDate);
+      if (lastActive >= oneDayAgo) dailyActiveCount++;
+      if (lastActive >= oneWeekAgo) weeklyActiveCount++;
+      if (lastActive >= oneMonthAgo) monthlyActiveCount++;
+    }
+
+    if (progressCount > 0) funnelStarted++;
+    if (completedCount > 0) funnelCompleted++;
+
+    // Per-module engagement.
+    modules.forEach(m => {
+      const isCompleted = userCompleted.includes(m.id);
+      const hasProgress = progressKeys.includes(m.id);
+      if (isCompleted || hasProgress) {
+        moduleEngagement[m.id].startedCount++;
+      }
+      if (isCompleted) {
+        moduleEngagement[m.id].completedCount++;
+      }
+    });
+  });
+
+  const completionRate = totalStarted > 0 ? Math.round((totalCompleted / totalStarted) * 100) : 100;
+  const dauWauRatio = weeklyActiveCount > 0 ? Math.round((dailyActiveCount / weeklyActiveCount) * 100) : 0;
+  const avgCompleted = totalUsers > 0 ? parseFloat((totalCompleted / totalUsers).toFixed(1)) : 0;
+
+  const engagementList = Object.values(moduleEngagement).map(m => ({
+    ...m,
+    completionRate: m.startedCount > 0 ? Math.round((m.completedCount / m.startedCount) * 100) : 0
+  })).sort((a, b) => a.completionRate - b.completionRate);
+
+  const statsDoc = {
+    computedAt: now.toISOString(),
+    totalUsers,
+    dailyActiveCount,
+    weeklyActiveCount,
+    monthlyActiveCount,
+    totalCompleted,
+    totalStarted,
+    completionRate,
+    dauWauRatio,
+    avgCompleted,
+    funnelStarted,
+    funnelCompleted,
+    moduleEngagement: engagementList
+  };
+
+  try {
+    const statsRef = doc(db, 'stats', 'aggregated');
+    await setDoc(statsRef, statsDoc);
+  } catch (err) {
+    console.error('Failed to write aggregated stats:', err);
+  }
+
+  return statsDoc;
+}
+
+async function loadAdminStats() {
+  // Try to read cached aggregated stats. If missing or stale (>24h), recompute.
+  const STALE_MS = 24 * 60 * 60 * 1000;
+  try {
+    const statsRef = doc(db, 'stats', 'aggregated');
+    const statsSnap = await getDoc(statsRef);
+    if (statsSnap.exists()) {
+      const data = statsSnap.data();
+      const computedAt = data.computedAt ? new Date(data.computedAt) : null;
+      const isStale = !computedAt || (Date.now() - computedAt.getTime() > STALE_MS);
+      if (!isStale) return data;
+    }
+  } catch (err) {
+    console.warn('Failed to load aggregated stats, recomputing:', err);
+  }
+  return await computeAdminStats();
+}
+
 async function renderAdminDashboard() {
   if (userState.role !== 'admin') {
     switchTab('home');
@@ -1976,51 +2091,20 @@ async function renderAdminDashboard() {
   await fetchRegisteredUsers();
   await loadModuleSchedules();
 
-  const totalUsers = registeredUsers.length;
-  let totalCompleted = 0;
-  let totalStarted = 0;
-  let weeklyActiveCount = 0;
+  // Use aggregated stats for fast dashboard rendering.
+  const stats = await loadAdminStats();
+  const totalUsers = stats.totalUsers || 0;
+  const totalCompleted = stats.totalCompleted || 0;
+  const totalStarted = stats.totalStarted || 1;
+  const weeklyActiveCount = stats.weeklyActiveCount || 0;
+  const dailyActiveCount = stats.dailyActiveCount || 0;
+  const monthlyActiveCount = stats.monthlyActiveCount || 0;
+  const funnelStarted = stats.funnelStarted || 0;
+  const funnelCompleted = stats.funnelCompleted || 0;
 
-  const now = new Date();
-  const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-  const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-  let dailyActiveCount = 0;
-  let monthlyActiveCount = 0;
-  let funnelStarted = 0;
-  let funnelCompleted = 0;
-
-  registeredUsers.forEach(u => {
-    const userCompleted = u.completedModules ? u.completedModules.filter(mId => modules.some(m => m.id === mId)) : [];
-    const completedCount = userCompleted.length;
-    const progressCount = Object.keys(u.lessonProgress || {}).filter(mId => modules.some(m => m.id === mId)).length;
-    const startedCount = Math.max(completedCount, progressCount);
-    
-    totalCompleted += completedCount;
-    totalStarted += startedCount;
-
-    if (u.lastActiveDate) {
-      const lastActive = new Date(u.lastActiveDate);
-      if (lastActive >= oneDayAgo) {
-        dailyActiveCount++;
-      }
-      if (lastActive >= oneWeekAgo) {
-        weeklyActiveCount++;
-      }
-      if (lastActive >= oneMonthAgo) {
-        monthlyActiveCount++;
-      }
-    }
-
-    // Dropout math logic
-    if (progressCount > 0) funnelStarted++;
-    if (completedCount > 0) funnelCompleted++;
-  });
-
-  const completionRate = totalStarted > 0 ? Math.round((totalCompleted / totalStarted) * 100) : 100;
-  const dauWauRatio = weeklyActiveCount > 0 ? Math.round((dailyActiveCount / weeklyActiveCount) * 100) : 0;
-  const avgCompleted = totalUsers > 0 ? (totalCompleted / totalUsers).toFixed(1) : 0;
+  const completionRate = stats.completionRate ?? Math.round((totalCompleted / totalStarted) * 100);
+  const dauWauRatio = stats.dauWauRatio ?? (weeklyActiveCount > 0 ? Math.round((dailyActiveCount / weeklyActiveCount) * 100) : 0);
+  const avgCompleted = stats.avgCompleted ?? (totalUsers > 0 ? parseFloat((totalCompleted / totalUsers).toFixed(1)) : 0);
 
   document.getElementById('admin-total-users').textContent = totalUsers;
   
@@ -2072,6 +2156,54 @@ async function renderAdminDashboard() {
       </div>
     `;
   }
+
+  // Render Module Engagement table
+  const engagement = stats.moduleEngagement || [];
+  let engagementPanel = document.getElementById('admin-module-engagement-panel');
+  if (!engagementPanel) {
+    engagementPanel = document.createElement('div');
+    engagementPanel.id = 'admin-module-engagement-panel';
+    engagementPanel.className = 'admin-panel-card';
+    engagementPanel.style.gridColumn = '1 / -1';
+    document.querySelector('.admin-grid-layout')?.appendChild(engagementPanel);
+  }
+  const engagementRows = engagement.map(m => `
+    <tr>
+      <td>
+        <div style="font-weight:600; color:var(--gray-900);">${sanitizeHTML(m.title)}</div>
+        <div style="font-size:0.75rem; color:var(--gray-400);">${m.moduleId}</div>
+      </td>
+      <td>${m.startedCount}</td>
+      <td>${m.completedCount}</td>
+      <td>
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <div style="flex:1; height:8px; background:var(--gray-200); border-radius:4px; overflow:hidden;">
+            <div style="height:100%; width:${m.completionRate}%; background:${m.completionRate >= 70 ? 'var(--brand-green)' : (m.completionRate >= 40 ? 'var(--brand-coral)' : '#ef4444')}; transition:width 0.3s;"></div>
+          </div>
+          <span style="font-size:0.8rem; font-weight:700; color:var(--gray-700); min-width:2.5rem; text-align:right;">${m.completionRate}%</span>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+  engagementPanel.innerHTML = `
+    <h3 class="admin-panel-title">Module Engagement</h3>
+    <p class="admin-panel-subtitle">Started vs completed counts across all learners, sorted by completion rate.</p>
+    <div class="admin-table-wrapper" style="margin-top:1rem;">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Module</th>
+            <th>Started</th>
+            <th>Completed</th>
+            <th>Completion Rate</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${engagementRows || '<tr><td colspan="4" style="text-align:center; color:var(--gray-400);">No engagement data yet.</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+  `;
 
   // Populate Users Table
   const usersListEl = document.getElementById('admin-users-list');
