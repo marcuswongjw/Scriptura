@@ -45,6 +45,47 @@ function debounce(fn, delay = 300) {
 }
 
 // ==========================================================================
+// Toast Notification System
+// ==========================================================================
+const toastIcons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
+const toastTitles = { success: 'Success', error: 'Error', warning: 'Warning', info: 'Info' };
+
+function ensureToastContainer() {
+  let container = document.querySelector('.toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.className = 'toast-container';
+    container.setAttribute('role', 'alert');
+    container.setAttribute('aria-live', 'polite');
+    document.body.appendChild(container);
+  }
+  return container;
+}
+
+function showToast(message, type = 'info', duration = 4000) {
+  const container = ensureToastContainer();
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.setAttribute('role', 'alert');
+  toast.innerHTML = `
+    <span class="toast-icon" aria-hidden="true">${toastIcons[type] || 'ℹ'}</span>
+    <div class="toast-content">
+      <span class="toast-title">${toastTitles[type] || 'Info'}</span>
+      <span class="toast-message">${sanitizeHTML(message)}</span>
+    </div>
+    <button class="toast-close" aria-label="Close notification">✕</button>
+  `;
+  container.appendChild(toast);
+  const removeToast = () => {
+    toast.classList.add('toast-out');
+    setTimeout(() => toast.remove(), 250);
+  };
+  toast.querySelector('.toast-close').addEventListener('click', removeToast);
+  if (duration > 0) setTimeout(removeToast, duration);
+  return toast;
+}
+
+// ==========================================================================
 // Application State
 // ==========================================================================
 let userState = {
@@ -803,6 +844,9 @@ function renderCurriculumGrid() {
     });
 
     document.querySelectorAll('.concentration-badge').forEach(badge => {
+      badge.setAttribute('role', 'button');
+      badge.setAttribute('tabindex', '0');
+      badge.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); badge.click(); } });
       badge.addEventListener('click', () => {
         const conId = badge.getAttribute('data-con-id');
         const con = concentrations.find(c => c.id === conId);
@@ -1027,6 +1071,9 @@ function renderCoursesCatalog() {
   });
 
   el.catalogGrid.querySelectorAll('.premium-course-card').forEach(card => {
+    card.setAttribute('role', 'button');
+    card.setAttribute('tabindex', '0');
+    card.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); card.click(); } });
     card.addEventListener('click', () => {
       const conId = card.getAttribute('data-con-id');
       if (conId) openOnboarding(conId);
@@ -1050,7 +1097,7 @@ function openOnboarding(concentrationId, pushState = true) {
 
   const releasedLessons = conLessons.filter(l => isModuleReleased(l.id));
   if (releasedLessons.length === 0) {
-    alert('This course is not yet released!');
+    showToast('This course is not yet released!', 'warning');
     switchTab('courses');
     return;
   }
@@ -1120,6 +1167,9 @@ function openOnboarding(concentrationId, pushState = true) {
   });
 
   el.onboardBulletPoints.querySelectorAll('.onboard-lesson-row-item').forEach(item => {
+    item.setAttribute('role', 'button');
+    item.setAttribute('tabindex', '0');
+    item.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); item.click(); } });
     item.addEventListener('click', () => {
       const lid = item.getAttribute('data-lesson-id');
       if (lid) startModule(lid);
@@ -1333,6 +1383,9 @@ function renderDirectoryList() {
   });
   
   document.querySelectorAll('.directory-item').forEach(item => {
+    item.setAttribute('role', 'button');
+    item.setAttribute('tabindex', '0');
+    item.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); item.click(); } });
     item.addEventListener('click', async () => {
       const code = item.getAttribute('data-country-code');
       userState.country = code;
@@ -1481,7 +1534,7 @@ function loadEvents() {
     
     document.querySelectorAll('.join-event-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        alert('You have successfully RSVPed to this study event! Check back closer to the time.');
+        showToast('You have successfully RSVPed to this study event! Check back closer to the time.', 'success');
       });
     });
   }, (err) => {
@@ -1511,7 +1564,7 @@ async function handleCreateEvent(e) {
     el.eventDialog.classList.add('hidden');
   } catch (err) {
     console.error('Failed to create event:', err);
-    alert('Failed to schedule event. Please try again.');
+    showToast('Failed to schedule event. Please try again.', 'error');
   }
 }
 
@@ -1899,7 +1952,7 @@ async function renderAdminDashboard() {
           await renderAdminDashboard();
         } catch (err) {
           console.error('Failed to update user role:', err);
-          alert('Error updating user role. Please try again.');
+          showToast('Error updating user role. Please try again.', 'error');
         }
       });
     });
@@ -2000,7 +2053,7 @@ async function renderAdminDashboard() {
           await renderAdminDashboard();
         } catch (err) {
           console.error('Failed to save module schedule:', err);
-          alert('Error saving schedule. Please try again.');
+          showToast('Error saving schedule. Please try again.', 'error');
         }
       });
     });
@@ -2160,7 +2213,7 @@ let editorSlides = [];
 function openVisualEditor(moduleId) {
   const mod = modules.find(m => m.id === moduleId);
   if (!mod) {
-    alert('Module not found.');
+    showToast('Module not found.', 'error');
     return;
   }
 
@@ -2382,7 +2435,7 @@ async function deleteModuleAction(moduleId) {
     const docRef = doc(db, 'custom_modules', moduleId);
     await setDoc(docRef, { deleted: true }, { merge: true });
 
-    alert(`Module "${moduleId}" has been soft-deleted successfully.`);
+    showToast(`Module "${moduleId}" has been soft-deleted successfully.`, 'success');
     
     // Reload databases
     await fetchAndMergeCustomModules();
@@ -2391,7 +2444,7 @@ async function deleteModuleAction(moduleId) {
     renderDashboard();
   } catch (err) {
     console.error('Failed to delete module:', err);
-    alert(`Error deleting module: ${err.message}`);
+    showToast(`Error deleting module: ${err.message}`, 'error');
   }
 }
 
@@ -2431,7 +2484,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const parentCon = document.getElementById('editor-parent-con').value;
 
       if (editorSlides.length === 0) {
-        alert('Validation Error: Module must contain at least 1 slide.');
+        showToast('Module must contain at least 1 slide.', 'warning');
         return;
       }
 
@@ -2459,7 +2512,7 @@ window.addEventListener('DOMContentLoaded', () => {
           moduleData: updatedModule
         });
 
-        alert(`Module "${title}" updated and revision backup created!`);
+        showToast(`Module "${title}" updated and revision backup created!`, 'success');
         dialog.classList.add('hidden');
 
         // Reload lists & dashboard
@@ -2469,7 +2522,7 @@ window.addEventListener('DOMContentLoaded', () => {
         renderDashboard();
       } catch (err) {
         console.error('Error saving edits:', err);
-        alert(`Failed to save module modifications: ${err.message}`);
+        showToast(`Failed to save module modifications: ${err.message}`, 'error');
       }
     });
   }
@@ -2570,6 +2623,9 @@ function updateStatsDisplay() {
     });
 
     listEl.querySelectorAll('.clickable-stats-row').forEach(row => {
+      row.setAttribute('role', 'button');
+      row.setAttribute('tabindex', '0');
+      row.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); row.click(); } });
       row.addEventListener('click', () => {
         const conId = row.getAttribute('data-con-id');
         if (conId) {
@@ -2586,7 +2642,7 @@ function updateStatsDisplay() {
 // ==========================================================================
 function startModule(moduleId, pushState = true) {
   if (!isModuleReleased(moduleId)) {
-    alert('This course is not yet released!');
+    showToast('This course is not yet released!', 'warning');
     switchTab('courses');
     return;
   }
@@ -3315,7 +3371,47 @@ function setupEventListeners() {
     }
   });
 
-  window.addEventListener('keydown', e => {
+    // ==========================================================================
+  // Escape-to-close & Focus Management for Modals
+  // ==========================================================================
+  const modalConfigs = [
+    { overlay: el.profileDialog, closeBtn: el.closeProfileBtn, focusSelector: '.profile-modal-card' },
+    { overlay: el.filtersModal, closeBtn: el.closeFiltersModal, focusSelector: '.filters-modal-sheet' },
+    { overlay: el.aiTutorModal, closeBtn: el.closeTutor, focusSelector: '.tutor-sheet-inner' },
+    { overlay: el.eventDialog, closeBtn: el.closeEventBtn, focusSelector: '.profile-modal-card' },
+    { overlay: el.courseOnboarding, closeBtn: el.closeOnboarding, focusSelector: '.course-detail-page' }
+  ];
+
+  modalConfigs.forEach(function(config) {
+    if (!config.overlay) return;
+    config.overlay.addEventListener('click', function(e) {
+      if (e.target === config.overlay) {
+        config.overlay.classList.add('hidden');
+      }
+    });
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      const dialogs = [
+        document.getElementById('visual-editor-dialog'),
+        document.getElementById('learner-progress-dialog'),
+        el.filtersModal,
+        el.aiTutorModal,
+        el.profileDialog,
+        el.eventDialog,
+        el.courseOnboarding
+      ];
+      for (let i = 0; i < dialogs.length; i++) {
+        if (dialogs[i] && !dialogs[i].classList.contains('hidden')) {
+          dialogs[i].classList.add('hidden');
+          break;
+        }
+      }
+    }
+  });
+
+window.addEventListener('keydown', e => {
     if (!activeModule) return;
     const slide = activeModule.slides[currentSlideIndex];
     if (e.key === 'Enter') {
@@ -3362,9 +3458,9 @@ async function initPushNotifications(registration) {
       } else if (Notification.permission === 'granted') {
         // Toggle refresh/resync
         await requestAndSaveToken(registration);
-        alert('Notification token is active and has been refreshed.');
+        showToast('Notification token is active and has been refreshed.', 'success');
       } else {
-        alert('Notifications are blocked by your browser settings. Please enable notifications manually in your browser settings.');
+        showToast('Notifications are blocked by your browser settings. Please enable them manually.', 'warning', 6000);
       }
     } catch (err) {
       console.error('Error toggling push notifications:', err);
@@ -3376,7 +3472,7 @@ async function initPushNotifications(registration) {
     console.log('Foreground push notification received: ', payload);
     const body = payload.notification?.body || '';
     const title = payload.notification?.title || 'Scriptura';
-    alert(`[Push Notification]\n\n${title}\n${body}`);
+    showToast(`${title}: ${body}`, 'info', 6000);
   });
 }
 
