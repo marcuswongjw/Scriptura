@@ -183,7 +183,22 @@ The following critical bugs were fixed directly in `app.js`:
 
 > **Note:** Client-side role guards are a stopgap. You must still enforce admin-only writes in `firestore.rules` (see Security Checklist below).
 
-## 10. Conclusion
+## 10. Phase A — Client-Side Stats Improvements (Implemented)
+
+The following stats-collection improvements were implemented in `app.js`:
+
+1. **XP is now meaningful** — Awards are granted for:
+   - +10 XP per new slide viewed
+   - +50 XP per first-time module completion
+   - +5 XP per correct first-try quiz/card-quiz answer
+   - +20 XP per daily streak maintained
+2. **Activity log** — `userState.activityLog` records `module_started`, `slide_viewed`, `quiz_answered`, `module_completed`, `xp_earned`, and `streak_updated` events, capped at 100 entries.
+3. **Streak tracking** — Added `longestStreak` and `lastActiveAt` (ISO timestamp). `updateStreak()` now correctly increments/reset streaks and updates the longest streak.
+4. **Modules started** — Added `modulesStarted` array, populated in `startModule()`.
+5. **Quiz history** — Added `quizHistory` array with question, selected/correct answers, correctness, first-attempt flag, and timestamp, capped at 50 entries.
+6. **Time spent displayed** — `updateStatsDisplay()` now dynamically adds stat cards for Total XP, Longest Streak, and Time Studied.
+
+## 11. Conclusion
 
 Scriptura is a solid, feature-complete application. The biggest return on investment will come from **modularizing `app.js`**, **centralizing state**, and **hardening Firestore security rules**. These changes will make the codebase easier to extend, test, and maintain without requiring a rewrite of the UI.
 

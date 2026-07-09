@@ -91,10 +91,14 @@ function showToast(message, type = 'info', duration = 4000) {
 let userState = {
   xp: 0,
   streak: 0,
+  longestStreak: 0,
   completedModules: [],
+  modulesStarted: [],
   lastActiveDate: null,
+  lastActiveAt: null,
   translation: 'ESV',
   quizStats: { correctFirstTry: 0, totalQuestions: 0 },
+  quizHistory: [],
   country: '',
   role: 'user',
   headline: '',
@@ -102,7 +106,8 @@ let userState = {
   interests: '',
   social: '',
   lessonProgress: {},
-  timeSpent: 0
+  timeSpent: 0,
+  activityLog: []
 };
 
 let sessionStartTime = Date.now();
@@ -449,10 +454,14 @@ async function loadUserCloudData(user) {
       userState = {
         xp: 0,
         streak: 0,
+        longestStreak: 0,
         completedModules: [],
+        modulesStarted: [],
         lastActiveDate: null,
+        lastActiveAt: null,
         translation: 'ESV',
         quizStats: { correctFirstTry: 0, totalQuestions: 0 },
+        quizHistory: [],
         country: '',
         name: user.displayName || '',
         photo: user.photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.uid}`,
@@ -464,11 +473,16 @@ async function loadUserCloudData(user) {
         interests: '',
         social: '',
         lessonProgress: {},
+        timeSpent: 0,
+        activityLog: [],
         ...cloudData
       };
       if (!userState.quizStats) userState.quizStats = { correctFirstTry: 0, totalQuestions: 0 };
       if (!userState.completedModules) userState.completedModules = [];
+      if (!userState.modulesStarted) userState.modulesStarted = [];
       if (!userState.lessonProgress) userState.lessonProgress = {};
+      if (!userState.quizHistory) userState.quizHistory = [];
+      if (!userState.activityLog) userState.activityLog = [];
 
       const isMigrated = localStorage.getItem('scriptura_local_migrated') === 'true';
       const cloudHasProgress = (cloudData.xp || 0) > 0 || (cloudData.completedModules || []).length > 0;
@@ -476,10 +490,16 @@ async function loadUserCloudData(user) {
         let merged = false;
         if (guestState.xp > (userState.xp || 0)) { userState.xp = guestState.xp; merged = true; }
         if (guestState.streak > (userState.streak || 0)) { userState.streak = guestState.streak; merged = true; }
+        if (guestState.longestStreak > (userState.longestStreak || 0)) { userState.longestStreak = guestState.longestStreak; merged = true; }
         const cloudCompleted = userState.completedModules || [];
         const guestCompleted = guestState.completedModules || [];
         const mergedCompleted = Array.from(new Set([...cloudCompleted, ...guestCompleted]));
         if (mergedCompleted.length > cloudCompleted.length) { userState.completedModules = mergedCompleted; merged = true; }
+        const cloudStarted = userState.modulesStarted || [];
+        const guestStarted = guestState.modulesStarted || [];
+        const mergedStarted = Array.from(new Set([...cloudStarted, ...guestStarted]));
+        if (mergedStarted.length > cloudStarted.length) { userState.modulesStarted = mergedStarted; merged = true; }
+        if (guestState.timeSpent > (userState.timeSpent || 0)) { userState.timeSpent = guestState.timeSpent; merged = true; }
         if (merged) await setDoc(userRef, userState);
         localStorage.setItem('scriptura_local_migrated', 'true');
       }
@@ -488,10 +508,14 @@ async function loadUserCloudData(user) {
         userState = {
           xp: 0,
           streak: 0,
+          longestStreak: 0,
           completedModules: [],
+          modulesStarted: [],
           lastActiveDate: null,
+          lastActiveAt: null,
           translation: 'ESV',
           quizStats: { correctFirstTry: 0, totalQuestions: 0 },
+          quizHistory: [],
           country: '',
           name: user.displayName || '',
           photo: user.photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.uid}`,
@@ -503,16 +527,22 @@ async function loadUserCloudData(user) {
           interests: '',
           social: '',
           lessonProgress: {},
+          timeSpent: 0,
+          activityLog: [],
           ...guestState
         };
       } else {
         userState = {
           xp: 0,
           streak: 0,
+          longestStreak: 0,
           completedModules: [],
+          modulesStarted: [],
           lastActiveDate: null,
+          lastActiveAt: null,
           translation: 'ESV',
           quizStats: { correctFirstTry: 0, totalQuestions: 0 },
+          quizHistory: [],
           country: pendingRegistrationDetails?.country || '',
           name: pendingRegistrationDetails?.name || user.displayName || '',
           photo: user.photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.uid}`,
@@ -523,7 +553,9 @@ async function loadUserCloudData(user) {
           goals: '',
           interests: '',
           social: '',
-          lessonProgress: {}
+          lessonProgress: {},
+          timeSpent: 0,
+          activityLog: []
         };
       }
       await setDoc(userRef, userState);
@@ -561,10 +593,64 @@ function showStatusEl(el, msg, type) {
 }
 
 function resetLocalState() {
-  userState = { xp: 0, streak: 0, completedModules: [], lastActiveDate: null, translation: 'ESV', quizStats: { correctFirstTry: 0, totalQuestions: 0 }, country: '', name: '', photo: '', email: '', church: '', role: 'user', headline: '', goals: '', interests: '', social: '', lessonProgress: {}, timeSpent: 0 };
+  userState = {
+    xp: 0, streak: 0, longestStreak: 0, completedModules: [], modulesStarted: [],
+    lastActiveDate: null, lastActiveAt: null, translation: 'ESV',
+    quizStats: { correctFirstTry: 0, totalQuestions: 0 }, quizHistory: [],
+    country: '', name: '', photo: '', email: '', church: '', role: 'user',
+    headline: '', goals: '', interests: '', social: '', lessonProgress: {},
+    timeSpent: 0, activityLog: []
+  };
   localStorage.removeItem('scriptura_local_migrated');
   localStorage.removeItem('scriptura_user_state');
   updateStatsDisplay();
+}
+
+// ==========================================================================
+// Stats helpers
+// ==========================================================================
+function awardXP(amount, reason) {
+  if (!amount || amount <= 0) return;
+  userState.xp = (userState.xp || 0) + amount;
+  logActivity('xp_earned', { amount, reason, xp: userState.xp });
+}
+
+function logActivity(type, metadata = {}) {
+  if (!userState.activityLog) userState.activityLog = [];
+  const entry = {
+    type,
+    timestamp: new Date().toISOString(),
+    ...metadata
+  };
+  userState.activityLog.push(entry);
+  if (userState.activityLog.length > 100) {
+    userState.activityLog = userState.activityLog.slice(-100);
+  }
+}
+
+function logQuizAnswer(moduleId, slideIndex, question, selectedAnswer, correctAnswer, isCorrect, isFirstAttempt) {
+  if (!userState.quizHistory) userState.quizHistory = [];
+  userState.quizHistory.push({
+    moduleId,
+    slideIndex,
+    question: question?.substring(0, 200),
+    selectedAnswer,
+    correctAnswer,
+    isCorrect,
+    isFirstAttempt,
+    timestamp: new Date().toISOString()
+  });
+  if (userState.quizHistory.length > 50) {
+    userState.quizHistory = userState.quizHistory.slice(-50);
+  }
+}
+
+function formatDuration(totalSeconds) {
+  if (!totalSeconds || totalSeconds <= 0) return '0m';
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
 }
 
 let stateDirty = false;
@@ -591,21 +677,36 @@ async function saveState() {
 function updateStreak() {
   const todayStr = new Date().toDateString();
   const lastActive = userState.lastActiveDate ? new Date(userState.lastActiveDate) : null;
-  if (!lastActive) { userState.streak = 0; return; }
+  if (!lastActive) { userState.streak = 1; return; }
   const lastActiveStr = lastActive.toDateString();
   if (todayStr !== lastActiveStr) {
     const diffDays = Math.ceil(Math.abs(new Date(todayStr) - lastActive) / (1000 * 60 * 60 * 24));
-    userState.streak = diffDays === 1 ? userState.streak + 1 : 1;
+    if (diffDays === 1) {
+      userState.streak = (userState.streak || 0) + 1;
+    } else {
+      userState.streak = 1;
+    }
+    if ((userState.streak || 0) > (userState.longestStreak || 0)) {
+      userState.longestStreak = userState.streak;
+    }
   }
 }
 
 function recordActivity() {
-  const todayStr = new Date().toDateString();
+  const now = new Date();
+  const todayStr = now.toDateString();
   const lastActiveStr = userState.lastActiveDate ? new Date(userState.lastActiveDate).toDateString() : null;
-  if (todayStr !== lastActiveStr) {
-    if (userState.streak === 0) userState.streak = 1;
-    userState.lastActiveDate = new Date().toISOString();
+  const streakIncremented = todayStr !== lastActiveStr;
+  if (streakIncremented) {
+    updateStreak();
+    userState.lastActiveDate = now.toISOString();
+    userState.lastActiveAt = now.toISOString();
+    // Award streak maintenance XP once per day.
+    awardXP(20, 'daily_streak');
+    logActivity('streak_updated', { streak: userState.streak, longestStreak: userState.longestStreak });
     saveState();
+  } else {
+    userState.lastActiveAt = now.toISOString();
   }
 }
 
@@ -2481,17 +2582,42 @@ window.addEventListener('DOMContentLoaded', () => {
 // ==========================================================================
 function updateStatsDisplay() {
   const completedList = (userState.completedModules || []).filter(id => modules.some(m => m.id === id));
-  
+
   const releasedCons = concentrations.filter(c => c.modules.some(mid => isModuleReleased(mid)));
   const completedCons = releasedCons.filter(c => c.modules.every(mid => completedList.includes(mid)));
   el.statsCompletedVal.textContent = `${completedCons.length} / ${releasedCons.length}`;
-  
+
   el.statsStreakVal.textContent = userState.streak || 0;
   const accuracy = userState.quizStats && userState.quizStats.totalQuestions > 0
     ? Math.round((userState.quizStats.correctFirstTry / userState.quizStats.totalQuestions) * 100)
     : 100;
   if (el.statsAccuracyVal) {
     el.statsAccuracyVal.textContent = `${accuracy}%`;
+  }
+
+  // Render additional stat cards (XP, longest streak, time spent).
+  const statsGrid = document.querySelector('.stats-grid');
+  if (statsGrid) {
+    const extraCards = [
+      { icon: '✨', value: userState.xp || 0, label: 'Total XP' },
+      { icon: '🔥', value: userState.longestStreak || 0, label: 'Longest Streak' },
+      { icon: '⏱️', value: formatDuration(userState.timeSpent || 0), label: 'Time Studied' }
+    ];
+    extraCards.forEach(card => {
+      const existing = statsGrid.querySelector(`.stat-card[data-stat="${card.label}"]`);
+      if (existing) {
+        existing.querySelector('.stat-number').textContent = card.value;
+      } else {
+        const cardHtml = `
+          <div class="stat-card" data-stat="${card.label}">
+            <div class="stat-icon">${card.icon}</div>
+            <div class="stat-number">${card.value}</div>
+            <div class="stat-label">${card.label}</div>
+          </div>
+        `;
+        statsGrid.insertAdjacentHTML('beforeend', cardHtml);
+      }
+    });
   }
 
   const listEl = document.getElementById('stats-modules-list');
@@ -2603,6 +2729,13 @@ function startModule(moduleId, pushState = true) {
   selectedOptionIndex = null;
   isQuizAnswered = false;
   currentQuestionFirstAttempt = true;
+
+  // Track module start for stats.
+  if (!userState.modulesStarted.includes(moduleId)) {
+    userState.modulesStarted.push(moduleId);
+    logActivity('module_started', { moduleId, moduleTitle: activeModule.title });
+    saveState();
+  }
 
   el.courseOnboarding.classList.add('hidden');
 
@@ -2721,8 +2854,12 @@ function renderSlide() {
   renderProgressDots();
 
   if (!userState.lessonProgress) userState.lessonProgress = {};
-  if (currentSlideIndex > (userState.lessonProgress[activeModule.id] || 0)) {
+  const previousProgress = userState.lessonProgress[activeModule.id] || 0;
+  if (currentSlideIndex > previousProgress) {
     userState.lessonProgress[activeModule.id] = currentSlideIndex;
+    // Award XP the first time a slide is viewed.
+    awardXP(10, 'slide_viewed');
+    logActivity('slide_viewed', { moduleId: activeModule.id, slideIndex: currentSlideIndex, slideTitle: slide.title });
     saveState();
   }
 
@@ -2933,7 +3070,18 @@ function checkQuizAnswer() {
   const isCorrect = selectedOptionIndex === slide.correctAnswer;
 
   if (slide.type === 'quiz') {
-    const selectedBtn = document.querySelector(`.quiz-option[data-index="${selectedOptionIndex}"]`);
+    const selectedBtn = el.activeCard.querySelector(`.quiz-option[data-index="${selectedOptionIndex}"]`);
+
+    // Log this quiz attempt.
+    logQuizAnswer(
+      activeModule.id,
+      currentSlideIndex,
+      slide.question,
+      slide.options[selectedOptionIndex],
+      slide.options[slide.correctAnswer],
+      isCorrect,
+      currentQuestionFirstAttempt
+    );
 
     if (isCorrect) {
       selectedBtn.classList.remove('selected');
@@ -2943,12 +3091,15 @@ function checkQuizAnswer() {
       if (feedbackIcon) feedbackIcon.textContent = '✓';
       feedbackTitle.textContent = 'Correct!';
       feedbackDesc.textContent  = slide.explanation;
-      if (currentQuestionFirstAttempt) userState.quizStats.correctFirstTry += 1;
+      if (currentQuestionFirstAttempt) {
+        userState.quizStats.correctFirstTry += 1;
+        awardXP(5, 'correct_quiz_first_try');
+      }
       userState.quizStats.totalQuestions += 1;
       isQuizAnswered = true;
       recordActivity();
       el.nextBtnText.textContent = 'CONTINUE';
-      document.querySelectorAll('.quiz-option').forEach(opt => {
+      el.activeCard.querySelectorAll('.quiz-option').forEach(opt => {
         if (opt !== selectedBtn) opt.style.opacity = '0.45';
         opt.setAttribute('disabled', 'true');
       });
@@ -2991,6 +3142,17 @@ function checkCardQuizAnswer() {
 
   const isCorrect = selectedOptionIndex === currentQ.correctAnswer;
 
+  // Log this card-quiz attempt.
+  logQuizAnswer(
+    activeModule.id,
+    currentSlideIndex,
+    currentQ.question,
+    selectedOptionIndex,
+    currentQ.correctAnswer,
+    isCorrect,
+    currentQuestionFirstAttempt
+  );
+
   yesBtn.setAttribute('disabled', 'true');
   noBtn.setAttribute('disabled', 'true');
 
@@ -3005,7 +3167,10 @@ function checkCardQuizAnswer() {
     feedbackTitle.textContent = '✓ Correct!';
     feedbackDesc.textContent  = currentQ.explanation;
 
-    if (currentQuestionFirstAttempt) userState.quizStats.correctFirstTry += 1;
+    if (currentQuestionFirstAttempt) {
+      userState.quizStats.correctFirstTry += 1;
+      awardXP(5, 'correct_cardquiz_first_try');
+    }
     userState.quizStats.totalQuestions += 1;
     isQuizAnswered = true;
     recordActivity();
@@ -3084,8 +3249,11 @@ function handlePrevClick() {
 }
 
 function completeActiveModule() {
-  if (!userState.completedModules.includes(activeModule.id)) {
+  const isFirstCompletion = !userState.completedModules.includes(activeModule.id);
+  if (isFirstCompletion) {
     userState.completedModules.push(activeModule.id);
+    awardXP(50, 'module_completed');
+    logActivity('module_completed', { moduleId: activeModule.id, moduleTitle: activeModule.title });
   }
   if (!userState.lessonProgress) userState.lessonProgress = {};
   userState.lessonProgress[activeModule.id] = activeModule.slides.length;
