@@ -541,9 +541,9 @@ async function loadUserCloudData(user) {
 // Utility: Show status helper for publisher form
 // ==========================================================================
 function showStatus(msg, type) {
-  const el = document.getElementById('publisher-status');
-  if (!el) return;
-  showStatusEl(el, msg, type);
+  const statusEl = document.getElementById('publisher-status');
+  if (!statusEl) return;
+  showStatusEl(statusEl, msg, type);
 }
 
 function showStatusEl(el, msg, type) {
@@ -1201,56 +1201,37 @@ const countryMetadata = {
 let registeredUsers = [];
 let currentNetworkTab = 'map';
 
+let networkListenersAttached = false;
+
 async function initNetworkViewer() {
-  el.netNavItems.forEach(item => {
-    const newItem = item.cloneNode(true);
-    item.parentNode.replaceChild(newItem, item);
-  });
-  
-  const freshNavItems = document.querySelectorAll('.net-nav-item');
-  freshNavItems.forEach(item => {
-    item.addEventListener('click', () => {
-      switchNetworkTab(item.getAttribute('data-net-tab'));
+  if (!networkListenersAttached) {
+    // Use event delegation for network nav items so re-renders never duplicate listeners.
+    document.querySelector('.network-sidebar')?.addEventListener('click', e => {
+      const item = e.target.closest('.net-nav-item');
+      if (item) switchNetworkTab(item.getAttribute('data-net-tab'));
     });
-  });
 
-  if (el.peopleSearch) {
-    const newSearch = el.peopleSearch.cloneNode(true);
-    el.peopleSearch.parentNode.replaceChild(newSearch, el.peopleSearch);
-    el.peopleSearch = newSearch;
-    el.peopleSearch.addEventListener('input', debounce(renderPeopleDirectory, 250));
-  }
+    if (el.peopleSearch) {
+      el.peopleSearch.addEventListener('input', debounce(renderPeopleDirectory, 250));
+    }
 
-  if (el.createEventBtn) {
-    const newBtn = el.createEventBtn.cloneNode(true);
-    el.createEventBtn.parentNode.replaceChild(newBtn, el.createEventBtn);
-    el.createEventBtn = newBtn;
-    el.createEventBtn.addEventListener('click', () => {
-      el.eventDialog.classList.remove('hidden');
-    });
-  }
-  
-  if (el.closeEventBtn) {
-    const newBtn = el.closeEventBtn.cloneNode(true);
-    el.closeEventBtn.parentNode.replaceChild(newBtn, el.closeEventBtn);
-    el.closeEventBtn = newBtn;
-    el.closeEventBtn.addEventListener('click', () => {
-      el.eventDialog.classList.add('hidden');
-    });
-  }
-  
-  if (el.eventCreateForm) {
-    const newForm = el.eventCreateForm.cloneNode(true);
-    el.eventCreateForm.parentNode.replaceChild(newForm, el.eventCreateForm);
-    el.eventCreateForm = newForm;
-    el.eventCreateForm.addEventListener('submit', handleCreateEvent);
-  }
+    if (el.createEventBtn) {
+      el.createEventBtn.addEventListener('click', () => el.eventDialog.classList.remove('hidden'));
+    }
 
-  if (el.chatInputForm) {
-    const newForm = el.chatInputForm.cloneNode(true);
-    el.chatInputForm.parentNode.replaceChild(newForm, el.chatInputForm);
-    el.chatInputForm = newForm;
-    el.chatInputForm.addEventListener('submit', handleSendChatMessage);
+    if (el.closeEventBtn) {
+      el.closeEventBtn.addEventListener('click', () => el.eventDialog.classList.add('hidden'));
+    }
+
+    if (el.eventCreateForm) {
+      el.eventCreateForm.addEventListener('submit', handleCreateEvent);
+    }
+
+    if (el.chatInputForm) {
+      el.chatInputForm.addEventListener('submit', handleSendChatMessage);
+    }
+
+    networkListenersAttached = true;
   }
 
   await fetchRegisteredUsers();
@@ -1260,7 +1241,7 @@ async function initNetworkViewer() {
 
 async function fetchRegisteredUsers() {
   try {
-    const querySnapshot = await getDocs(collection(db, 'users'));
+    const querySnapshot = await getDocs(query(collection(db, 'users'), limit(100)));
     registeredUsers = [];
     querySnapshot.forEach(docSnap => {
       registeredUsers.push({
@@ -1718,7 +1699,19 @@ function openProfileDialog() {
   document.getElementById('profile-goals-input').value = userState.goals || '';
   document.getElementById('profile-interests-input').value = userState.interests || '';
   document.getElementById('profile-social-input').value = userState.social || '';
-  document.getElementById('profile-role-select').value = userState.role || 'user';
+  const roleSelect = document.getElementById('profile-role-select');
+  if (roleSelect) {
+    roleSelect.value = userState.role || 'user';
+    // Only allow admins to see/change role in the profile dialog.
+    // Real authorization must still be enforced in Firestore rules.
+    if (userState.role !== 'admin') {
+      roleSelect.disabled = true;
+      roleSelect.closest('.form-field')?.classList.add('hidden');
+    } else {
+      roleSelect.disabled = false;
+      roleSelect.closest('.form-field')?.classList.remove('hidden');
+    }
+  }
   
   const preview = document.getElementById('profile-photo-preview');
   if (preview) {
@@ -1751,7 +1744,8 @@ async function handleProfileSave(e) {
   const newGoals = document.getElementById('profile-goals-input').value;
   const newInterests = document.getElementById('profile-interests-input').value;
   const newSocial = document.getElementById('profile-social-input').value;
-  const newRole = document.getElementById('profile-role-select').value;
+  const roleSelect = document.getElementById('profile-role-select');
+  const newRole = roleSelect?.value || userState.role || 'user';
   
   const preview = document.getElementById('profile-photo-preview');
   const uploadedDataUrl = preview?.dataset.dataUrl;
@@ -1773,7 +1767,9 @@ async function handleProfileSave(e) {
   userState.goals = newGoals;
   userState.interests = newInterests;
   userState.social = newSocial;
-  userState.role = newRole;
+  // Prevent non-admin users from escalating their own role.
+  // Admins may change their own role, but server-side rules are the real guard.
+  userState.role = userState.role === 'admin' ? newRole : (userState.role || 'user');
   
   await saveState();
   updateHeaderProfile();
@@ -1787,6 +1783,89 @@ async function handleProfileSave(e) {
 // ==========================================================================
 // Admin Dashboard
 // ==========================================================================
+
+function handleTemplateToggle(e) {
+  const templateBox = document.getElementById('publisher-template-box');
+  if (!templateBox) return;
+  templateBox.classList.toggle('hidden');
+  e.target.textContent = templateBox.classList.contains('hidden') ? 'Show Schema Template' : 'Hide Schema Template';
+}
+
+function handlePublisherFileInput(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const form = e.target.closest('#admin-publisher-form');
+  const jsonTextArea = form?.querySelector('#publisher-json-textarea');
+  const statusEl = form?.querySelector('#publisher-status');
+  const reader = new FileReader();
+  reader.onload = (evt) => {
+    if (jsonTextArea) jsonTextArea.value = evt.target.result;
+    showStatusEl(statusEl, 'File loaded successfully!', 'success');
+  };
+  reader.onerror = () => {
+    showStatusEl(statusEl, 'Failed to read file.', 'error');
+  };
+  reader.readAsText(file);
+}
+
+function handlePublisherSubmit(e) {
+  e.preventDefault();
+  const form = e.target;
+  const jsonTextArea = form.querySelector('#publisher-json-textarea');
+  const parentConSelect = form.querySelector('#publisher-parent-con');
+  const statusEl = form.querySelector('#publisher-status');
+  const fileInput = form.querySelector('#publisher-file-input');
+
+  const rawJson = jsonTextArea.value.trim();
+  const parentCon = parentConSelect.value;
+
+  if (!rawJson) {
+    showStatusEl(statusEl, 'Please enter or upload a valid JSON module schema.', 'error');
+    return;
+  }
+
+  let parsedModule;
+  try {
+    parsedModule = JSON.parse(rawJson);
+  } catch (err) {
+    showStatusEl(statusEl, `JSON Syntax Error: ${err.message}`, 'error');
+    return;
+  }
+
+  const requiredFields = ['id', 'title', 'category', 'duration', 'slides'];
+  for (const field of requiredFields) {
+    if (parsedModule[field] === undefined) {
+      showStatusEl(statusEl, `Validation Error: Missing required field "${field}".`, 'error');
+      return;
+    }
+  }
+
+  if (!Array.isArray(parsedModule.slides) || parsedModule.slides.length === 0) {
+    showStatusEl(statusEl, 'Validation Error: "slides" must be a non-empty array.', 'error');
+    return;
+  }
+
+  parsedModule.parentConcentrationId = parentCon;
+  showStatusEl(statusEl, 'Validating and publishing to Firestore...', 'success');
+
+  (async () => {
+    try {
+      const docRef = doc(db, 'custom_modules', parsedModule.id);
+      await setDoc(docRef, parsedModule);
+      showStatusEl(statusEl, `Module "${parsedModule.title}" published successfully! Reloading...`, 'success');
+      jsonTextArea.value = '';
+      if (fileInput) fileInput.value = '';
+      await fetchAndMergeCustomModules();
+      await renderAdminDashboard();
+      renderCoursesCatalog();
+      renderDashboard();
+    } catch (err) {
+      console.error('Firestore save error:', err);
+      showStatusEl(statusEl, `Database Error: ${err.message}`, 'error');
+    }
+  })();
+}
+
 async function renderAdminDashboard() {
   if (userState.role !== 'admin') {
     switchTab('home');
@@ -2072,137 +2151,6 @@ async function renderAdminDashboard() {
     });
   }
 
-  // Setup/Refresh Dynamic Course Publisher admin view events
-  const publisherForm = document.getElementById('admin-publisher-form');
-  const fileInput = document.getElementById('publisher-file-input');
-  const jsonTextArea = document.getElementById('publisher-json-textarea');
-  const statusEl = document.getElementById('publisher-status');
-  const templateToggle = document.getElementById('publisher-template-toggle');
-  const templateBox = document.getElementById('publisher-template-box');
-  const parentConSelect = document.getElementById('publisher-parent-con');
-
-  if (templateToggle && templateBox) {
-    // Remove old listener to avoid duplicates, then add
-    const newToggle = templateToggle.cloneNode(true);
-    templateToggle.parentNode.replaceChild(newToggle, templateToggle);
-    newToggle.addEventListener('click', () => {
-      templateBox.classList.toggle('hidden');
-      newToggle.textContent = templateBox.classList.contains('hidden') ? 'Show Schema Template' : 'Hide Schema Template';
-    });
-  }
-
-  if (fileInput && jsonTextArea) {
-    fileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      
-      const reader = new FileReader();
-      reader.onload = (evt) => {
-        jsonTextArea.value = evt.target.result;
-        showStatus('File loaded successfully!', 'success');
-      };
-      reader.onerror = () => {
-        showStatus('Failed to read file.', 'error');
-      };
-      reader.readAsText(file);
-    });
-  }
-
-  if (publisherForm) {
-    const newForm = publisherForm.cloneNode(true);
-    publisherForm.parentNode.replaceChild(newForm, publisherForm);
-
-    // Re-query replacement elements to attach to correct new DOM tree
-    const formFileInput = newForm.querySelector('#publisher-file-input');
-    const formJsonTextArea = newForm.querySelector('#publisher-json-textarea');
-    const formParentCon = newForm.querySelector('#publisher-parent-con');
-    const formStatus = newForm.querySelector('#publisher-status');
-
-    if (formFileInput && formJsonTextArea) {
-      formFileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-          formJsonTextArea.value = evt.target.result;
-          showStatusEl(formStatus, 'File loaded successfully!', 'success');
-        };
-        reader.onerror = () => {
-          showStatusEl(formStatus, 'Failed to read file.', 'error');
-        };
-        reader.readAsText(file);
-      });
-    }
-
-    newForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      const rawJson = formJsonTextArea.value.trim();
-      const parentCon = formParentCon.value;
-
-      if (!rawJson) {
-        showStatusEl(formStatus, 'Please enter or upload a valid JSON module schema.', 'error');
-        return;
-      }
-
-      let parsedModule;
-      try {
-        parsedModule = JSON.parse(rawJson);
-      } catch (err) {
-        showStatusEl(formStatus, `JSON Syntax Error: ${err.message}`, 'error');
-        return;
-      }
-
-      // Validation
-      const requiredFields = ['id', 'title', 'category', 'duration', 'slides'];
-      for (const field of requiredFields) {
-        if (parsedModule[field] === undefined) {
-          showStatusEl(formStatus, `Validation Error: Missing required field "${field}".`, 'error');
-          return;
-        }
-      }
-
-      if (!Array.isArray(parsedModule.slides) || parsedModule.slides.length === 0) {
-        showStatusEl(formStatus, 'Validation Error: "slides" must be a non-empty array.', 'error');
-        return;
-      }
-
-      // Add parent course relationship
-      parsedModule.parentConcentrationId = parentCon;
-
-      // Clean up slides: ensure no asterisks error/issues as per user request
-      parsedModule.slides = parsedModule.slides.map(slide => {
-        if (slide.content) {
-          // Replace single stray asterisks but keep bold notation (**)
-          // We can normalize slide content or keep it as is, but we make sure clean formatting applies.
-        }
-        return slide;
-      });
-
-      showStatusEl(formStatus, 'Validating and publishing to Firestore...', 'success');
-
-      try {
-        const docRef = doc(db, 'custom_modules', parsedModule.id);
-        await setDoc(docRef, parsedModule);
-
-        showStatusEl(formStatus, `Module "${parsedModule.title}" published successfully! Reloading...`, 'success');
-        
-        // Clear inputs
-        formJsonTextArea.value = '';
-        if (formFileInput) formFileInput.value = '';
-
-        // Reload data and re-render Catalog & Dashboard
-        await fetchAndMergeCustomModules();
-        await renderAdminDashboard();
-        renderCoursesCatalog();
-        renderDashboard();
-      } catch (err) {
-        console.error('Firestore save error:', err);
-        showStatusEl(formStatus, `Database Error: ${err.message}`, 'error');
-      }
-    });
-  }
 }
 
 // ==========================================================================
@@ -2728,7 +2676,8 @@ function formatMarkdown(content) {
     
     const applyInline = t => t
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '<em>$1</em>')
+      // Replace single asterisks that are not part of a ** pair.
+      .replace(/(^|[^*])\*([^*\n]+)\*([^*]|$)/g, '$1<em>$2</em>$3')
       .replace(/^###\s*(.+)/, '<h3>$1</h3>')
       .replace(/^##\s*(.+)/, '<h2>$1</h2>')
       .replace(/^#\s*(.+)/, '<h1>$1</h1>')
@@ -2813,7 +2762,7 @@ function renderSlide() {
     const scriptureText = slide.scriptureText?.[trans] || slide.scriptureText?.['ESV'] || '';
 
     let bodyHtml = '';
-    if (slide.content.includes('Luke:') || slide.content.includes('Ben:')) {
+    if (slide.content && (slide.content.includes('Luke:') || slide.content.includes('Ben:'))) {
       bodyHtml = slide.content.split('\n\n').map(p => {
         if (p.startsWith('Luke:')) {
           return `<div class="dialogue-block"><div class="dialogue-speaker">Luke (Student)</div>${p.replace('Luke:', '').trim()}</div>`;
@@ -2924,11 +2873,11 @@ function renderSlide() {
   el.activeCard.innerHTML = cardHtml;
 
   if (slide.type === 'quiz') {
-    document.querySelectorAll('.quiz-option').forEach(opt => {
+    el.activeCard.querySelectorAll('.quiz-option').forEach(opt => {
       opt.addEventListener('click', () => selectQuizOption(parseInt(opt.getAttribute('data-index'))));
     });
   } else if (slide.type === 'card-quiz') {
-    document.querySelectorAll('.yn-btn').forEach(btn => {
+    el.activeCard.querySelectorAll('.yn-btn').forEach(btn => {
       btn.addEventListener('click', () => selectYesNoOption(btn.getAttribute('data-val')));
     });
   }
@@ -2954,26 +2903,29 @@ function renderSlide() {
 }
 
 function selectQuizOption(index) {
-  if (isQuizAnswered) return;
+  if (isQuizAnswered || !el.activeCard) return;
   selectedOptionIndex = index;
-  document.querySelectorAll('.quiz-option').forEach((opt, idx) => {
+  el.activeCard.querySelectorAll('.quiz-option').forEach((opt, idx) => {
     opt.classList.toggle('selected', idx === index);
   });
   el.nextSlideBtn.disabled = false;
 }
 
 function selectYesNoOption(value) {
-  if (isQuizAnswered) return;
+  if (isQuizAnswered || !el.activeCard) return;
   selectedOptionIndex = value;
-  const yesBtn = document.querySelector('.yn-btn.yes');
-  const noBtn  = document.querySelector('.yn-btn.no');
+  const yesBtn = el.activeCard.querySelector('.yn-btn.yes');
+  const noBtn  = el.activeCard.querySelector('.yn-btn.no');
+  if (!yesBtn || !noBtn) return;
   if (value === 'yes') { yesBtn.classList.add('selected-yes'); noBtn.classList.remove('selected-no'); }
   else { noBtn.classList.add('selected-no'); yesBtn.classList.remove('selected-yes'); }
   checkCardQuizAnswer();
 }
 
 function checkQuizAnswer() {
+  if (!activeModule) return;
   const slide = activeModule.slides[currentSlideIndex];
+  if (!slide) return;
   const feedbackBox   = document.getElementById('quiz-feedback-box');
   const feedbackTitle = document.getElementById('feedback-title');
   const feedbackDesc  = document.getElementById('feedback-desc');
@@ -3020,12 +2972,15 @@ function checkQuizAnswer() {
 }
 
 function checkCardQuizAnswer() {
+  if (!activeModule || !el.activeCard) return;
   const slide = activeModule.slides[currentSlideIndex];
+  if (!slide) return;
   const feedbackBox   = document.getElementById('quiz-feedback-box');
   const feedbackTitle = document.getElementById('feedback-title');
   const feedbackDesc  = document.getElementById('feedback-desc');
-  const yesBtn = document.querySelector('.yn-btn.yes');
-  const noBtn  = document.querySelector('.yn-btn.no');
+  const yesBtn = el.activeCard.querySelector('.yn-btn.yes');
+  const noBtn  = el.activeCard.querySelector('.yn-btn.no');
+  if (!yesBtn || !noBtn) return;
 
   const qs = slide.questions || [{
     question: slide.question,
@@ -3102,7 +3057,9 @@ function checkCardQuizAnswer() {
 }
 
 function handleNextClick() {
+  if (!activeModule) return;
   const slide = activeModule.slides[currentSlideIndex];
+  if (!slide) return;
   if (slide.type === 'quiz' && !isQuizAnswered) {
     checkQuizAnswer();
   } else if (slide.type === 'card-quiz' && !isQuizAnswered) {
@@ -3295,9 +3252,23 @@ function setupEventListeners() {
   if (el.profileEditForm) {
     el.profileEditForm.addEventListener('submit', handleProfileSave);
   }
+
+  // Admin publisher: attach listeners once, never clone the form.
+  const publisherForm = document.getElementById('admin-publisher-form');
+  if (publisherForm) publisherForm.addEventListener('submit', handlePublisherSubmit);
+  const publisherFileInput = document.getElementById('publisher-file-input');
+  if (publisherFileInput) publisherFileInput.addEventListener('change', handlePublisherFileInput);
+  const templateToggle = document.getElementById('publisher-template-toggle');
+  if (templateToggle) templateToggle.addEventListener('click', handleTemplateToggle);
   const roleSelect = document.getElementById('profile-role-select');
   if (roleSelect) {
     roleSelect.addEventListener('change', async () => {
+      // Guard against self-elevation to admin.
+      if (userState.role !== 'admin' && roleSelect.value === 'admin') {
+        roleSelect.value = userState.role || 'user';
+        showToast('Only administrators can change roles.', 'warning');
+        return;
+      }
       userState.role = roleSelect.value;
       await saveState();
       checkAdminNavVisibility();
