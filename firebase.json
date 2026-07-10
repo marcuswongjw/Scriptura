@@ -5,11 +5,9 @@
   },
   "hosting": {
     "site": "scriptura-study-2026",
-    "public": ".",
+    "public": "public",
     "ignore": [
       "firebase.json",
-      "firestore.rules",
-      "firestore.indexes.json",
       "**/.*",
       "**/node_modules/**"
     ],
