@@ -225,6 +225,24 @@ export const concentrations = [
     ]
   },
   {
+    "id": "1peter",
+    "title": "1 Peter",
+    "group": "Books of the Bible",
+    "description": "Living hope for elect exiles: holiness, suffering with Christ, and shepherd care in the household of God.",
+    "modules": [
+      "1peter"
+    ]
+  },
+  {
+    "id": "2peter",
+    "title": "2 Peter",
+    "group": "Books of the Bible",
+    "description": "Grow in the knowledge of Christ, resist false teachers, and wait for the day of the Lord in holiness.",
+    "modules": [
+      "2peter"
+    ]
+  },
+  {
     "id": "heaven",
     "title": "Heaven & The New Earth",
     "group": "Eschatology",

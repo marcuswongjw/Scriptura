@@ -1176,9 +1176,10 @@ img { display: block; max-width: 100%; }
 }
 
 /*
-  Lesson reading column — same max-width as #main-content so lessons
-  don't stretch edge-to-edge on wide screens (hard to read).
-  Base 720 → 960 at 1024px → 1200 at desktop (matches existing shell rules).
+  Lesson reading column — mirror #main-content exactly:
+  720px base; from 769px → 1200px !important (same desktop override as the shell).
+  Do not add inner max-widths (e.g. 72ch) on .slide-body — those re-narrow content
+  while the shell looks wide.
 */
 .lesson-content-area > #takeaway-banner,
 .lesson-content-area > #active-card,
@@ -1190,23 +1191,6 @@ img { display: block; max-width: 100%; }
   box-sizing: border-box;
 }
 
-@media (min-width: 1024px) {
-  .lesson-content-area > #takeaway-banner,
-  .lesson-content-area > #active-card,
-  .lesson-content-area > #ai-tutor-trigger {
-    max-width: 960px;
-  }
-}
-
-/* Same desktop width as #main-content override */
-@media (min-width: 769px) {
-  .lesson-content-area > #takeaway-banner,
-  .lesson-content-area > #active-card,
-  .lesson-content-area > #ai-tutor-trigger {
-    max-width: 1200px;
-  }
-}
-
 .lesson-bottom-bar {
   display: flex;
   justify-content: center;
@@ -1215,18 +1199,6 @@ img { display: block; max-width: 100%; }
 .lesson-bottom-bar .lesson-continue-btn {
   width: 100%;
   max-width: 720px;
-}
-
-@media (min-width: 1024px) {
-  .lesson-bottom-bar .lesson-continue-btn {
-    max-width: 960px;
-  }
-}
-
-@media (min-width: 769px) {
-  .lesson-bottom-bar .lesson-continue-btn {
-    max-width: 1200px;
-  }
 }
 
 /* ---- INFO SLIDE ---- */
@@ -3958,6 +3930,21 @@ select option[disabled] {
     padding-right: 2rem !important;
   }
 
+  /* Lesson column + continue button track the same desktop content width */
+  .lesson-content-area > #takeaway-banner,
+  .lesson-content-area > #active-card,
+  .lesson-content-area > #ai-tutor-trigger,
+  .lesson-bottom-bar .lesson-continue-btn {
+    max-width: 1200px !important;
+  }
+
+  .lesson-content-area > #takeaway-banner,
+  .lesson-content-area > #active-card,
+  .lesson-content-area > #ai-tutor-trigger {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+
   /* Centered, floating bottom navigation on desktop screens */
   .bottom-nav {
     left: 50% !important;
@@ -6131,15 +6118,6 @@ html {
 
 .lesson-content-area {
   padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
-}
-
-/* Keep lesson body readable even if other desktop rules widen the shell */
-@media (min-width: 769px) {
-  .lesson-content-area > #active-card .slide-body,
-  .lesson-content-area > #active-card .quiz-question,
-  .lesson-content-area > #active-card .summary-slide {
-    max-width: 72ch;
-  }
 }
 
 .lesson-bottom-bar {

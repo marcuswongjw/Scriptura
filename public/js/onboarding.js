@@ -1,11 +1,11 @@
 // First-run onboarding: name, church, location, start first module
-import { modules } from '../modules.js?v=2.0.23';
-import { state } from './state.js?v=2.0.22';
-import { saveState, updateHeaderProfile, isModuleReleased } from './user.js?v=2.0.22';
-import { showToast } from './toast.js?v=2.0.22';
-import { startModule } from './lesson.js?v=2.0.22';
-import { setNotificationPrefs, getNotificationPrefs } from './notifications.js?v=2.0.22';
-import { requestAndSaveToken } from './push.js?v=2.0.22';
+import { modules } from '../modules.js?v=2.0.24';
+import { state } from './state.js?v=2.0.24';
+import { saveState, updateHeaderProfile, isModuleReleased } from './user.js?v=2.0.24';
+import { showToast } from './toast.js?v=2.0.24';
+import { startModule } from './lesson.js?v=2.0.24';
+import { setNotificationPrefs, getNotificationPrefs } from './notifications.js?v=2.0.24';
+import { requestAndSaveToken } from './push.js?v=2.0.24';
 
 export function needsOnboarding() {
   if (state.userState.onboardingCompleted) return false;

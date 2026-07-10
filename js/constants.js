@@ -35,6 +35,8 @@ export const moduleIcons = {
   'heaven-1': '🌤️',
   'heaven-2': '🌅',
   'heaven-3': '👑',
+  '1peter': '🪨',
+  '2peter': '🕯️',
 };
 
 /** Shared concentration icons (catalog, onboarding, stats) */
@@ -63,6 +65,8 @@ export const conIcons = {
   'nehemiah': '🧱',
   'esther': '🍷',
   'job': '🌪️',
+  '1peter': '🪨',
+  '2peter': '🕯️',
   'heaven': '🌤️'
 };
 
