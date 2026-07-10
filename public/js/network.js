@@ -1,13 +1,13 @@
 // Feature module: network (Phase 2) — Community hub UI
-import { auth, db } from './firebase.js?v=2.0.18';
+import { auth, db } from './firebase.js?v=2.0.19';
 import { collection, getDocs, onSnapshot, addDoc, query, orderBy, limit, doc, updateDoc, arrayUnion, arrayRemove } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-import { modules } from '../modules.js?v=2.0.18';
-import { sanitizeHTML, debounce } from './utils.js?v=2.0.18';
-import { showToast } from './toast.js?v=2.0.18';
-import { el } from './dom.js?v=2.0.18';
-import { state } from './state.js?v=2.0.18';
-import { checkAdminNavVisibility, saveState, updateHeaderProfile } from './user.js?v=2.0.18';
-import { notifyCommunityOfEvent, getNotificationPrefs, setNotificationPrefs } from './notifications.js?v=2.0.18';
+import { modules } from '../modules.js?v=2.0.19';
+import { sanitizeHTML, debounce } from './utils.js?v=2.0.19';
+import { showToast } from './toast.js?v=2.0.19';
+import { el } from './dom.js?v=2.0.19';
+import { state } from './state.js?v=2.0.19';
+import { checkAdminNavVisibility, saveState, updateHeaderProfile } from './user.js?v=2.0.19';
+import { notifyCommunityOfEvent, getNotificationPrefs, setNotificationPrefs } from './notifications.js?v=2.0.19';
 
 /** Prefer stored country; default Singapore for untagged learners. */
 export function effectiveCountry(userOrCode) {
@@ -701,15 +701,14 @@ export function openProfileDialog() {
   document.getElementById('profile-interests-input').value = state.userState.interests || '';
   document.getElementById('profile-social-input').value = state.userState.social || '';
 
+  // Role is not self-editable (prevents lockouts). Use Admin → Learners to promote others.
   const roleSelect = document.getElementById('profile-role-select');
   const roleSection = document.getElementById('profile-role-section');
   if (roleSelect) {
     roleSelect.value = state.userState.role || 'user';
-    const isAdmin = state.userState.role === 'admin';
-    roleSelect.disabled = !isAdmin;
-    if (roleSection) roleSection.classList.toggle('hidden', !isAdmin);
-    else roleSelect.closest('.form-field')?.classList.toggle('hidden', !isAdmin);
+    roleSelect.disabled = true;
   }
+  if (roleSection) roleSection.classList.add('hidden');
 
   const preview = document.getElementById('profile-photo-preview');
   if (preview) {
@@ -780,11 +779,8 @@ export async function handleProfileSave(e) {
   state.userState.interests = newInterests;
   state.userState.social = newSocial;
 
-  if (state.userState.role === 'admin') {
-    state.userState.role = (newRole === 'admin' || newRole === 'user') ? newRole : 'admin';
-  } else {
-    state.userState.role = 'user';
-  }
+  // Never change role from profile self-save (use Admin dashboard to promote others).
+  // Local role is refreshed from cloud on next load.
 
   const pd = document.getElementById('pref-daily-reminder');
   const pe = document.getElementById('pref-event-alerts');

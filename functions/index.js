@@ -21,6 +21,29 @@ initializeApp();
 const db = getFirestore();
 const messaging = getMessaging();
 
+/**
+ * Bootstrap admins — always re-applied by scheduled job so owners cannot stay locked out.
+ * Edit this list (redeploy functions) to add/remove permanent admins.
+ */
+const BOOTSTRAP_ADMIN_EMAILS = [
+  'marcuswongjw@gmail.com'
+].map((e) => e.toLowerCase());
+
+async function ensureBootstrapAdmins() {
+  const snap = await db.collection('users').limit(500).get();
+  let fixed = 0;
+  for (const docSnap of snap.docs) {
+    const u = docSnap.data() || {};
+    const email = (u.email || '').toLowerCase();
+    if (!email || !BOOTSTRAP_ADMIN_EMAILS.includes(email)) continue;
+    if (u.role === 'admin') continue;
+    await docSnap.ref.update({ role: 'admin' });
+    fixed += 1;
+    logger.info('Restored bootstrap admin', { uid: docSnap.id, email });
+  }
+  return fixed;
+}
+
 function singaporeNowParts() {
   const fmt = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Singapore',
@@ -99,6 +122,14 @@ exports.dailyReadingReminder = onSchedule(
   async () => {
     const { dateKey, hour } = singaporeNowParts();
     logger.info('dailyReadingReminder tick', { dateKey, hour });
+
+    // Keep bootstrap owners as admin even if a client write demoted them.
+    try {
+      const restored = await ensureBootstrapAdmins();
+      if (restored) logger.info('bootstrap admins restored', { restored });
+    } catch (err) {
+      logger.warn('ensureBootstrapAdmins failed', err);
+    }
 
     const snap = await db.collection('users').limit(500).get();
     let attempted = 0;

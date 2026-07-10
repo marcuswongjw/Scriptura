@@ -1,12 +1,12 @@
 // Feature module: stats (Phase 2)
-import { concentrations, modules } from '../modules.js?v=2.0.18';
-import { conIcons } from './constants.js?v=2.0.18';
-import { formatDuration } from './utils.js?v=2.0.18';
-import { el } from './dom.js?v=2.0.18';
-import { state } from './state.js?v=2.0.18';
-import { openOnboarding } from './catalog.js?v=2.0.18';
-import { switchTab } from './routing.js?v=2.0.18';
-import { isModuleReleased } from './user.js?v=2.0.18';
+import { concentrations, modules } from '../modules.js?v=2.0.19';
+import { conIcons } from './constants.js?v=2.0.19';
+import { formatDuration } from './utils.js?v=2.0.19';
+import { el } from './dom.js?v=2.0.19';
+import { state } from './state.js?v=2.0.19';
+import { openOnboarding } from './catalog.js?v=2.0.19';
+import { switchTab } from './routing.js?v=2.0.19';
+import { isModuleReleased } from './user.js?v=2.0.19';
 
 export function updateStatsDisplay() {
   const completedList = (state.userState.completedModules || []).filter(id => modules.some(m => m.id === id));

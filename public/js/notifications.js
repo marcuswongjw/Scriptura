@@ -11,10 +11,10 @@ import {
   doc,
   serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-import { auth, db } from './firebase.js?v=2.0.18';
-import { state } from './state.js?v=2.0.18';
-import { saveState } from './user.js?v=2.0.18';
-import { showToast } from './toast.js?v=2.0.18';
+import { auth, db } from './firebase.js?v=2.0.19';
+import { state } from './state.js?v=2.0.19';
+import { saveState } from './user.js?v=2.0.19';
+import { showToast } from './toast.js?v=2.0.19';
 
 function defaultPrefs() {
   return {

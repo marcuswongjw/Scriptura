@@ -1,11 +1,11 @@
 // Feature module: user (Phase 2)
-import { auth, db } from './firebase.js?v=2.0.18';
+import { auth, db } from './firebase.js?v=2.0.19';
 import { doc, getDoc, setDoc, collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-import { concentrations, modules } from '../modules.js?v=2.0.18';
-import { createDefaultUserState } from './constants.js?v=2.0.18';
-import { el } from './dom.js?v=2.0.18';
-import { state } from './state.js?v=2.0.18';
-import { updateStatsDisplay } from './stats.js?v=2.0.18';
+import { concentrations, modules } from '../modules.js?v=2.0.19';
+import { createDefaultUserState } from './constants.js?v=2.0.19';
+import { el } from './dom.js?v=2.0.19';
+import { state } from './state.js?v=2.0.19';
+import { updateStatsDisplay } from './stats.js?v=2.0.19';
 
 export async function fetchAndMergeCustomModules() {
   try {
@@ -145,9 +145,12 @@ export async function loadUserCloudData(user) {
         const mergedStarted = Array.from(new Set([...cloudStarted, ...guestStarted]));
         if (mergedStarted.length > cloudStarted.length) { state.userState.modulesStarted = mergedStarted; merged = true; }
         if (guestState.timeSpent > (state.userState.timeSpent || 0)) { state.userState.timeSpent = guestState.timeSpent; merged = true; }
-        if (merged) await setDoc(userRef, state.userState);
+        // Preserve cloud role — never rewrite it from guest merge.
+        if (merged) await setDoc(userRef, userDocWithoutRole(), { merge: true });
         localStorage.setItem('scriptura_local_migrated', 'true');
       }
+      // Authoritative role always comes from cloud for existing users
+      state.userState.role = cloudData.role === 'admin' ? 'admin' : 'user';
     } else {
       if (guestState) {
         state.userState = {
@@ -206,7 +209,8 @@ export async function loadUserCloudData(user) {
           activityLog: []
         };
       }
-      await setDoc(userRef, state.userState);
+      // First-time create may set role user only
+      await setDoc(userRef, { ...state.userState, role: 'user' });
       localStorage.setItem('scriptura_local_migrated', 'true');
       state.pendingRegistrationDetails = null;
     }
@@ -270,9 +274,16 @@ export function logQuizAnswer(moduleId, slideIndex, question, selectedAnswer, co
   }
 }
 
+/** Payload for user doc writes — never includes `role` (role only via admin toggle / bootstrap). */
+function userDocWithoutRole(extra = {}) {
+  const payload = { ...state.userState, ...extra };
+  delete payload.role;
+  return payload;
+}
+
 export async function saveState() {
-  // Client-side role clamp: non-admins cannot escalate. Server rules are authoritative.
-  if (state.userState.role !== 'admin') {
+  // Keep local role honest for UI, but never write role from client save paths.
+  if (state.userState.role !== 'admin' && state.userState.role !== 'user') {
     state.userState.role = 'user';
   }
   localStorage.setItem('scriptura_user_state', JSON.stringify(state.userState));
@@ -283,11 +294,8 @@ export async function saveState() {
       if (state.stateDirty && auth.currentUser) {
         try {
           const userRef = doc(db, 'users', auth.currentUser.uid);
-          // Never write a role change for non-admins (Firestore rules also enforce this).
-          if (state.userState.role !== 'admin') {
-            state.userState.role = 'user';
-          }
-          await setDoc(userRef, state.userState);
+          // merge: true + omit role so progress saves cannot demote/promote
+          await setDoc(userRef, userDocWithoutRole(), { merge: true });
           state.stateDirty = false;
         } catch (err) { console.error('Failed to sync progress:', err); }
       }

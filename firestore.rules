@@ -29,8 +29,10 @@ service cloud.firestore {
       allow create: if isOwner(userId)
         && request.resource.data.role == 'user';
 
+      // Own profile: never change role (prevents accidental self-demotion via saveState).
+      // Admins may update OTHER users (including role promote/demote).
       allow update: if (isOwner(userId) && roleUnchanged())
-        || isAdmin();
+        || (isAdmin() && request.auth.uid != userId);
 
       allow delete: if isAdmin();
     }
