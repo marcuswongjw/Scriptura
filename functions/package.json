@@ -2,7 +2,7 @@
   "name": "scriptura-functions",
   "description": "Scriptura Cloud Functions (daily FCM reminders)",
   "engines": {
-    "node": "20"
+    "node": "22"
   },
   "main": "index.js",
   "scripts": {
