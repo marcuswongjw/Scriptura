@@ -82,7 +82,7 @@ export function createDefaultUserState() {
     translation: 'ESV',
     quizStats: { correctFirstTry: 0, totalQuestions: 0 },
     quizHistory: [],
-    country: '',
+    country: 'SG',
     role: 'user',
     headline: '',
     goals: '',

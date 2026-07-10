@@ -1,11 +1,11 @@
 // Feature module: user (Phase 2)
-import { auth, db } from './firebase.js?v=2.0.13';
+import { auth, db } from './firebase.js?v=2.0.14';
 import { doc, getDoc, setDoc, collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-import { concentrations, modules } from '../modules.js?v=2.0.13';
-import { createDefaultUserState } from './constants.js?v=2.0.13';
-import { el } from './dom.js?v=2.0.13';
-import { state } from './state.js?v=2.0.13';
-import { updateStatsDisplay } from './stats.js?v=2.0.13';
+import { concentrations, modules } from '../modules.js?v=2.0.14';
+import { createDefaultUserState } from './constants.js?v=2.0.14';
+import { el } from './dom.js?v=2.0.14';
+import { state } from './state.js?v=2.0.14';
+import { updateStatsDisplay } from './stats.js?v=2.0.14';
 
 export async function fetchAndMergeCustomModules() {
   try {
@@ -161,7 +161,7 @@ export async function loadUserCloudData(user) {
           translation: 'ESV',
           quizStats: { correctFirstTry: 0, totalQuestions: 0 },
           quizHistory: [],
-          country: '',
+          country: 'SG',
           name: user.displayName || '',
           photo: user.photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.uid}`,
           email: user.email || '',
@@ -176,7 +176,8 @@ export async function loadUserCloudData(user) {
           activityLog: [],
           ...guestState,
           // Guest localStorage must never grant admin (rules also require role == 'user' on create).
-          role: 'user'
+          role: 'user',
+          country: (guestState && guestState.country) || 'SG'
         };
       } else {
         state.userState = {
@@ -190,7 +191,7 @@ export async function loadUserCloudData(user) {
           translation: 'ESV',
           quizStats: { correctFirstTry: 0, totalQuestions: 0 },
           quizHistory: [],
-          country: state.pendingRegistrationDetails?.country || '',
+          country: state.pendingRegistrationDetails?.country || 'SG',
           name: state.pendingRegistrationDetails?.name || user.displayName || '',
           photo: user.photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.uid}`,
           email: user.email || '',

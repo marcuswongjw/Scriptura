@@ -1,19 +1,63 @@
-// Feature module: network (Phase 2)
-import { auth, db } from './firebase.js?v=2.0.13';
+// Feature module: network (Phase 2) — Community hub UI
+import { auth, db } from './firebase.js?v=2.0.14';
 import { collection, getDocs, onSnapshot, addDoc, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-import { modules } from '../modules.js?v=2.0.13';
-import { sanitizeHTML, debounce } from './utils.js?v=2.0.13';
-import { showToast } from './toast.js?v=2.0.13';
-import { el } from './dom.js?v=2.0.13';
-import { state } from './state.js?v=2.0.13';
-import { checkAdminNavVisibility, saveState, updateHeaderProfile } from './user.js?v=2.0.13';
+import { modules } from '../modules.js?v=2.0.14';
+import { sanitizeHTML, debounce } from './utils.js?v=2.0.14';
+import { showToast } from './toast.js?v=2.0.14';
+import { el } from './dom.js?v=2.0.14';
+import { state } from './state.js?v=2.0.14';
+import { checkAdminNavVisibility, saveState, updateHeaderProfile } from './user.js?v=2.0.14';
+
+/** Prefer stored country; default Singapore for untagged learners. */
+export function effectiveCountry(userOrCode) {
+  if (!userOrCode) return 'SG';
+  if (typeof userOrCode === 'string') {
+    return state.countryMetadata[userOrCode] ? userOrCode : 'SG';
+  }
+  const code = userOrCode.country;
+  return code && state.countryMetadata[code] ? code : 'SG';
+}
+
+function countryMeta(code) {
+  const c = effectiveCountry(code);
+  return state.countryMetadata[c] || { name: 'Singapore', flag: '🇸🇬', region: 'Southeast Asia' };
+}
+
+function avatarUrl(u) {
+  return u.photo || `https://api.dicebear.com/7.x/bottts/svg?seed=${u.uid || 'learner'}`;
+}
+
+function completedModuleCount(u) {
+  return u.completedModules
+    ? u.completedModules.filter(id => modules.some(m => m.id === id)).length
+    : 0;
+}
+
+function groupUsersByCountry(users) {
+  const groups = {};
+  users.forEach(u => {
+    const code = effectiveCountry(u);
+    if (!groups[code]) groups[code] = [];
+    groups[code].push(u);
+  });
+  // Singapore first, then others by count
+  return Object.entries(groups).sort((a, b) => {
+    if (a[0] === 'SG') return -1;
+    if (b[0] === 'SG') return 1;
+    return b[1].length - a[1].length;
+  });
+}
 
 export async function initNetworkViewer() {
   if (!state.networkListenersAttached) {
-    // Use event delegation for network nav items so re-renders never duplicate listeners.
-    document.querySelector('.network-sidebar')?.addEventListener('click', e => {
+    document.querySelector('.network-tabs')?.addEventListener('click', e => {
       const item = e.target.closest('.net-nav-item');
       if (item) switchNetworkTab(item.getAttribute('data-net-tab'));
+    });
+
+    document.getElementById('network-see-all-people')?.addEventListener('click', () => {
+      state.peopleCountryFilter = 'all';
+      switchNetworkTab('people');
     });
 
     if (el.peopleSearch) {
@@ -39,9 +83,15 @@ export async function initNetworkViewer() {
     state.networkListenersAttached = true;
   }
 
+  // Default profile location when missing
+  if (!state.userState.country || !state.countryMetadata[state.userState.country]) {
+    state.userState.country = 'SG';
+  }
+  if (state.peopleCountryFilter == null) state.peopleCountryFilter = 'all';
+
   await fetchRegisteredUsers();
   updateNetworkView();
-  switchNetworkTab('map');
+  switchNetworkTab(state.currentNetworkTab === 'map' ? 'hub' : (state.currentNetworkTab || 'hub'));
 }
 
 export async function fetchRegisteredUsers() {
@@ -49,140 +99,140 @@ export async function fetchRegisteredUsers() {
     const querySnapshot = await getDocs(query(collection(db, 'users'), limit(100)));
     state.registeredUsers = [];
     querySnapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      // Skip empty shell docs
+      if (!data.email && !data.name && !data.photo) return;
       state.registeredUsers.push({
         uid: docSnap.id,
-        ...docSnap.data()
+        ...data
       });
     });
+    // Stable sort: name A–Z
+    state.registeredUsers.sort((a, b) =>
+      (a.name || a.email || '').localeCompare(b.name || b.email || '', undefined, { sensitivity: 'base' })
+    );
   } catch (err) {
     console.error('Failed to fetch registered users:', err);
   }
 }
 
 export function updateNetworkView() {
-  const currentCountry = state.userState.country;
-  
-  const countEl = document.getElementById('regional-active-count');
-  if (countEl) {
-    const counts = {};
-    state.registeredUsers.forEach(u => {
-      if (u.country) {
-        counts[u.country] = (counts[u.country] || 0) + 1;
-      }
-    });
-    const countryCount = currentCountry ? (counts[currentCountry] || 0) : 0;
-    countEl.textContent = countryCount.toLocaleString();
+  renderHubStats();
+  renderYouCard();
+  renderLocationCards();
+  renderPeoplePreview();
+  if (state.currentNetworkTab === 'people') {
+    renderPeopleDirectory();
+  }
+}
+
+function renderHubStats() {
+  const totalEl = document.getElementById('network-total-count');
+  const locEl = document.getElementById('network-location-count');
+  const groups = groupUsersByCountry(state.registeredUsers);
+  if (totalEl) totalEl.textContent = String(state.registeredUsers.length);
+  if (locEl) locEl.textContent = String(groups.length);
+}
+
+function renderYouCard() {
+  const card = document.getElementById('network-you-card');
+  if (!card) return;
+  const code = effectiveCountry(state.userState);
+  const meta = countryMeta(code);
+  const peers = state.registeredUsers.filter(u => effectiveCountry(u) === code).length;
+  card.innerHTML = `
+    <div class="you-card-inner">
+      <div class="you-card-flag" aria-hidden="true">${meta.flag}</div>
+      <div class="you-card-text">
+        <p class="you-card-label">Your location</p>
+        <h3 class="you-card-title">${sanitizeHTML(meta.name)}</h3>
+        <p class="you-card-meta">${peers} learner${peers === 1 ? '' : 's'} nearby · ${sanitizeHTML(meta.region || '')}</p>
+      </div>
+      <button type="button" class="secondary-btn compact-btn" id="browse-my-location-btn">Browse</button>
+    </div>
+  `;
+  card.querySelector('#browse-my-location-btn')?.addEventListener('click', () => {
+    state.peopleCountryFilter = code;
+    switchNetworkTab('people');
+  });
+}
+
+function renderLocationCards() {
+  const wrap = document.getElementById('network-location-cards');
+  if (!wrap) return;
+  const groups = groupUsersByCountry(state.registeredUsers);
+  if (groups.length === 0) {
+    wrap.innerHTML = `<div class="empty-state soft">No learners yet — invite a friend to join Scriptura.</div>`;
+    return;
   }
 
-  renderMapClusters();
-  renderDirectoryList();
-}
+  wrap.innerHTML = groups.map(([code, users]) => {
+    const meta = countryMeta(code);
+    const stack = users.slice(0, 4).map(u =>
+      `<img class="avatar-stack-img" src="${avatarUrl(u)}" alt="" loading="lazy">`
+    ).join('');
+    const more = users.length > 4 ? `<span class="avatar-stack-more">+${users.length - 4}</span>` : '';
+    const isYours = code === effectiveCountry(state.userState);
+    return `
+      <button type="button" class="location-card ${isYours ? 'is-yours' : ''}" data-country="${code}">
+        <div class="location-card-top">
+          <span class="location-flag">${meta.flag}</span>
+          ${isYours ? '<span class="location-you-badge">You</span>' : ''}
+        </div>
+        <div class="location-card-name">${sanitizeHTML(meta.name)}</div>
+        <div class="location-card-count">${users.length} learner${users.length === 1 ? '' : 's'}</div>
+        <div class="avatar-stack">${stack}${more}</div>
+      </button>
+    `;
+  }).join('');
 
-export function renderMapClusters() {
-  const clusterGroup = document.getElementById('map-clusters');
-  if (!clusterGroup) return;
-  clusterGroup.innerHTML = '';
-  
-  const counts = {};
-  state.registeredUsers.forEach(u => {
-    if (u.country) {
-      counts[u.country] = (counts[u.country] || 0) + 1;
-    }
-  });
-  
-  Object.keys(counts).forEach(countryCode => {
-    const meta = state.countryMetadata[countryCode];
-    if (!meta) return;
-    const count = counts[countryCode];
-    const isUserCountry = countryCode === state.userState.country;
-    
-    const r = 12 + Math.min(count, 10) * 2;
-    
-    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    g.setAttribute('class', `map-cluster ${isUserCountry ? 'active' : ''}`);
-    g.setAttribute('data-country', countryCode);
-    
-    // Pulsing circle backdrop
-    const pulse = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    pulse.setAttribute('cx', meta.cx);
-    pulse.setAttribute('cy', meta.cy);
-    pulse.setAttribute('r', r);
-    pulse.setAttribute('class', `map-cluster-pulse ${isUserCountry ? 'active-user' : ''}`);
-    
-    // Main interactive circle
-    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    circle.setAttribute('cx', meta.cx);
-    circle.setAttribute('cy', meta.cy);
-    circle.setAttribute('r', r);
-    circle.setAttribute('class', `map-cluster-circle ${isUserCountry ? 'active-user' : ''}`);
-    
-    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    text.setAttribute('x', meta.cx);
-    text.setAttribute('y', meta.cy);
-    text.setAttribute('dy', '4');
-    text.setAttribute('text-anchor', 'middle');
-    text.setAttribute('class', 'map-cluster-text');
-    text.textContent = count;
-    
-    g.appendChild(pulse);
-    g.appendChild(circle);
-    g.appendChild(text);
-    clusterGroup.appendChild(g);
-    
-    g.addEventListener('click', async () => {
-      state.userState.country = countryCode;
-      await saveState();
-      await fetchRegisteredUsers();
-      updateNetworkView();
+  wrap.querySelectorAll('.location-card').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.peopleCountryFilter = btn.getAttribute('data-country');
+      switchNetworkTab('people');
     });
   });
 }
 
-export function renderDirectoryList() {
-  const listEl = document.getElementById('network-directory-list');
-  if (!listEl) return;
-  listEl.innerHTML = '';
-  
-  const counts = {};
-  state.registeredUsers.forEach(u => {
-    if (u.country) {
-      counts[u.country] = (counts[u.country] || 0) + 1;
-    }
-  });
-  
-  Object.keys(counts).forEach(code => {
-    const info = state.countryMetadata[code];
-    if (!info) return;
-    const count = counts[code];
-    const isUserCountry = code === state.userState.country;
-    
-    const html = `
-      <div class="directory-item ${isUserCountry ? 'active-user-country' : ''}" data-country-code="${code}">
-        <div class="directory-country-name">
-          <span class="directory-country-flag">${info.flag}</span>
-          <span>${info.name} ${isUserCountry ? '(You)' : ''}</span>
-        </div>
-        <div class="directory-user-count">${count} registered</div>
-      </div>
+function renderPeoplePreview() {
+  const row = document.getElementById('network-preview-people');
+  if (!row) return;
+
+  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  let list = state.registeredUsers.filter(u => {
+    if (!u.lastActiveDate && !u.lastActiveAt) return true;
+    const t = new Date(u.lastActiveAt || u.lastActiveDate).getTime();
+    return !Number.isNaN(t) ? t >= weekAgo : true;
+  }).slice(0, 8);
+
+  if (list.length === 0) list = state.registeredUsers.slice(0, 8);
+
+  if (list.length === 0) {
+    row.innerHTML = `<div class="empty-state soft">No one to show yet.</div>`;
+    return;
+  }
+
+  row.innerHTML = list.map(u => {
+    const meta = countryMeta(u);
+    return `
+      <button type="button" class="person-chip" data-uid="${u.uid}">
+        <img src="${avatarUrl(u)}" alt="" class="person-chip-avatar" loading="lazy">
+        <span class="person-chip-name">${sanitizeHTML(u.name || 'Learner')}</span>
+        <span class="person-chip-loc">${meta.flag}</span>
+      </button>
     `;
-    listEl.insertAdjacentHTML('beforeend', html);
-  });
-  
-  document.querySelectorAll('.directory-item').forEach(item => {
-    item.setAttribute('role', 'button');
-    item.setAttribute('tabindex', '0');
-    item.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); item.click(); } });
-    item.addEventListener('click', async () => {
-      const code = item.getAttribute('data-country-code');
-      state.userState.country = code;
-      await saveState();
-      await fetchRegisteredUsers();
-      updateNetworkView();
+  }).join('');
+
+  row.querySelectorAll('.person-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      state.peopleCountryFilter = 'all';
+      switchNetworkTab('people');
     });
   });
 }
 
 export function switchNetworkTab(tabId) {
+  if (tabId === 'map') tabId = 'hub';
   state.currentNetworkTab = tabId;
   const navItems = document.querySelectorAll('.net-nav-item');
   const subviews = document.querySelectorAll('.net-subview');
@@ -195,8 +245,11 @@ export function switchNetworkTab(tabId) {
     view.classList.toggle('active', shouldBeActive);
     view.classList.toggle('hidden', !shouldBeActive);
   });
-  
-  if (tabId === 'people') {
+
+  if (tabId === 'hub') {
+    updateNetworkView();
+  } else if (tabId === 'people') {
+    renderPeopleFilterChips();
     renderPeopleDirectory();
   } else if (tabId === 'events') {
     loadEvents();
@@ -205,137 +258,216 @@ export function switchNetworkTab(tabId) {
   }
 }
 
-// Render Enriched People Profiles in Directory
+function renderPeopleFilterChips() {
+  const row = document.getElementById('people-filter-chips');
+  if (!row) return;
+  const groups = groupUsersByCountry(state.registeredUsers);
+  const chips = [
+    { id: 'all', label: 'All', flag: '' },
+    ...groups.map(([code, users]) => ({
+      id: code,
+      label: `${countryMeta(code).flag} ${countryMeta(code).name}`,
+      count: users.length
+    }))
+  ];
+
+  row.innerHTML = chips.map(c => {
+    const active = (state.peopleCountryFilter || 'all') === c.id;
+    const count = c.count != null ? ` · ${c.count}` : '';
+    return `<button type="button" class="filter-chip ${active ? 'active' : ''}" data-filter="${c.id}">${c.label}${count}</button>`;
+  }).join('');
+
+  row.querySelectorAll('.filter-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.peopleCountryFilter = btn.getAttribute('data-filter');
+      renderPeopleFilterChips();
+      renderPeopleDirectory();
+    });
+  });
+}
 
 export function renderPeopleDirectory() {
   if (!el.peopleGrid) return;
   el.peopleGrid.innerHTML = '';
-  
+
   const searchQuery = el.peopleSearch ? el.peopleSearch.value.toLowerCase().trim() : '';
-  
+  const countryFilter = state.peopleCountryFilter || 'all';
+
   const filtered = state.registeredUsers.filter(u => {
-    const countryMeta = state.countryMetadata[u.country] || { name: '' };
-    const matchesSearch = !searchQuery || 
+    const code = effectiveCountry(u);
+    const meta = countryMeta(code);
+    if (countryFilter !== 'all' && code !== countryFilter) return false;
+
+    const matchesSearch = !searchQuery ||
       (u.name && u.name.toLowerCase().includes(searchQuery)) ||
+      (u.email && u.email.toLowerCase().includes(searchQuery)) ||
       (u.church && u.church.toLowerCase().includes(searchQuery)) ||
       (u.headline && u.headline.toLowerCase().includes(searchQuery)) ||
-      (countryMeta.name && countryMeta.name.toLowerCase().includes(searchQuery));
-      
+      (meta.name && meta.name.toLowerCase().includes(searchQuery));
+
     return matchesSearch;
   });
-  
+
+  const metaEl = document.getElementById('people-results-meta');
+  if (metaEl) {
+    metaEl.textContent = filtered.length === 0
+      ? 'No matches'
+      : `${filtered.length} learner${filtered.length === 1 ? '' : 's'}`;
+  }
+
   if (filtered.length === 0) {
-    el.peopleGrid.innerHTML = `<div style="grid-column: 1/-1; padding: 3rem 1.5rem; color: var(--gray-400); text-align: center; background:#fff; border-radius:var(--r-lg);">No learners found matching filters.</div>`;
+    el.peopleGrid.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon" aria-hidden="true">🔎</div>
+        <p class="empty-state-title">No learners found</p>
+        <p class="empty-state-text">Try another search or clear the location filter.</p>
+        <button type="button" class="secondary-btn compact-btn" id="clear-people-filters">Clear filters</button>
+      </div>`;
+    document.getElementById('clear-people-filters')?.addEventListener('click', () => {
+      state.peopleCountryFilter = 'all';
+      if (el.peopleSearch) el.peopleSearch.value = '';
+      renderPeopleFilterChips();
+      renderPeopleDirectory();
+    });
     return;
   }
-  
+
   filtered.forEach(u => {
-    const avatarUrl = u.photo || `https://api.dicebear.com/7.x/bottts/svg?seed=${u.uid}`;
-    const countryMeta = state.countryMetadata[u.country] || { name: 'Unknown', flag: '🌍' };
-    const modCount = u.completedModules
-      ? u.completedModules.filter(id => modules.some(m => m.id === id)).length
-      : 0;
-    
-    // Process Interests
+    const isSelf = u.uid === auth.currentUser?.uid;
+    const meta = countryMeta(u);
+    const modCount = completedModuleCount(u);
     const interestPills = (u.interests || '')
       .split(',')
       .map(tag => tag.trim())
       .filter(tag => tag.length > 0)
+      .slice(0, 4)
       .map(tag => `<span class="interest-pill">${sanitizeHTML(tag)}</span>`)
       .join('');
 
     const socialLinkHtml = u.social ? `
-      <a href="${u.social}" target="_blank" rel="noopener noreferrer" class="card-social-link">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-        <span>Contact</span>
+      <a href="${sanitizeHTML(u.social)}" target="_blank" rel="noopener noreferrer" class="card-social-link">
+        Contact
       </a>
     ` : '';
 
     const html = `
-      <div class="user-card premium-user-card">
+      <article class="user-card premium-user-card ${isSelf ? 'is-self' : ''}">
         <div class="user-card-header">
-          <img class="card-avatar" src="${avatarUrl}" alt="${u.name || 'Learner'}">
+          <img class="card-avatar" src="${avatarUrl(u)}" alt="" loading="lazy">
           <div class="header-text-block">
-            <div class="card-name">${sanitizeHTML(u.name) || 'Anonymous Learner'}</div>
-            <div class="card-headline">${sanitizeHTML(u.headline) || 'Scriptura Learner'}</div>
+            <div class="card-name">
+              ${sanitizeHTML(u.name) || 'Learner'}
+              ${isSelf ? '<span class="you-pill">You</span>' : ''}
+            </div>
+            <div class="card-headline">${sanitizeHTML(u.headline) || 'Scriptura learner'}</div>
           </div>
         </div>
         <div class="card-body-section">
-          <div class="card-church">⛪ ${sanitizeHTML(u.church) || 'Independent Fellowship'}</div>
-          <span class="card-country-tag">${countryMeta.flag} ${countryMeta.name}</span>
-          ${u.goals ? `<div class="card-goals"><strong>Goal:</strong> ${sanitizeHTML(u.goals)}</div>` : ''}
+          <div class="card-meta-line">
+            <span class="card-country-tag">${meta.flag} ${sanitizeHTML(meta.name)}</span>
+            ${u.church ? `<span class="card-church-inline">⛪ ${sanitizeHTML(u.church)}</span>` : ''}
+          </div>
+          ${u.goals ? `<div class="card-goals">${sanitizeHTML(u.goals)}</div>` : ''}
           ${interestPills ? `<div class="card-interests-wrapper">${interestPills}</div>` : ''}
         </div>
         <div class="card-footer-section">
           <div class="card-meta-row">
-            <span class="card-badge">🔥 ${u.streak || 0}d streak</span>
-            <span class="card-badge">📖 ${modCount} modules</span>
+            <span class="card-badge">🔥 ${u.streak || 0}d</span>
+            <span class="card-badge">📖 ${modCount}</span>
           </div>
           ${socialLinkHtml}
         </div>
-      </div>
+      </article>
     `;
     el.peopleGrid.insertAdjacentHTML('beforeend', html);
   });
 }
 
+// Legacy no-ops kept if anything still calls old map APIs
+export function renderMapClusters() {
+  renderLocationCards();
+}
+export function renderDirectoryList() {
+  renderLocationCards();
+}
+
 export function loadEvents() {
   if (state.unsubscribeEvents) state.unsubscribeEvents();
-  
+
   const eventsCol = collection(db, 'events');
   state.unsubscribeEvents = onSnapshot(query(eventsCol, orderBy('time', 'asc')), (snapshot) => {
     el.eventsList.innerHTML = '';
-    let events = [];
+    const events = [];
     snapshot.forEach(docSnap => {
-      events.push({ id: docSnap.id, ...docSnap.data() });
+      // Skip non-event docs such as module_schedules
+      const data = docSnap.data();
+      if (!data.title || docSnap.id === 'module_schedules') return;
+      events.push({ id: docSnap.id, ...data });
     });
-    
+
     if (events.length === 0) {
-      el.eventsList.innerHTML = `<div style="padding: 2rem; color: var(--gray-400); text-align: center;">No study events scheduled. Click "Schedule Event" to create one!</div>`;
+      el.eventsList.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon" aria-hidden="true">📅</div>
+          <p class="empty-state-title">No events yet</p>
+          <p class="empty-state-text">Schedule a study night or fellowship so others can join.</p>
+          <button type="button" class="primary-btn compact-btn" id="empty-schedule-event">Schedule event</button>
+        </div>`;
+      document.getElementById('empty-schedule-event')?.addEventListener('click', () => {
+        el.eventDialog?.classList.remove('hidden');
+      });
       return;
     }
-    
+
     events.forEach(ev => {
-      const timeStr = new Date(ev.time).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      let timeStr = 'TBD';
+      try {
+        timeStr = new Date(ev.time).toLocaleString([], {
+          weekday: 'short', month: 'short', day: 'numeric',
+          hour: '2-digit', minute: '2-digit'
+        });
+      } catch (_) { /* keep TBD */ }
       const hostAvatar = ev.hostPhoto || `https://api.dicebear.com/7.x/bottts/svg?seed=${ev.hostUid}`;
-      
+
       const html = `
-        <div class="event-card">
+        <article class="event-card">
           <div class="event-info">
-            <span class="event-time-badge">${timeStr}</span>
-            <div class="event-title">${ev.title}</div>
-            <p class="event-desc">${ev.description}</p>
+            <span class="event-time-badge">${sanitizeHTML(timeStr)}</span>
+            <h4 class="event-title">${sanitizeHTML(ev.title)}</h4>
+            <p class="event-desc">${sanitizeHTML(ev.description || '')}</p>
             <div class="event-host">
-              <img class="event-host-avatar" src="${hostAvatar}" alt="Host">
-              <span>Hosted by ${ev.hostName || 'Host'}</span>
+              <img class="event-host-avatar" src="${hostAvatar}" alt="">
+              <span>${sanitizeHTML(ev.hostName || 'Host')}</span>
             </div>
           </div>
           <div class="event-actions">
-            <button class="primary-btn compact-btn join-event-btn" data-event-id="${ev.id}">RSVP / JOIN</button>
+            <button type="button" class="primary-btn compact-btn join-event-btn" data-event-id="${ev.id}">I'm interested</button>
           </div>
-        </div>
+        </article>
       `;
       el.eventsList.insertAdjacentHTML('beforeend', html);
     });
-    
+
     document.querySelectorAll('.join-event-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        showToast('You have successfully RSVPed to this study event! Check back closer to the time.', 'success');
+        showToast("You're on the list — see you there!", 'success');
+        btn.textContent = 'Saved';
+        btn.disabled = true;
       });
     });
   }, (err) => {
-    console.error("Error loading events: ", err);
+    console.error('Error loading events: ', err);
   });
 }
 
 export async function handleCreateEvent(e) {
   e.preventDefault();
   if (!auth.currentUser) return;
-  
+
   const title = el.eventTitleInput.value;
   const description = el.eventDescInput.value;
   const time = el.eventTimeInput.value;
-  
+
   try {
     await addDoc(collection(db, 'events'), {
       title,
@@ -345,9 +477,10 @@ export async function handleCreateEvent(e) {
       hostName: state.userState.name || auth.currentUser.displayName || 'Scriptura Learner',
       hostPhoto: state.userState.photo || `https://api.dicebear.com/7.x/bottts/svg?seed=${auth.currentUser.uid}`
     });
-    
+
     el.eventCreateForm.reset();
     el.eventDialog.classList.add('hidden');
+    showToast('Event scheduled!', 'success');
   } catch (err) {
     console.error('Failed to create event:', err);
     showToast('Failed to schedule event. Please try again.', 'error');
@@ -356,17 +489,26 @@ export async function handleCreateEvent(e) {
 
 export function loadChatMessages() {
   if (state.unsubscribeChat) state.unsubscribeChat();
-  
+
   const messagesCol = collection(db, 'messages');
-  const q = query(messagesCol, orderBy('timestamp', 'asc'));
-  
+  const q = query(messagesCol, orderBy('timestamp', 'asc'), limit(100));
+
   state.unsubscribeChat = onSnapshot(q, (snapshot) => {
     el.chatMessages.innerHTML = '';
+    if (snapshot.empty) {
+      el.chatMessages.innerHTML = `
+        <div class="empty-state soft chat-empty">
+          <p class="empty-state-title">Start the conversation</p>
+          <p class="empty-state-text">Share a verse, prayer request, or word of encouragement.</p>
+        </div>`;
+      return;
+    }
+
     snapshot.forEach(docSnap => {
       const msg = docSnap.data();
       const isSelf = msg.senderUid === auth.currentUser?.uid;
-      const avatarUrl = msg.senderPhoto || `https://api.dicebear.com/7.x/bottts/svg?seed=${msg.senderUid}`;
-      let timeStr = 'Just now';
+      const aUrl = msg.senderPhoto || `https://api.dicebear.com/7.x/bottts/svg?seed=${msg.senderUid}`;
+      let timeStr = '';
       if (msg.timestamp) {
         try {
           timeStr = new Date(msg.timestamp.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -374,13 +516,13 @@ export function loadChatMessages() {
           timeStr = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
       }
-      
+
       const html = `
         <div class="chat-msg ${isSelf ? 'self' : ''}">
-          <img class="chat-msg-avatar" src="${avatarUrl}" alt="Avatar">
+          <img class="chat-msg-avatar" src="${aUrl}" alt="">
           <div class="chat-msg-content">
             <div class="chat-msg-header">
-              <span class="chat-msg-author">${msg.senderName || 'Anonymous'}</span>
+              <span class="chat-msg-author">${sanitizeHTML(msg.senderName || 'Anonymous')}</span>
               <span class="chat-msg-time">${timeStr}</span>
             </div>
             <div class="chat-msg-bubble">${sanitizeHTML(msg.text)}</div>
@@ -389,22 +531,22 @@ export function loadChatMessages() {
       `;
       el.chatMessages.insertAdjacentHTML('beforeend', html);
     });
-    
+
     el.chatMessages.scrollTop = el.chatMessages.scrollHeight;
   }, (err) => {
-    console.error("Error loading chat: ", err);
+    console.error('Error loading chat: ', err);
   });
 }
 
 export async function handleSendChatMessage(e) {
   e.preventDefault();
   if (!auth.currentUser) return;
-  
+
   const text = el.chatMessageInput.value.trim();
   if (!text) return;
-  
+
   el.chatMessageInput.value = '';
-  
+
   try {
     await addDoc(collection(db, 'messages'), {
       text,
@@ -415,33 +557,28 @@ export async function handleSendChatMessage(e) {
     });
   } catch (err) {
     console.error('Failed to send message:', err);
+    showToast('Could not post message.', 'error');
   }
 }
 
 export function renderAvatarPresets() {
   if (!el.avatarPresetsContainer) return;
   el.avatarPresetsContainer.innerHTML = '';
-  
-  const uid = auth.currentUser ? auth.currentUser.uid.slice(0,8) : 'scriptura';
+
+  const uid = auth.currentUser ? auth.currentUser.uid.slice(0, 8) : 'scriptura';
   const presets = [
     { style: 'open-peeps', seed: uid },
     { style: 'open-peeps', seed: uid + '1' },
     { style: 'open-peeps', seed: uid + '2' },
     { style: 'big-smile', seed: uid },
     { style: 'big-smile', seed: uid + '1' },
-    { style: 'big-smile', seed: uid + '2' },
     { style: 'adventurer', seed: uid },
     { style: 'adventurer', seed: uid + '1' },
-    { style: 'adventurer', seed: uid + '2' },
     { style: 'fun-emoji', seed: uid },
-    { style: 'fun-emoji', seed: uid + '1' },
-    { style: 'fun-emoji', seed: uid + '2' },
     { style: 'lorelei', seed: uid },
-    { style: 'lorelei', seed: uid + '1' },
-    { style: 'lorelei', seed: uid + '2' },
     { style: 'avataaars', seed: uid },
   ];
-  
+
   presets.forEach(({ style, seed }) => {
     const url = `https://api.dicebear.com/7.x/${style}/svg?seed=${seed}`;
     const wrapper = document.createElement('div');
@@ -451,20 +588,19 @@ export function renderAvatarPresets() {
     img.src = url;
     img.alt = style;
     img.loading = 'lazy';
-    
+
     if (state.userState.photo === url) {
       wrapper.classList.add('selected');
     }
-    
+
     wrapper.addEventListener('click', () => {
       document.querySelectorAll('.avatar-preset-wrapper').forEach(p => p.classList.remove('selected'));
       wrapper.classList.add('selected');
-      wrapper.dataset.selectedUrl = url;
       el.avatarPresetsContainer.dataset.selectedUrl = url;
       const preview = document.getElementById('profile-photo-preview');
       if (preview) preview.classList.add('hidden');
     });
-    
+
     wrapper.appendChild(img);
     el.avatarPresetsContainer.appendChild(wrapper);
   });
@@ -474,17 +610,21 @@ export function setupPhotoUpload() {
   const uploadInput = document.getElementById('profile-photo-upload');
   const preview = document.getElementById('profile-photo-preview');
   if (!uploadInput || !preview) return;
-  
+
   uploadInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    if (file.size > 800 * 1024) {
+      showToast('Please choose an image under 800KB.', 'warning');
+      return;
+    }
     const reader = new FileReader();
-    reader.onload = (ev) => {
-      preview.src = ev.target.result;
+    reader.onload = () => {
+      preview.src = reader.result;
       preview.classList.remove('hidden');
+      preview.dataset.dataUrl = reader.result;
+      if (el.avatarPresetsContainer) el.avatarPresetsContainer.dataset.selectedUrl = '';
       document.querySelectorAll('.avatar-preset-wrapper').forEach(p => p.classList.remove('selected'));
-      el.avatarPresetsContainer.dataset.selectedUrl = '';
-      preview.dataset.dataUrl = ev.target.result;
     };
     reader.readAsDataURL(file);
   });
@@ -492,13 +632,12 @@ export function setupPhotoUpload() {
 
 export function openProfileDialog() {
   if (!auth.currentUser) return;
-  
+
   el.profileNameInput.value = state.userState.name || auth.currentUser.displayName || '';
   el.profileEmailInput.value = state.userState.email || auth.currentUser.email || '';
   el.profileChurchInput.value = state.userState.church || '';
-  el.profileCountrySelect.value = state.userState.country || '';
-  
-  // Enriched fields
+  el.profileCountrySelect.value = effectiveCountry(state.userState);
+
   document.getElementById('profile-headline-input').value = state.userState.headline || '';
   document.getElementById('profile-goals-input').value = state.userState.goals || '';
   document.getElementById('profile-interests-input').value = state.userState.interests || '';
@@ -506,8 +645,6 @@ export function openProfileDialog() {
   const roleSelect = document.getElementById('profile-role-select');
   if (roleSelect) {
     roleSelect.value = state.userState.role || 'user';
-    // Only allow admins to see/change role in the profile dialog.
-    // Real authorization must still be enforced in Firestore rules.
     if (state.userState.role !== 'admin') {
       roleSelect.disabled = true;
       roleSelect.closest('.form-field')?.classList.add('hidden');
@@ -516,7 +653,7 @@ export function openProfileDialog() {
       roleSelect.closest('.form-field')?.classList.remove('hidden');
     }
   }
-  
+
   const preview = document.getElementById('profile-photo-preview');
   if (preview) {
     if (state.userState.photo && state.userState.photo.startsWith('data:image')) {
@@ -530,7 +667,7 @@ export function openProfileDialog() {
   }
   const uploadInput = document.getElementById('profile-photo-upload');
   if (uploadInput) uploadInput.value = '';
-  
+
   renderAvatarPresets();
   el.profileDialog.classList.remove('hidden');
 }
@@ -538,19 +675,19 @@ export function openProfileDialog() {
 export async function handleProfileSave(e) {
   e.preventDefault();
   if (!auth.currentUser) return;
-  
+
   const newName = el.profileNameInput.value;
   const newEmail = el.profileEmailInput.value;
   const newChurch = el.profileChurchInput.value;
-  const newCountry = el.profileCountrySelect.value;
-  
+  const newCountry = el.profileCountrySelect.value || 'SG';
+
   const newHeadline = document.getElementById('profile-headline-input').value;
   const newGoals = document.getElementById('profile-goals-input').value;
   const newInterests = document.getElementById('profile-interests-input').value;
   const newSocial = document.getElementById('profile-social-input').value;
   const roleSelect = document.getElementById('profile-role-select');
   const newRole = roleSelect?.value || state.userState.role || 'user';
-  
+
   const preview = document.getElementById('profile-photo-preview');
   const uploadedDataUrl = preview?.dataset.dataUrl;
   const selectedPresetUrl = el.avatarPresetsContainer?.dataset.selectedUrl;
@@ -560,31 +697,30 @@ export async function handleProfileSave(e) {
   } else if (selectedPresetUrl) {
     newPhoto = selectedPresetUrl;
   }
-  
+
   state.userState.name = newName;
   state.userState.email = newEmail;
   state.userState.church = newChurch;
   state.userState.country = newCountry;
   state.userState.photo = newPhoto;
-  
+
   state.userState.headline = newHeadline;
   state.userState.goals = newGoals;
   state.userState.interests = newInterests;
   state.userState.social = newSocial;
-  // Prevent non-admin users from escalating their own role.
-  // Admins may change their own role; Firestore rules are the real guard.
+
   if (state.userState.role === 'admin') {
     state.userState.role = (newRole === 'admin' || newRole === 'user') ? newRole : 'admin';
   } else {
     state.userState.role = 'user';
   }
-  
+
   await saveState();
   updateHeaderProfile();
   checkAdminNavVisibility();
   el.profileDialog.classList.add('hidden');
-  
+  showToast('Profile updated', 'success');
+
   await fetchRegisteredUsers();
   updateNetworkView();
 }
-

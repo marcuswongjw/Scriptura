@@ -8,7 +8,7 @@
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#e11d48">
-  <link rel="stylesheet" href="style.css?v=2.0.13">
+  <link rel="stylesheet" href="style.css?v=2.0.14">
 </head>
 <body>
 
@@ -47,9 +47,9 @@
 
       <!-- Welcome Hero -->
       <div class="welcome-hero">
-        <p class="welcome-label">WELCOME TO</p>
+        <p class="welcome-label">Welcome back</p>
         <h1 class="welcome-title">Scriptura</h1>
-        <p class="welcome-tagline">An active recall Bible study platform that helps you examine the Scriptures daily with great eagerness.</p>
+        <p class="welcome-tagline">Examine the Scriptures daily with active recall — short lessons that stick.</p>
       </div>
 
       <!-- Daily Reading Card -->
@@ -87,9 +87,9 @@
 
     <!-- 2. COURSES VIEW (Renovated Quantic UI) -->
     <section id="view-courses" class="tab-view hidden">
-      <div class="courses-page-header">
-        <h2 class="page-heading">Course Catalog</h2>
-        <p class="section-subtitle">Premium Bible study courses and interactive lessons</p>
+      <div class="courses-page-header page-header-block">
+        <h2 class="page-heading">Courses</h2>
+        <p class="section-subtitle">Browse lessons by book and topic</p>
       </div>
 
       <!-- Quantic-style Search & Filter Panel -->
@@ -114,148 +114,127 @@
       </div>
     </section>
 
-    <!-- 3. GLOBAL NETWORK VIEW -->
+    <!-- 3. COMMUNITY / NETWORK VIEW -->
     <section id="view-network" class="tab-view hidden">
-      <div class="network-layout">
-        
-        <!-- Network Sub-Navigation -->
-        <div class="network-sidebar">
-          <button class="net-nav-item active" data-net-tab="map">
-            <svg class="net-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
-            <span>Map</span>
+      <div class="network-shell">
+        <header class="network-hero">
+          <div class="network-hero-copy">
+            <p class="network-kicker">Community</p>
+            <h2 class="page-heading">Study together</h2>
+            <p class="section-subtitle">Find learners near you, join events, and share encouragement.</p>
+          </div>
+          <div class="network-hero-stats" aria-label="Community stats">
+            <div class="net-stat-chip">
+              <span class="net-stat-value" id="network-total-count">0</span>
+              <span class="net-stat-label">Learners</span>
+            </div>
+            <div class="net-stat-chip">
+              <span class="net-stat-value" id="network-location-count">0</span>
+              <span class="net-stat-label">Locations</span>
+            </div>
+          </div>
+        </header>
+
+        <nav class="network-tabs" aria-label="Community sections">
+          <button class="net-nav-item active" data-net-tab="hub" type="button">
+            <span class="net-tab-icon" aria-hidden="true">🏠</span>
+            <span>Hub</span>
           </button>
-          <button class="net-nav-item" data-net-tab="people">
-            <svg class="net-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          <button class="net-nav-item" data-net-tab="people" type="button">
+            <span class="net-tab-icon" aria-hidden="true">👥</span>
             <span>People</span>
           </button>
-          <button class="net-nav-item" data-net-tab="events">
-            <svg class="net-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <button class="net-nav-item" data-net-tab="events" type="button">
+            <span class="net-tab-icon" aria-hidden="true">📅</span>
             <span>Events</span>
           </button>
-          <button class="net-nav-item" data-net-tab="messages">
-            <svg class="net-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-            <span>Messages</span>
+          <button class="net-nav-item" data-net-tab="messages" type="button">
+            <span class="net-tab-icon" aria-hidden="true">💬</span>
+            <span>Board</span>
           </button>
-        </div>
+        </nav>
 
-        <!-- Network Body Area -->
         <div class="network-body">
-          
-          <!-- SUB-VIEW 1: MAP (Renovated Detailed Outlines Map) -->
-          <div id="net-subview-map" class="net-subview active">
-            <div class="network-page-header">
-              <h2 class="page-heading">Scriptura Network Map</h2>
-              <p class="section-subtitle">Real-time registered users worldwide</p>
-            </div>
-            
-            <div class="network-container">
-              <!-- World Map SVG wrapper -->
-              <div class="map-wrapper">
-                <div class="network-stats-overlay">
-                  <span class="active-count-num" id="regional-active-count">0</span>
-                  <span class="active-count-label">Registered globally</span>
-                </div>
-                <svg id="world-map-svg" viewBox="0 0 1000 500" class="world-map" xmlns="http://www.w3.org/2000/svg">
-                  <!-- Background grid -->
-                  <rect width="1000" height="500" fill="none" />
-                  
-                  <!-- High-fidelity detailed outlines -->
-                  <!-- Greenland -->
-                  <path class="continent-path" d="M 290,20 C 310,15 340,15 345,25 C 350,35 335,65 315,70 C 295,75 285,60 280,45 C 275,30 280,25 290,20 Z" />
-                  <!-- North America -->
-                  <path class="continent-path" d="M 60,60 C 80,45 100,45 130,40 C 160,35 180,20 220,20 C 260,20 280,35 320,40 C 330,45 320,60 300,75 C 310,85 330,80 340,90 C 350,100 320,110 300,120 C 280,130 260,150 240,180 C 235,190 225,230 220,240 C 215,245 205,235 205,225 C 200,215 190,195 185,185 C 180,175 160,170 150,175 C 130,180 120,170 100,160 C 80,150 65,130 60,110 C 55,90 50,75 60,60 Z" />
-                  <!-- South America -->
-                  <path class="continent-path" d="M 215,245 C 225,240 240,240 250,250 C 270,270 290,290 310,310 C 330,330 340,360 325,410 C 310,460 290,480 270,480 C 260,480 250,440 245,410 C 240,380 230,340 220,310 C 210,280 205,260 215,245 Z" />
-                  <!-- Great Britain -->
-                  <path class="continent-path" d="M 485,90 C 490,85 495,90 495,95 C 495,100 490,105 485,105 C 480,105 480,95 485,90 Z" />
-                  <!-- Iceland -->
-                  <path class="continent-path" d="M 420,55 C 425,50 435,50 435,55 C 435,60 425,65 420,65 C 415,65 415,60 420,55 Z" />
-                  <!-- Africa -->
-                  <path class="continent-path" d="M 430,205 C 450,190 480,180 520,185 C 550,190 575,200 590,225 C 605,250 620,285 595,335 C 570,385 555,420 535,445 C 525,455 515,455 510,440 C 505,420 500,380 495,360 C 490,340 470,320 455,300 C 440,280 420,265 415,245 C 410,225 415,215 430,205 Z" />
-                  <!-- Madagascar -->
-                  <path class="continent-path" d="M 610,360 C 615,355 620,360 625,370 C 630,380 625,405 620,415 C 615,425 610,420 605,405 C 600,390 605,365 610,360 Z" />
-                  <!-- Eurasia -->
-                  <path class="continent-path" d="M 425,185 C 430,170 420,150 440,140 C 460,130 480,130 485,110 C 490,90 500,80 530,80 C 560,80 580,60 610,65 C 640,70 670,55 710,50 C 750,45 800,45 860,50 C 920,55 960,65 980,85 C 990,95 980,110 960,120 C 940,130 920,155 940,175 C 960,195 945,215 905,225 C 865,235 835,215 815,235 C 795,255 770,275 750,275 C 730,275 710,255 690,255 C 670,255 640,245 615,245 C 590,245 560,255 530,255 C 500,255 460,245 440,230 C 420,215 420,200 425,185 Z" />
-                  <!-- Japan -->
-                  <path class="continent-path" d="M 880,115 C 885,110 890,115 892,120 C 895,130 890,140 885,150 C 880,160 875,160 872,150 C 870,140 875,120 880,115 Z" />
-                  <!-- Australia -->
-                  <path class="continent-path" d="M 780,340 C 790,330 810,330 840,320 C 870,310 885,320 895,335 C 905,350 900,370 890,385 C 880,400 850,410 820,410 C 790,410 780,390 775,370 C 770,350 770,350 780,340 Z" />
-                  <!-- New Zealand -->
-                  <path class="continent-path" d="M 910,430 C 915,425 920,430 922,435 C 925,445 920,455 915,465 C 910,475 905,470 905,460 C 905,445 905,435 910,430 Z" />
+          <!-- HUB -->
+          <div id="net-subview-hub" class="net-subview active">
+            <section class="net-panel net-you-are-here" id="network-you-card">
+              <!-- filled by JS -->
+            </section>
 
-                  <!-- Dynamic clusters injected here -->
-                  <g id="map-clusters"></g>
-                </svg>
+            <section class="net-panel">
+              <div class="net-panel-header">
+                <h3 class="net-panel-title">Locations</h3>
+                <p class="net-panel-sub">Tap a city to browse people there</p>
               </div>
+              <div id="network-location-cards" class="location-cards">
+                <!-- filled by JS -->
+              </div>
+            </section>
 
-              <!-- Global network list -->
-              <div class="network-directory">
-                <h3 class="directory-title">Active Regional Chapters</h3>
-                <div class="directory-list" id="network-directory-list">
-                  <!-- Generated dynamically -->
+            <section class="net-panel">
+              <div class="net-panel-header row">
+                <div>
+                  <h3 class="net-panel-title">Recently active</h3>
+                  <p class="net-panel-sub">Learners studying this week</p>
                 </div>
+                <button type="button" class="text-link-btn" id="network-see-all-people">See all</button>
               </div>
-            </div>
+              <div id="network-preview-people" class="people-preview-row">
+                <!-- filled by JS -->
+              </div>
+            </section>
           </div>
 
-          <!-- SUB-VIEW 2: PEOPLE -->
+          <!-- PEOPLE -->
           <div id="net-subview-people" class="net-subview hidden">
-            <div class="network-page-header">
-              <h2 class="page-heading">Scriptura Directory</h2>
-              <p class="section-subtitle">Browse and search registered learners</p>
-            </div>
-            
             <div class="directory-toolbar">
-              <input type="text" id="people-search" class="search-bar" placeholder="Search by name, church, occupation or country..." style="width: 100%;">
+              <div class="search-input-wrapper net-search">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="search" id="people-search" class="search-bar-new" placeholder="Search name, church, or location…" autocomplete="off">
+              </div>
+              <div id="people-filter-chips" class="filter-chip-row" role="group" aria-label="Filter by location">
+                <!-- filled by JS -->
+              </div>
             </div>
-            
-            <div id="people-grid" class="people-grid">
-              <!-- Dynamically populated card list -->
-            </div>
+            <p id="people-results-meta" class="results-meta"></p>
+            <div id="people-grid" class="people-grid"></div>
           </div>
 
-          <!-- SUB-VIEW 3: EVENTS -->
+          <!-- EVENTS -->
           <div id="net-subview-events" class="net-subview hidden">
             <div class="network-page-header-flex">
               <div>
-                <h2 class="page-heading">Study Events</h2>
-                <p class="section-subtitle">Join or schedule virtual/in-person scripture fellowships</p>
+                <h3 class="net-panel-title">Study events</h3>
+                <p class="net-panel-sub">Fellowships and group study times</p>
               </div>
-              <button id="create-event-btn" class="primary-btn compact-btn">Schedule Event</button>
+              <button id="create-event-btn" class="primary-btn compact-btn" type="button">+ Schedule</button>
             </div>
-            
-            <div id="events-list" class="events-list">
-              <!-- Dynamically populated events -->
-            </div>
+            <div id="events-list" class="events-list"></div>
           </div>
 
-          <!-- SUB-VIEW 4: MESSAGES -->
+          <!-- MESSAGES / BOARD -->
           <div id="net-subview-messages" class="net-subview hidden">
-            <div class="network-page-header">
-              <h2 class="page-heading">Global Study Board</h2>
-              <p class="section-subtitle">Post thoughts, prayer requests, and notes with other learners</p>
+            <div class="net-panel-header">
+              <h3 class="net-panel-title">Community board</h3>
+              <p class="net-panel-sub">Share thoughts, prayer requests, and notes</p>
             </div>
-            
             <div class="chat-container">
-              <div id="chat-messages" class="chat-messages">
-                <!-- Dynamically populated chat messages -->
-              </div>
+              <div id="chat-messages" class="chat-messages"></div>
               <form id="chat-input-form" class="chat-input-form">
-                <input type="text" id="chat-message-input" required placeholder="Write a message to the board..." autocomplete="off">
+                <input type="text" id="chat-message-input" required placeholder="Write something encouraging…" autocomplete="off" maxlength="500">
                 <button type="submit" class="chat-send-btn">Post</button>
               </form>
             </div>
           </div>
-
         </div>
       </div>
     </section>
 
     <!-- 4. STATS VIEW -->
     <section id="view-stats" class="tab-view hidden">
-      <div class="stats-page-header">
-        <h2 class="page-heading">Your Progress</h2>
-        <p class="section-subtitle">Keep studying to grow your streak and accuracy</p>
+      <div class="stats-page-header page-header-block">
+        <h2 class="page-heading">Your progress</h2>
+        <p class="section-subtitle">Streaks, accuracy, and modules completed</p>
       </div>
       <div class="stats-grid">
         <div class="stat-card">
@@ -992,6 +971,6 @@
     </button>
   </nav>
 
-  <script type="module" src="app.js?v=2.0.13"></script>
+  <script type="module" src="app.js?v=2.0.14"></script>
 </body>
 </html>

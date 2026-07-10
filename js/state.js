@@ -1,5 +1,5 @@
 // Shared mutable application state (Phase 2)
-import { createDefaultUserState } from './constants.js?v=2.0.13';
+import { createDefaultUserState } from './constants.js?v=2.0.14';
 
 export const state = {
   userState: createDefaultUserState(),
@@ -22,22 +22,23 @@ export const state = {
   stateDirty: false,
   stateSaveTimer: null,
   registeredUsers: [],
-  currentNetworkTab: 'map',
+  currentNetworkTab: 'hub',
+  peopleCountryFilter: 'all',
   networkListenersAttached: false,
   unsubscribeEvents: null,
   unsubscribeChat: null,
   editorSlides: [],
   pendingRegistrationDetails: null,
   countryMetadata: {
-    US: { name: 'United States', flag: '🇺🇸', cx: 210, cy: 140 },
-    SG: { name: 'Singapore', flag: '🇸🇬', cx: 770, cy: 240 },
-    GB: { name: 'United Kingdom', flag: '🇬🇧', cx: 510, cy: 110 },
-    AU: { name: 'Australia', flag: '🇦🇺', cx: 850, cy: 380 },
-    CA: { name: 'Canada', flag: '🇨🇦', cx: 180, cy: 120 },
-    ZA: { name: 'South Africa', flag: '🇿🇦', cx: 540, cy: 360 },
-    PH: { name: 'Philippines', flag: '🇵🇭', cx: 830, cy: 180 },
-    KR: { name: 'South Korea', flag: '🇰🇷', cx: 810, cy: 130 },
-    MY: { name: 'Malaysia', flag: '🇲🇾', cx: 750, cy: 210 },
-    HK: { name: 'Hong Kong', flag: '🇭🇰', cx: 790, cy: 160 }
+    SG: { name: 'Singapore', flag: '🇸🇬', region: 'Southeast Asia' },
+    PH: { name: 'Philippines', flag: '🇵🇭', region: 'Southeast Asia' },
+    MY: { name: 'Malaysia', flag: '🇲🇾', region: 'Southeast Asia' },
+    HK: { name: 'Hong Kong', flag: '🇭🇰', region: 'East Asia' },
+    KR: { name: 'South Korea', flag: '🇰🇷', region: 'East Asia' },
+    AU: { name: 'Australia', flag: '🇦🇺', region: 'Oceania' },
+    US: { name: 'United States', flag: '🇺🇸', region: 'North America' },
+    GB: { name: 'United Kingdom', flag: '🇬🇧', region: 'Europe' },
+    CA: { name: 'Canada', flag: '🇨🇦', region: 'North America' },
+    ZA: { name: 'South Africa', flag: '🇿🇦', region: 'Africa' }
   }
 };

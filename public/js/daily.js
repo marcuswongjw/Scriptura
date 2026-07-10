@@ -1,9 +1,9 @@
 // Feature module: daily (Phase 2)
-import { dailyReadings } from '../daily_readings.js?v=2.0.13';
-import { sanitizeHTML, getDayOfYear } from './utils.js?v=2.0.13';
-import { showToast } from './toast.js?v=2.0.13';
-import { state } from './state.js?v=2.0.13';
-import { awardXP, logActivity, recordActivity, saveState } from './user.js?v=2.0.13';
+import { dailyReadings } from '../daily_readings.js?v=2.0.14';
+import { sanitizeHTML, getDayOfYear } from './utils.js?v=2.0.14';
+import { showToast } from './toast.js?v=2.0.14';
+import { state } from './state.js?v=2.0.14';
+import { awardXP, logActivity, recordActivity, saveState } from './user.js?v=2.0.14';
 
 export function getTodaysReading() {
   if (!dailyReadings || dailyReadings.length === 0) return null;
