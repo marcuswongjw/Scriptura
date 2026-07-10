@@ -1,5 +1,5 @@
 // Feature module: catalog (Phase 2)
-import { concentrations, modules } from '../modules.js?v=2.0.22';
+import { concentrations, modules } from '../modules.js?v=2.0.23';
 import { conIcons } from './constants.js?v=2.0.22';
 import { showToast } from './toast.js?v=2.0.22';
 import { el } from './dom.js?v=2.0.22';

@@ -1,5 +1,5 @@
 // First-run onboarding: name, church, location, start first module
-import { modules } from '../modules.js?v=2.0.22';
+import { modules } from '../modules.js?v=2.0.23';
 import { state } from './state.js?v=2.0.22';
 import { saveState, updateHeaderProfile, isModuleReleased } from './user.js?v=2.0.22';
 import { showToast } from './toast.js?v=2.0.22';

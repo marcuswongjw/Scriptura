@@ -6,15 +6,23 @@ This guide explains how to add new courses, concentrations, and interactive stud
 
 ## Step 1: Understand the Data Files
 
-All study content is managed in two primary files inside the project directory:
-1. `modules.js`: Contains the structural definitions of concentrations and all module/slide content.
-2. `app.js`: Contains logic and configuration maps, such as the module icons.
+Study content is split for maintainability (the old single `modules.js` was 6k+ lines):
+
+| Path | Purpose |
+|------|---------|
+| `content/concentrations.js` | Course groupings (`concentrations` array) |
+| `content/modules/*.js` | Module + slide data by book/group (e.g. `genesis.js`, `wisdom.js`) |
+| `modules.js` | Thin barrel that re-exports `concentrations` and merges all module arrays |
+
+App code still imports from `modules.js` — you do not need to change imports when adding content.
+
+Also: `app.js` wires logic; module icons live in constants / UI maps as needed.
 
 ---
 
-## Step 2: Define a Concentration in `modules.js`
+## Step 2: Define a Concentration
 
-At the top of [modules.js](file:///Users/marcus/.gemini/antigravity/scratch/Scriptura/modules.js), locate the `concentrations` array. Each concentration represents a course topic grouping:
+Edit `content/concentrations.js`. Each concentration represents a course topic grouping:
 
 ```javascript
 export const concentrations = [
@@ -29,9 +37,9 @@ export const concentrations = [
 
 ---
 
-## Step 3: Define a Module in `modules.js`
+## Step 3: Define a Module
 
-Under the `modules` array in `modules.js`, add a new module object. Each module is made of metadata and a sequential series of slides:
+Add a module object to the right group file under `content/modules/` (or create a new group file and import it from the root `modules.js` barrel). Each module is metadata plus an ordered `slides` array:
 
 ```javascript
 {
