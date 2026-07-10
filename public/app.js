@@ -1,22 +1,22 @@
 // Scriptura app entry — wires Phase 1 + Phase 2 modules
-import { auth } from './js/firebase.js?v=2.0.19';
+import { auth } from './js/firebase.js?v=2.0.20';
 import { signOut, onAuthStateChanged, setPersistence, browserSessionPersistence } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
-import { debounce } from './js/utils.js?v=2.0.19';
-import { showToast } from './js/toast.js?v=2.0.19';
-import { el } from './js/dom.js?v=2.0.19';
-import { state } from './js/state.js?v=2.0.19';
-import { handlePublisherFileInput, handlePublisherSubmit, handleTemplateToggle, wireVisualEditor } from './js/admin.js?v=2.0.19';
-import { handleGoogleSignIn, handleLoginSubmit, handleRegisterSubmit, switchAuthTab } from './js/auth_ui.js?v=2.0.19';
-import { renderCoursesCatalog, updateFilterTagsUI } from './js/catalog.js?v=2.0.19';
-import { renderDashboard } from './js/dashboard.js?v=2.0.19';
-import { closeLesson, handleNextClick, handlePrevClick, renderSlide, startModule } from './js/lesson.js?v=2.0.19';
-import { handleProfileSave, initNetworkViewer, openProfileDialog, setupPhotoUpload } from './js/network.js?v=2.0.19';
-import { checkAndSyncPushToken, registerServiceWorker } from './js/push.js?v=2.0.19';
-import { routeToPath, switchDashboardSubtab, switchTab } from './js/routing.js?v=2.0.19';
-import { updateStatsDisplay } from './js/stats.js?v=2.0.19';
-import { checkAdminNavVisibility, fetchAndMergeCustomModules, loadModuleSchedules, loadUserCloudData, resetLocalState, saveState, updateHeaderProfile, updateStreak } from './js/user.js?v=2.0.19';
-import { wireOnboarding, maybeShowOnboarding } from './js/onboarding.js?v=2.0.19';
-import { maybeSendDailyReadingReminder, surfaceUnreadNotifications } from './js/notifications.js?v=2.0.19';
+import { debounce } from './js/utils.js?v=2.0.20';
+import { showToast } from './js/toast.js?v=2.0.20';
+import { el } from './js/dom.js?v=2.0.20';
+import { state } from './js/state.js?v=2.0.20';
+import { handlePublisherFileInput, handlePublisherSubmit, handleTemplateToggle, wireVisualEditor } from './js/admin.js?v=2.0.20';
+import { handleGoogleSignIn, handleLoginSubmit, handleRegisterSubmit, switchAuthTab } from './js/auth_ui.js?v=2.0.20';
+import { renderCoursesCatalog, updateFilterTagsUI } from './js/catalog.js?v=2.0.20';
+import { renderDashboard } from './js/dashboard.js?v=2.0.20';
+import { closeLesson, handleNextClick, handlePrevClick, renderSlide, startModule } from './js/lesson.js?v=2.0.20';
+import { handleProfileSave, initNetworkViewer, openProfileDialog, setupPhotoUpload } from './js/network.js?v=2.0.20';
+import { checkAndSyncPushToken, registerServiceWorker } from './js/push.js?v=2.0.20';
+import { routeToPath, switchDashboardSubtab, switchTab } from './js/routing.js?v=2.0.20';
+import { updateStatsDisplay } from './js/stats.js?v=2.0.20';
+import { checkAdminNavVisibility, fetchAndMergeCustomModules, loadModuleSchedules, loadUserCloudData, resetLocalState, saveState, updateHeaderProfile, updateStreak } from './js/user.js?v=2.0.20';
+import { wireOnboarding, maybeShowOnboarding } from './js/onboarding.js?v=2.0.20';
+import { maybeSendDailyReadingReminder, surfaceUnreadNotifications } from './js/notifications.js?v=2.0.20';
 
 async function init() {
   setupEventListeners();
@@ -166,20 +166,7 @@ function setupEventListeners() {
   if (publisherFileInput) publisherFileInput.addEventListener('change', handlePublisherFileInput);
   const templateToggle = document.getElementById('publisher-template-toggle');
   if (templateToggle) templateToggle.addEventListener('click', handleTemplateToggle);
-  const roleSelect = document.getElementById('profile-role-select');
-  if (roleSelect) {
-    roleSelect.addEventListener('change', async () => {
-      // Guard against self-elevation to admin.
-      if (state.userState.role !== 'admin' && roleSelect.value === 'admin') {
-        roleSelect.value = state.userState.role || 'user';
-        showToast('Only administrators can change roles.', 'warning');
-        return;
-      }
-      state.userState.role = roleSelect.value;
-      await saveState();
-      checkAdminNavVisibility();
-    });
-  }
+  // Profile role select is display-only / hidden — do not bind change→save (prevents demotion).
   setupPhotoUpload();
   wireVisualEditor();
 

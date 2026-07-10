@@ -1,12 +1,12 @@
 // Feature module: catalog (Phase 2)
-import { concentrations, modules } from '../modules.js?v=2.0.19';
-import { conIcons } from './constants.js?v=2.0.19';
-import { showToast } from './toast.js?v=2.0.19';
-import { el } from './dom.js?v=2.0.19';
-import { state } from './state.js?v=2.0.19';
-import { startModule } from './lesson.js?v=2.0.19';
-import { switchTab } from './routing.js?v=2.0.19';
-import { isModuleReleased } from './user.js?v=2.0.19';
+import { concentrations, modules } from '../modules.js?v=2.0.20';
+import { conIcons } from './constants.js?v=2.0.20';
+import { showToast } from './toast.js?v=2.0.20';
+import { el } from './dom.js?v=2.0.20';
+import { state } from './state.js?v=2.0.20';
+import { startModule } from './lesson.js?v=2.0.20';
+import { switchTab } from './routing.js?v=2.0.20';
+import { isModuleReleased } from './user.js?v=2.0.20';
 
 export function updateFilterTagsUI() {
   document.querySelectorAll('.filter-tag-btn').forEach(btn => {

@@ -8,7 +8,7 @@
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#e11d48">
-  <link rel="stylesheet" href="style.css?v=2.0.19">
+  <link rel="stylesheet" href="style.css?v=2.0.20">
 </head>
 <body>
 
@@ -267,187 +267,181 @@
 
     <!-- 5. ADMIN DASHBOARD VIEW -->
     <section id="view-admin" class="tab-view hidden">
-      <div class="stats-page-header">
-        <h2 class="page-heading">Admin Dashboard</h2>
-        <p class="section-subtitle">Manage user roles, view global stats, and schedule course release dates</p>
-      </div>
-      
-      <div class="admin-grid-layout">
-        <!-- Overview Stats -->
-        <div class="admin-panel-card">
-          <h3 class="admin-panel-title">System Overview</h3>
+      <div class="admin-shell">
+        <header class="admin-hero">
+          <div>
+            <p class="admin-kicker">Administration</p>
+            <h2 class="page-heading">Admin</h2>
+            <p class="section-subtitle">People, content, and community health</p>
+          </div>
+          <div class="admin-hero-badge" id="admin-you-badge">Signed in as admin</div>
+        </header>
+
+        <nav class="admin-tabs" aria-label="Admin sections">
+          <button type="button" class="admin-tab active" data-admin-tab="overview">Overview</button>
+          <button type="button" class="admin-tab" data-admin-tab="people">People</button>
+          <button type="button" class="admin-tab" data-admin-tab="content">Content</button>
+          <button type="button" class="admin-tab" data-admin-tab="moderation">Moderation</button>
+        </nav>
+
+        <!-- OVERVIEW -->
+        <div id="admin-panel-overview" class="admin-tab-panel active">
           <div class="admin-stats-grid">
             <div class="admin-stat-card">
               <span class="admin-stat-icon">👥</span>
               <div class="admin-stat-info">
                 <div id="admin-total-users" class="admin-stat-num">0</div>
-                <div class="admin-stat-lbl">Active Learners</div>
+                <div class="admin-stat-lbl">Learners</div>
               </div>
             </div>
             <div class="admin-stat-card">
               <span class="admin-stat-icon">📈</span>
               <div class="admin-stat-info">
-                <div id="admin-completion-rate" class="admin-stat-num">100%</div>
-                <div class="admin-stat-lbl">Study Completion Rate</div>
+                <div id="admin-completion-rate" class="admin-stat-num">—</div>
+                <div class="admin-stat-lbl">Completion rate</div>
               </div>
             </div>
             <div class="admin-stat-card">
               <span class="admin-stat-icon">🔥</span>
               <div class="admin-stat-info">
                 <div id="admin-weekly-active" class="admin-stat-num">0</div>
-                <div class="admin-stat-lbl">Weekly Active Learners</div>
+                <div class="admin-stat-lbl">Weekly active</div>
               </div>
+            </div>
+            <div class="admin-stat-card">
+              <span class="admin-stat-icon">📅</span>
+              <div class="admin-stat-info">
+                <div id="admin-mau-count" class="admin-stat-num">0</div>
+                <div class="admin-stat-lbl">Monthly active</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="admin-two-col">
+            <div class="admin-panel-card">
+              <h3 class="admin-panel-title">Engagement</h3>
+              <p class="admin-panel-subtitle">Activity ratios for the last period</p>
+              <div class="admin-metric-list">
+                <div class="admin-metric-row">
+                  <span>DAU / WAU</span>
+                  <strong id="admin-dau-wau-ratio">0%</strong>
+                </div>
+                <div class="admin-metric-row">
+                  <span>Avg modules per learner</span>
+                  <strong id="admin-avg-modules-active">0</strong>
+                </div>
+              </div>
+            </div>
+            <div class="admin-panel-card">
+              <h3 class="admin-panel-title">Study funnel</h3>
+              <p class="admin-panel-subtitle">Started vs completed a module</p>
+              <div id="admin-dropout-funnel-container" class="admin-funnel"></div>
+            </div>
+          </div>
+
+          <div id="admin-module-engagement-host"></div>
+        </div>
+
+        <!-- PEOPLE -->
+        <div id="admin-panel-people" class="admin-tab-panel hidden">
+          <div class="admin-panel-card">
+            <div class="admin-panel-head-row">
+              <div>
+                <h3 class="admin-panel-title">Learners</h3>
+                <p class="admin-panel-subtitle">Promote admins and review progress</p>
+              </div>
+            </div>
+            <div class="admin-table-wrapper">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Learner</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Progress</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-users-list"></tbody>
+              </table>
             </div>
           </div>
         </div>
 
-        <!-- Cohort Retention & Completion Funnel Panel -->
-        <div class="admin-panel-card" style="grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
-          <div>
-            <h3 class="admin-panel-title">Weekly Learner Cohorts</h3>
-            <p class="admin-panel-subtitle">Distribution of learners active within past 7 days vs past 30 days.</p>
-            <div style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
-              <div style="background: var(--gray-50); border: 1px solid var(--gray-150); border-radius: var(--r-md); padding: 0.85rem; display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 0.85rem; font-weight: 600; color: var(--gray-700);">Daily Active to Weekly Active Ratio (DAU/WAU)</span>
-                <span id="admin-dau-wau-ratio" style="font-size: 1.1rem; font-weight: 800; color: var(--brand-coral);">0%</span>
+        <!-- CONTENT -->
+        <div id="admin-panel-content" class="admin-tab-panel hidden">
+          <div class="admin-panel-card">
+            <h3 class="admin-panel-title">Module release schedule</h3>
+            <p class="admin-panel-subtitle">Set a future date to lock a module until release</p>
+            <div class="admin-table-wrapper">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Module</th>
+                    <th>Topic</th>
+                    <th>Release date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-modules-list"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="admin-panel-card">
+            <h3 class="admin-panel-title">Publish a module</h3>
+            <p class="admin-panel-subtitle">Import JSON to add or update a lesson in the catalog</p>
+            <form id="admin-publisher-form" class="admin-publisher-form">
+              <div class="form-field">
+                <label for="publisher-parent-con">Parent course / topic</label>
+                <div class="select-wrapper">
+                  <select id="publisher-parent-con" required>
+                    <option value="">— Choose course —</option>
+                    <option value="foundations">Foundations</option>
+                    <option value="genesis">Genesis</option>
+                    <option value="exodus">Exodus</option>
+                    <option value="leviticus">Leviticus</option>
+                    <option value="numbers">Numbers</option>
+                    <option value="deuteronomy">Deuteronomy</option>
+                    <option value="joshua">Joshua</option>
+                    <option value="judges">Judges</option>
+                    <option value="ruth">Ruth</option>
+                    <option value="1samuel">1 Samuel</option>
+                    <option value="2samuel">2 Samuel</option>
+                    <option value="1kings">1 Kings</option>
+                    <option value="2kings">2 Kings</option>
+                    <option value="joel">Joel</option>
+                    <option value="hosea">Hosea</option>
+                    <option value="psalms">Psalms</option>
+                    <option value="proverbs">Proverbs</option>
+                    <option value="1chronicles">1 Chronicles</option>
+                    <option value="2chronicles">2 Chronicles</option>
+                    <option value="ezra">Ezra</option>
+                    <option value="nehemiah">Nehemiah</option>
+                    <option value="esther">Esther</option>
+                    <option value="job">Job</option>
+                    <option value="heaven">Heaven &amp; The New Earth</option>
+                  </select>
+                </div>
               </div>
-              <div style="background: var(--gray-50); border: 1px solid var(--gray-150); border-radius: var(--r-md); padding: 0.85rem; display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 0.85rem; font-weight: 600; color: var(--gray-700);">Monthly Active Learners (MAU)</span>
-                <span id="admin-mau-count" style="font-size: 1.1rem; font-weight: 800; color: var(--brand-green);">0</span>
+              <div class="form-field">
+                <label for="publisher-file-input">Import JSON file</label>
+                <input type="file" id="publisher-file-input" accept=".json" class="admin-file-input">
               </div>
-              <div style="background: var(--gray-50); border: 1px solid var(--gray-150); border-radius: var(--r-md); padding: 0.85rem; display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 0.85rem; font-weight: 600; color: var(--gray-700);">Avg. Modules Completed Per Active User</span>
-                <span id="admin-avg-modules-active" style="font-size: 1.1rem; font-weight: 800; color: #1e3a8a;">0</span>
+              <div class="form-field">
+                <label for="publisher-json-textarea">Or paste module JSON</label>
+                <textarea id="publisher-json-textarea" rows="8" class="admin-json-area" placeholder="Paste module JSON…"></textarea>
               </div>
-            </div>
-          </div>
-          <div>
-            <h3 class="admin-panel-title">Drop-out Funnel</h3>
-            <p class="admin-panel-subtitle">Breakdown of slide progress depth for active users (Started vs Completed).</p>
-            <div id="admin-dropout-funnel-container" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
-              <!-- Populated by JS -->
-            </div>
-          </div>
-        </div>
-
-        <!-- Moderation -->
-        <div class="admin-panel-card" style="grid-column: 1 / -1;">
-          <div class="admin-panel-head-row">
-            <div>
-              <h3 class="admin-panel-title">Reflection moderation</h3>
-              <p class="admin-panel-subtitle">Reported community reflections from the last 30 days</p>
-            </div>
-            <button type="button" id="admin-refresh-moderation" class="secondary-btn compact-btn">Refresh</button>
-          </div>
-          <div id="admin-moderation-list" class="admin-moderation-list">
-            <p class="admin-muted">Loading…</p>
-          </div>
-        </div>
-
-        <!-- Manage Roles -->
-        <div class="admin-panel-card">
-          <h3 class="admin-panel-title">Learner Roles Management</h3>
-          <div class="admin-table-wrapper">
-            <table class="admin-table">
-              <thead>
-                <tr>
-                  <th>Learner</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th>Progress</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="admin-users-list">
-                <!-- Loaded dynamically -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Schedule Releases -->
-        <div class="admin-panel-card">
-          <h3 class="admin-panel-title">Module Release Schedule</h3>
-          <p class="admin-panel-subtitle">Set future release dates to lock modules. Leaving blank keeps it released immediately.</p>
-          <div class="admin-table-wrapper">
-            <table class="admin-table">
-              <thead>
-                <tr>
-                  <th>Module</th>
-                  <th>Topic</th>
-                  <th>Scheduled Release Date</th>
-                  <th>Current Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="admin-modules-list">
-                <!-- Loaded dynamically -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Dynamic Publisher -->
-        <div class="admin-panel-card" style="grid-column: 1 / -1;">
-          <h3 class="admin-panel-title">Dynamic Course Publisher</h3>
-          <p class="admin-panel-subtitle">Upload a new lesson or update an existing one instantly by importing its JSON schema. The lesson will automatically merge into the course catalog.</p>
-          
-          <form id="admin-publisher-form" style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
-            <div class="form-field">
-              <label for="publisher-parent-con">Select Parent Course / Topic</label>
-              <div class="select-wrapper dark">
-                <select id="publisher-parent-con" required>
-                  <option value="">-- Choose Course --</option>
-                  <option value="foundations">Foundations</option>
-                  <option value="genesis">Genesis</option>
-                  <option value="exodus">Exodus</option>
-                  <option value="leviticus">Leviticus</option>
-                  <option value="numbers">Numbers</option>
-                  <option value="deuteronomy">Deuteronomy</option>
-                  <option value="joshua">Joshua</option>
-                  <option value="judges">Judges</option>
-                  <option value="ruth">Ruth</option>
-                  <option value="1samuel">1 Samuel</option>
-                  <option value="2samuel">2 Samuel</option>
-                  <option value="1kings">1 Kings</option>
-                  <option value="2kings">2 Kings</option>
-                  <option value="joel">Joel</option>
-                  <option value="hosea">Hosea</option>
-                  <option value="psalms">Psalms</option>
-                  <option value="proverbs">Proverbs</option>
-                  <option value="1chronicles">1 Chronicles</option>
-                  <option value="2chronicles">2 Chronicles</option>
-                  <option value="ezra">Ezra</option>
-                  <option value="nehemiah">Nehemiah</option>
-                  <option value="esther">Esther</option>
-                  <option value="job">Job</option>
-                  <option value="heaven">Heaven & The New Earth</option>
-                </select>
+              <div id="publisher-status" class="publisher-status hidden"></div>
+              <div class="admin-publisher-actions">
+                <button type="submit" id="publisher-submit-btn" class="primary-btn">Publish module</button>
+                <button type="button" id="publisher-template-toggle" class="secondary-btn">Show schema template</button>
               </div>
-            </div>
-
-            <div class="form-field">
-              <label for="publisher-file-input">Import from JSON File</label>
-              <input type="file" id="publisher-file-input" accept=".json" style="padding: 0.5rem; border: 1px dashed var(--gray-300); border-radius: var(--r-md); background: var(--gray-50); cursor: pointer;">
-            </div>
-
-            <div class="form-field">
-              <label for="publisher-json-textarea">Or Paste Module JSON Schema</label>
-              <textarea id="publisher-json-textarea" placeholder="Paste formatted JSON here..." rows="8" style="font-family: monospace; font-size: 0.82rem; padding: 0.75rem; border-radius: var(--r-md); border: 1px solid var(--gray-250); background: #f8fafc; resize: vertical;"></textarea>
-            </div>
-
-            <div id="publisher-status" class="publisher-status hidden" style="padding: 0.75rem 1rem; border-radius: var(--r-md); font-size: 0.85rem; font-weight: 600;"></div>
-
-            <div style="display: flex; gap: 1rem; align-items: center; margin-top: 0.5rem;">
-              <button type="submit" id="publisher-submit-btn" class="primary-btn" style="min-width: 140px;">Publish Module</button>
-              <button type="button" id="publisher-template-toggle" class="secondary-btn" style="background: none; border: 1px solid var(--gray-200); color: var(--gray-600); cursor: pointer; padding: 0.5rem 1rem; border-radius: var(--r-md); font-weight: 600;">Show Schema Template</button>
-            </div>
-          </form>
-
-          <!-- Toggleable JSON template helper -->
-          <div id="publisher-template-box" class="hidden" style="margin-top: 1.5rem; padding: 1.25rem; background: #0f172a; color: #cbd5e1; border-radius: var(--r-lg); border: 1px solid var(--gray-800); overflow-x: auto;">
-            <h4 style="color: #fff; margin-bottom: 0.5rem; font-family: var(--font-display);">Required Module JSON Schema</h4>
-            <pre style="font-family: monospace; font-size: 0.8rem; line-height: 1.4; margin: 0;"><code style="color: #38bdf8;">{
+            </form>
+            <div id="publisher-template-box" class="admin-template-box hidden">
+              <h4>Required module JSON schema</h4>
+              <pre><code>{
   "id": "heaven-4",
   "title": "Part 4: The Final Restoration",
   "category": "Eschatology",
@@ -459,14 +453,14 @@
       "title": "Welcome to Restoration",
       "illustration": "🌤️",
       "keyTakeaway": "God makes all things new.",
-      "content": "Double asterisks make text **bold**.\n\nDouble newlines start a new paragraph.",
-      "aiTutorExplanation": "Context context..."
+      "content": "Double asterisks make text **bold**.",
+      "aiTutorExplanation": "Context…"
     },
     {
       "type": "card-quiz",
-      "question": "Is the new earth a physical restoration of our current world?",
+      "question": "Is the new earth physical?",
       "correctAnswer": "yes",
-      "explanation": "Yes, scripture describes a renewed physical cosmos, not an abstract spirit state."
+      "explanation": "Scripture describes a renewed physical cosmos."
     },
     {
       "type": "summary",
@@ -476,9 +470,28 @@
     }
   ]
 }</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- MODERATION -->
+        <div id="admin-panel-moderation" class="admin-tab-panel hidden">
+          <div class="admin-panel-card">
+            <div class="admin-panel-head-row">
+              <div>
+                <h3 class="admin-panel-title">Reflection moderation</h3>
+                <p class="admin-panel-subtitle">Reported posts from the last 30 days</p>
+              </div>
+              <button type="button" id="admin-refresh-moderation" class="secondary-btn compact-btn">Refresh</button>
+            </div>
+            <div id="admin-moderation-list" class="admin-moderation-list">
+              <p class="admin-muted">Loading…</p>
+            </div>
           </div>
         </div>
       </div>
+    </section>
+
     </section>
 
   </main>
@@ -1085,6 +1098,6 @@
     </button>
   </nav>
 
-  <script type="module" src="app.js?v=2.0.19"></script>
+  <script type="module" src="app.js?v=2.0.20"></script>
 </body>
 </html>

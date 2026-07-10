@@ -12,6 +12,7 @@
 
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { onDocumentCreated } = require('firebase-functions/v2/firestore');
+const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const { getMessaging } = require('firebase-admin/messaging');
@@ -43,6 +44,33 @@ async function ensureBootstrapAdmins() {
   }
   return fixed;
 }
+
+/**
+ * Callable: if the signed-in user's email is in BOOTSTRAP_ADMIN_EMAILS,
+ * force role=admin and return { admin: true }. Called on every login.
+ */
+exports.claimBootstrapAdmin = onCall(
+  { region: 'asia-southeast1' },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Sign in required.');
+    }
+    const email = (request.auth.token.email || '').toLowerCase();
+    const uid = request.auth.uid;
+    if (!email || !BOOTSTRAP_ADMIN_EMAILS.includes(email)) {
+      // Still return current role from firestore if present
+      const snap = await db.collection('users').doc(uid).get();
+      const role = snap.exists && snap.data()?.role === 'admin' ? 'admin' : 'user';
+      return { admin: role === 'admin', bootstrap: false };
+    }
+    await db.collection('users').doc(uid).set(
+      { role: 'admin', email },
+      { merge: true }
+    );
+    logger.info('claimBootstrapAdmin granted', { uid, email });
+    return { admin: true, bootstrap: true };
+  }
+);
 
 function singaporeNowParts() {
   const fmt = new Intl.DateTimeFormat('en-CA', {

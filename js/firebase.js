@@ -3,6 +3,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebas
 import { getAuth } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 import { getMessaging } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js';
+import { getFunctions } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js';
 
 export const firebaseConfig = {
   projectId: "scriptura-study-2026",
@@ -17,4 +18,6 @@ export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const messaging = getMessaging(app);
+/** Callable / HTTPS functions (singapore region matches deployed functions). */
+export const functions = getFunctions(app, 'asia-southeast1');
 export const VAPID_KEY = "BO-hBNUqSqDpYLSE8Oz2c0nNKtUDyK27fyzjoTdoiBMLZUGIENy9qcZzegNRFcGE-G_KVPwKC-zcNxnh6dan0xE";

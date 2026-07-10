@@ -1,15 +1,15 @@
 // Feature module: admin (Phase 2)
-import { auth, db } from './firebase.js?v=2.0.19';
+import { auth, db } from './firebase.js?v=2.0.20';
 import { doc, getDoc, setDoc, collection, getDocs, addDoc, query, orderBy, limit, where, updateDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-import { concentrations, modules } from '../modules.js?v=2.0.19';
-import { sanitizeHTML } from './utils.js?v=2.0.19';
-import { showToast, showStatusEl } from './toast.js?v=2.0.19';
-import { state } from './state.js?v=2.0.19';
-import { renderCoursesCatalog } from './catalog.js?v=2.0.19';
-import { renderDashboard } from './dashboard.js?v=2.0.19';
-import { fetchRegisteredUsers } from './network.js?v=2.0.19';
-import { switchTab } from './routing.js?v=2.0.19';
-import { checkAdminNavVisibility, fetchAndMergeCustomModules, loadModuleSchedules, saveState } from './user.js?v=2.0.19';
+import { concentrations, modules } from '../modules.js?v=2.0.20';
+import { sanitizeHTML } from './utils.js?v=2.0.20';
+import { showToast, showStatusEl } from './toast.js?v=2.0.20';
+import { state } from './state.js?v=2.0.20';
+import { renderCoursesCatalog } from './catalog.js?v=2.0.20';
+import { renderDashboard } from './dashboard.js?v=2.0.20';
+import { fetchRegisteredUsers } from './network.js?v=2.0.20';
+import { switchTab } from './routing.js?v=2.0.20';
+import { checkAdminNavVisibility, fetchAndMergeCustomModules, loadModuleSchedules, saveState } from './user.js?v=2.0.20';
 
 export function handleTemplateToggle(e) {
   const templateBox = document.getElementById('publisher-template-box');
@@ -208,10 +208,37 @@ export async function loadAdminStats() {
   return await computeAdminStats();
 }
 
+export function wireAdminTabs() {
+  const nav = document.querySelector('.admin-tabs');
+  if (!nav || nav.dataset.wired) return;
+  nav.dataset.wired = '1';
+  nav.addEventListener('click', (e) => {
+    const btn = e.target.closest('.admin-tab');
+    if (!btn) return;
+    const tab = btn.getAttribute('data-admin-tab');
+    document.querySelectorAll('.admin-tab').forEach(b => {
+      b.classList.toggle('active', b === btn);
+    });
+    document.querySelectorAll('.admin-tab-panel').forEach(p => {
+      const id = `admin-panel-${tab}`;
+      const show = p.id === id;
+      p.classList.toggle('active', show);
+      p.classList.toggle('hidden', !show);
+    });
+    if (tab === 'moderation') loadModerationPanel();
+  });
+}
+
 export async function renderAdminDashboard() {
   if (state.userState.role !== 'admin') {
     switchTab('home');
     return;
+  }
+
+  wireAdminTabs();
+  const badge = document.getElementById('admin-you-badge');
+  if (badge) {
+    badge.textContent = state.userState.email || auth.currentUser?.email || 'Admin';
   }
 
   await fetchRegisteredUsers();
@@ -291,8 +318,10 @@ export async function renderAdminDashboard() {
     engagementPanel = document.createElement('div');
     engagementPanel.id = 'admin-module-engagement-panel';
     engagementPanel.className = 'admin-panel-card';
-    engagementPanel.style.gridColumn = '1 / -1';
-    document.querySelector('.admin-grid-layout')?.appendChild(engagementPanel);
+    const host = document.getElementById('admin-module-engagement-host')
+      || document.querySelector('.admin-shell')
+      || document.querySelector('.admin-grid-layout');
+    host?.appendChild(engagementPanel);
   }
   const engagementRows = engagement.map(m => `
     <tr>

@@ -1,11 +1,12 @@
 // Feature module: user (Phase 2)
-import { auth, db } from './firebase.js?v=2.0.19';
+import { auth, db, functions } from './firebase.js?v=2.0.20';
 import { doc, getDoc, setDoc, collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-import { concentrations, modules } from '../modules.js?v=2.0.19';
-import { createDefaultUserState } from './constants.js?v=2.0.19';
-import { el } from './dom.js?v=2.0.19';
-import { state } from './state.js?v=2.0.19';
-import { updateStatsDisplay } from './stats.js?v=2.0.19';
+import { httpsCallable } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js';
+import { concentrations, modules } from '../modules.js?v=2.0.20';
+import { createDefaultUserState } from './constants.js?v=2.0.20';
+import { el } from './dom.js?v=2.0.20';
+import { state } from './state.js?v=2.0.20';
+import { updateStatsDisplay } from './stats.js?v=2.0.20';
 
 export async function fetchAndMergeCustomModules() {
   try {
@@ -62,13 +63,40 @@ export async function fetchAndMergeCustomModules() {
 
 export function checkAdminNavVisibility() {
   const adminNav = document.getElementById('nav-item-admin');
-  if (adminNav) {
-    if (state.userState.role === 'admin') {
-      adminNav.classList.remove('hidden');
+  if (!adminNav) return;
+  const isAdmin = state.userState.role === 'admin';
+  adminNav.classList.toggle('hidden', !isAdmin);
+  adminNav.setAttribute('aria-hidden', isAdmin ? 'false' : 'true');
+}
+
+/**
+ * Server-side bootstrap: if email is on the permanent admin list, force role=admin.
+ * Also re-reads role from Firestore so localStorage cannot hide the Admin tab.
+ */
+export async function syncAdminRoleFromServer() {
+  if (!auth.currentUser) return false;
+  try {
+    const claim = httpsCallable(functions, 'claimBootstrapAdmin');
+    const res = await claim({});
+    if (res?.data?.admin) {
+      state.userState.role = 'admin';
     } else {
-      adminNav.classList.add('hidden');
+      // Fall back to a fresh user doc read
+      const snap = await getDoc(doc(db, 'users', auth.currentUser.uid));
+      state.userState.role = snap.exists() && snap.data()?.role === 'admin' ? 'admin' : 'user';
+    }
+  } catch (err) {
+    console.warn('syncAdminRoleFromServer failed, reading Firestore role:', err);
+    try {
+      const snap = await getDoc(doc(db, 'users', auth.currentUser.uid));
+      state.userState.role = snap.exists() && snap.data()?.role === 'admin' ? 'admin' : 'user';
+    } catch (_) {
+      /* keep local */
     }
   }
+  localStorage.setItem('scriptura_user_state', JSON.stringify(state.userState));
+  checkAdminNavVisibility();
+  return state.userState.role === 'admin';
 }
 
 export function updateHeaderProfile() {
@@ -216,6 +244,9 @@ export async function loadUserCloudData(user) {
     }
 
     if (state.userState.translation) el.translationSelect.value = state.userState.translation;
+
+    // Final authoritative role sync (bootstrap claim + fresh doc)
+    await syncAdminRoleFromServer();
   } catch (err) {
     console.error('Error loading user cloud data:', err);
   }
