@@ -1,6 +1,6 @@
 // Auto-split from modules.js — exodus (exodus-1, exodus-2)
 export const exodusModules = [
-{
+  {
     "id": "exodus-1",
     "category": "Exodus",
     "title": "Exodus Part 1: Plagues & Deliverance",
@@ -40,9 +40,13 @@ export const exodusModules = [
         "type": "card-quiz",
         "title": "The Baseline Structure",
         "aiTutorExplanation": "Let's do a quick check on the primary structural sequence of the second book of the Torah.",
-        "question": "True or False: God gave the Israelites the 10 Commandments while they were still slaves in Egypt so they could earn their freedom through obedience.",
-        "correctAnswer": "no",
-        "explanation": "God delivered the people first by pure grace in the first half of the book; the Law was only introduced afterward as a response to salvation."
+        "questions": [
+          {
+            "question": "True or False: God gave the Israelites the 10 Commandments while they were still slaves in Egypt so they could earn their freedom through obedience.",
+            "correctAnswer": "no",
+            "explanation": "God delivered the people first by pure grace in the first half of the book; the Law was only introduced afterward as a response to salvation."
+          }
+        ]
       },
       {
         "type": "quiz",
@@ -90,9 +94,13 @@ export const exodusModules = [
         "type": "card-quiz",
         "title": "Defining the Promised Land",
         "aiTutorExplanation": "Let's check our understanding of what the Promised Land represents typologically for the Christian life.",
-        "question": "True or False: Typologically speaking, the Promised Land represents heaven after a Christian dies.",
-        "correctAnswer": "no",
-        "explanation": "The Promised Land represents a present place of spiritual rest, victory, and conquest over sin while still living on Earth."
+        "questions": [
+          {
+            "question": "True or False: Typologically speaking, the Promised Land represents heaven after a Christian dies.",
+            "correctAnswer": "no",
+            "explanation": "The Promised Land represents a present place of spiritual rest, victory, and conquest over sin while still living on Earth."
+          }
+        ]
       },
       {
         "type": "info",
@@ -159,8 +167,7 @@ export const exodusModules = [
       }
     ]
   },
-
-{
+  {
     "id": "exodus-2",
     "category": "Exodus",
     "title": "Exodus Part 2: Sinai & The Tabernacle",
@@ -214,9 +221,13 @@ export const exodusModules = [
         "type": "card-quiz",
         "title": "The Hardening Dynamic",
         "aiTutorExplanation": "Let's review the chronological steps of Pharaoh's heart hardening.",
-        "question": "True or False: God unilaterally hardened Pharaoh's heart before Pharaoh ever had a chance to make a personal moral choice.",
-        "correctAnswer": "no",
-        "explanation": "Pharaoh actively hardened his own heart 7 times through systemic cruelty before God sovereignly sealed his internal condition."
+        "questions": [
+          {
+            "question": "True or False: God unilaterally hardened Pharaoh's heart before Pharaoh ever had a chance to make a personal moral choice.",
+            "correctAnswer": "no",
+            "explanation": "Pharaoh actively hardened his own heart 7 times through systemic cruelty before God sovereignly sealed his internal condition."
+          }
+        ]
       },
       {
         "type": "info",
@@ -292,9 +303,13 @@ export const exodusModules = [
         "type": "card-quiz",
         "title": "The Source of Wisdom",
         "aiTutorExplanation": "Let's check our understanding of how God views non-academic skills and talents.",
-        "question": "True or False: In the construction of the Tabernacle, the Spirit of Wisdom was only given to scholars who could read and translate texts.",
-        "correctAnswer": "no",
-        "explanation": "God poured out the Spirit of Wisdom onto manual laborers and physical craftsmen, proving all talents can be spiritually utilized for His glory."
+        "questions": [
+          {
+            "question": "True or False: In the construction of the Tabernacle, the Spirit of Wisdom was only given to scholars who could read and translate texts.",
+            "correctAnswer": "no",
+            "explanation": "God poured out the Spirit of Wisdom onto manual laborers and physical craftsmen, proving all talents can be spiritually utilized for His glory."
+          }
+        ]
       },
       {
         "type": "summary",

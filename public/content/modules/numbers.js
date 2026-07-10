@@ -1,6 +1,6 @@
 // Auto-split from modules.js — numbers (numbers-1, numbers-2)
 export const numbersModules = [
-{
+  {
     "id": "numbers-1",
     "category": "Numbers",
     "title": "Numbers Part 1: Kadesh-barnea & The Lost Generation",
@@ -40,9 +40,13 @@ export const numbersModules = [
         "type": "card-quiz",
         "title": "The Census Demographic",
         "aiTutorExplanation": "Let's double-check the strict structural rules governing the wilderness headcounts.",
-        "question": "True or False: The censuses recorded in the book of Numbers included accurate counts of all women, children, and elderly men across the tribes.",
-        "correctAnswer": "no",
-        "explanation": "The headcounts were strictly military censuses restricted exclusively to able-bodied males aged 20 and above who were ready for combat."
+        "questions": [
+          {
+            "question": "True or False: The censuses recorded in the book of Numbers included accurate counts of all women, children, and elderly men across the tribes.",
+            "correctAnswer": "no",
+            "explanation": "The headcounts were strictly military censuses restricted exclusively to able-bodied males aged 20 and above who were ready for combat."
+          }
+        ]
       },
       {
         "type": "info",
@@ -123,8 +127,7 @@ export const numbersModules = [
       }
     ]
   },
-
-{
+  {
     "id": "numbers-2",
     "category": "Numbers",
     "title": "Numbers Part 2: The Bronze Serpent & The New Generation",
@@ -136,9 +139,13 @@ export const numbersModules = [
         "type": "card-quiz",
         "title": "The Definition of Fellowship",
         "aiTutorExplanation": "Let's review how personal sins impact our standing with God based on the cleanliness laws.",
-        "question": "True or False: When a saved Christian commits a sin, their baseline relationship as a child of God is completely terminated.",
-        "correctAnswer": "no",
-        "explanation": "Your positional relationship as a child remains entirely secure; however, personal sin severely damages your daily fellowship with the Father until confessed and cleansed."
+        "questions": [
+          {
+            "question": "True or False: When a saved Christian commits a sin, their baseline relationship as a child of God is completely terminated.",
+            "correctAnswer": "no",
+            "explanation": "Your positional relationship as a child remains entirely secure; however, personal sin severely damages your daily fellowship with the Father until confessed and cleansed."
+          }
+        ]
       },
       {
         "type": "info",
@@ -214,9 +221,13 @@ export const numbersModules = [
         "type": "card-quiz",
         "title": "The Singular Sacrifice",
         "aiTutorExplanation": "Let's verify why Moses' actions with the rock carried such heavy spiritual consequences.",
-        "question": "True or False: Moses was barred from the Promised Land primarily because God ran out of water resources in the desert.",
-        "correctAnswer": "no",
-        "explanation": "Moses was restricted because his double-strike destroyed the typological picture that Christ only needed to be struck (die) once for humanity."
+        "questions": [
+          {
+            "question": "True or False: Moses was barred from the Promised Land primarily because God ran out of water resources in the desert.",
+            "correctAnswer": "no",
+            "explanation": "Moses was restricted because his double-strike destroyed the typological picture that Christ only needed to be struck (die) once for humanity."
+          }
+        ]
       },
       {
         "type": "summary",

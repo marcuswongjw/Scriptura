@@ -18,6 +18,32 @@ App code still imports from `modules.js` — you do not need to change imports w
 
 Also: `app.js` wires logic; module icons live in constants / UI maps as needed.
 
+### Source of truth vs `public/`
+
+Edit files at the **repo root** (`app.js`, `js/`, `content/`, `modules.js`, `style.css`, …).  
+Firebase Hosting serves **`public/`** only. Before deploy (or after editing):
+
+```bash
+npm run sync:public
+```
+
+CI runs the same sync on merge/PR. Do not hand-edit only under `public/` — changes will be overwritten.
+
+### Card-quiz shape
+
+Always use the `questions` array (legacy top-level `question` / `correctAnswer` is normalized by `npm run normalize:card-quiz`):
+
+```javascript
+{
+  type: "card-quiz",
+  title: "…",
+  aiTutorExplanation: "…",
+  questions: [
+    { question: "…", correctAnswer: "yes", explanation: "…" }
+  ]
+}
+```
+
 ---
 
 ## Step 2: Define a Concentration

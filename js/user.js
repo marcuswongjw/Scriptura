@@ -1,12 +1,12 @@
 // Feature module: user (Phase 2)
-import { auth, db, functions } from './firebase.js?v=2.0.29';
+import { auth, db, functions } from './firebase.js?v=2.0.30';
 import { doc, getDoc, setDoc, collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 import { httpsCallable } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js';
-import { concentrations, modules } from '../modules.js?v=2.0.29';
-import { createDefaultUserState } from './constants.js?v=2.0.29';
-import { el } from './dom.js?v=2.0.29';
-import { state } from './state.js?v=2.0.29';
-import { updateStatsDisplay } from './stats.js?v=2.0.29';
+import { concentrations, modules } from '../modules.js?v=2.0.30';
+import { createDefaultUserState } from './constants.js?v=2.0.30';
+import { el } from './dom.js?v=2.0.30';
+import { state } from './state.js?v=2.0.30';
+import { updateStatsDisplay } from './stats.js?v=2.0.30';
 
 export async function fetchAndMergeCustomModules() {
   try {
@@ -154,6 +154,9 @@ export async function loadUserCloudData(user) {
       if (!state.userState.modulesStarted) state.userState.modulesStarted = [];
       if (!state.userState.dailyReadingsCompleted) state.userState.dailyReadingsCompleted = [];
       if (!state.userState.lessonProgress) state.userState.lessonProgress = {};
+      if (!state.userState.lessonQuizCleared || typeof state.userState.lessonQuizCleared !== 'object') {
+        state.userState.lessonQuizCleared = {};
+      }
       if (!state.userState.quizHistory) state.userState.quizHistory = [];
       if (!state.userState.activityLog) state.userState.activityLog = [];
 

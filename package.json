@@ -1,0 +1,10 @@
+{
+  "name": "scriptura",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "sync:public": "node scripts/sync-public.mjs",
+    "normalize:card-quiz": "node scripts/normalize-card-quiz.mjs",
+    "predeploy": "npm run sync:public"
+  }
+}

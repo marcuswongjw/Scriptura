@@ -1,8 +1,8 @@
 // Feature module: auth_ui (Phase 2)
-import { auth } from './firebase.js?v=2.0.29';
+import { auth } from './firebase.js?v=2.0.30';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
-import { el } from './dom.js?v=2.0.29';
-import { state } from './state.js?v=2.0.29';
+import { el } from './dom.js?v=2.0.30';
+import { state } from './state.js?v=2.0.30';
 
 export function showAuthError(msg) {
   el.authError.textContent = msg;

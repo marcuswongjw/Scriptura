@@ -1,6 +1,6 @@
 // Auto-split from modules.js — deuteronomy (deuteronomy-1, deuteronomy-2)
 export const deuteronomyModules = [
-{
+  {
     "id": "deuteronomy-1",
     "category": "Deuteronomy",
     "title": "Deuteronomy Part 1: The Shema & The Devotion Walk",
@@ -40,9 +40,13 @@ export const deuteronomyModules = [
         "type": "card-quiz",
         "title": "The Legal Contract",
         "aiTutorExplanation": "Let's review the format running underneath Moses' written document.",
-        "question": "True or False: Deuteronomy is structurally modeled after the exact literary layout of an ancient near-eastern sovereign treaty.",
-        "correctAnswer": "yes",
-        "explanation": "The book replicates ancient contract laws: detailing explicit blessings for keeping terms, and clear chastisements for defiance."
+        "questions": [
+          {
+            "question": "True or False: Deuteronomy is structurally modeled after the exact literary layout of an ancient near-eastern sovereign treaty.",
+            "correctAnswer": "yes",
+            "explanation": "The book replicates ancient contract laws: detailing explicit blessings for keeping terms, and clear chastisements for defiance."
+          }
+        ]
       },
       {
         "type": "info",
@@ -76,9 +80,13 @@ export const deuteronomyModules = [
         "type": "card-quiz",
         "title": "The 11-Day Journey",
         "aiTutorExplanation": "Think back to the geography and timeline Moses mentioned at the very beginning of the book.",
-        "question": "True or False: The physical journey from Mount Sinai to the edge of the Promised Land naturally takes 40 years.",
-        "correctAnswer": "no",
-        "explanation": "Deuteronomy 1:2 notes that the actual physical journey takes only 11 days; the 40 years was a spiritual punishment for rebellion."
+        "questions": [
+          {
+            "question": "True or False: The physical journey from Mount Sinai to the edge of the Promised Land naturally takes 40 years.",
+            "correctAnswer": "no",
+            "explanation": "Deuteronomy 1:2 notes that the actual physical journey takes only 11 days; the 40 years was a spiritual punishment for rebellion."
+          }
+        ]
       },
       {
         "type": "info",
@@ -140,9 +148,13 @@ export const deuteronomyModules = [
         "type": "card-quiz",
         "title": "Kings and the Law",
         "aiTutorExplanation": "Consider the power dynamics of the ancient world when testing your knowledge here.",
-        "question": "True or False: In ancient Israel, the king was considered divine and was completely exempt from following the laws of Moses.",
-        "correctAnswer": "no",
-        "explanation": "Unlike surrounding pagan cultures, the laws of Moses were unique because even the kings of Israel were fully required to obey them."
+        "questions": [
+          {
+            "question": "True or False: In ancient Israel, the king was considered divine and was completely exempt from following the laws of Moses.",
+            "correctAnswer": "no",
+            "explanation": "Unlike surrounding pagan cultures, the laws of Moses were unique because even the kings of Israel were fully required to obey them."
+          }
+        ]
       },
       {
         "type": "info",
@@ -181,8 +193,7 @@ export const deuteronomyModules = [
       }
     ]
   },
-
-{
+  {
     "id": "deuteronomy-2",
     "category": "Deuteronomy",
     "title": "Deuteronomy Part 2: Blessings, Curses, & Succession",
@@ -236,9 +247,13 @@ export const deuteronomyModules = [
         "type": "card-quiz",
         "title": "The Motive for Obedience",
         "aiTutorExplanation": "Reflect carefully on the core relationship between rules and love in a Christian's life.",
-        "question": "True or False: According to Deuteronomy and the teachings of Jesus, we must keep the commandments primarily to earn our salvation.",
-        "correctAnswer": "no",
-        "explanation": "We obey God's law not to earn salvation, but as an expression of love and gratitude after being saved, in order to glorify Him."
+        "questions": [
+          {
+            "question": "True or False: According to Deuteronomy and the teachings of Jesus, we must keep the commandments primarily to earn our salvation.",
+            "correctAnswer": "no",
+            "explanation": "We obey God's law not to earn salvation, but as an expression of love and gratitude after being saved, in order to glorify Him."
+          }
+        ]
       },
       {
         "type": "info",

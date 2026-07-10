@@ -99,6 +99,8 @@ export function createDefaultUserState() {
     interests: '',
     social: '',
     lessonProgress: {},
+    /** moduleId → slide indexes whose quiz/card-quiz was already cleared (resume skips re-answer) */
+    lessonQuizCleared: {},
     timeSpent: 0,
     activityLog: [],
     onboardingCompleted: false,

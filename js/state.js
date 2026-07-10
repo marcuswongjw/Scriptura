@@ -1,5 +1,5 @@
 // Shared mutable application state (Phase 2)
-import { createDefaultUserState } from './constants.js?v=2.0.29';
+import { createDefaultUserState } from './constants.js?v=2.0.30';
 
 export const state = {
   userState: createDefaultUserState(),

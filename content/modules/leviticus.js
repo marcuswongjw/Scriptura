@@ -1,6 +1,6 @@
 // Auto-split from modules.js — leviticus (leviticus)
 export const leviticusModules = [
-{
+  {
     "id": "leviticus",
     "category": "Leviticus",
     "title": "Leviticus: Accessing a Holy God",
@@ -40,9 +40,13 @@ export const leviticusModules = [
         "type": "card-quiz",
         "title": "The Sequence of Grace",
         "aiTutorExplanation": "Let's test our understanding of how the Law connects with the concept of salvation.",
-        "question": "True or False: According to Leviticus, God gave the Israelites the holiness laws so they could execute them perfectly to earn their escape from Egypt.",
-        "correctAnswer": "no",
-        "explanation": "Deliverance occurred first as an act of pure grace; the holiness codes were given 50 days later purely as a guide on how to live after being saved."
+        "questions": [
+          {
+            "question": "True or False: According to Leviticus, God gave the Israelites the holiness laws so they could execute them perfectly to earn their escape from Egypt.",
+            "correctAnswer": "no",
+            "explanation": "Deliverance occurred first as an act of pure grace; the holiness codes were given 50 days later purely as a guide on how to live after being saved."
+          }
+        ]
       },
       {
         "type": "info",
@@ -76,9 +80,13 @@ export const leviticusModules = [
         "type": "card-quiz",
         "title": "Outside the Gate",
         "aiTutorExplanation": "Let's look at the location where the offerings were taken. This detail has direct prophetic implications for the crucifixion.",
-        "question": "True or False: In Leviticus, the remains of the sin offering were burned inside the Tabernacle to keep the holy zone clean.",
-        "correctAnswer": "no",
-        "explanation": "The remains of the sin offering were taken outside the camp to be burned, directly foreshadowing how Jesus suffered outside the city gate."
+        "questions": [
+          {
+            "question": "True or False: In Leviticus, the remains of the sin offering were burned inside the Tabernacle to keep the holy zone clean.",
+            "correctAnswer": "no",
+            "explanation": "The remains of the sin offering were taken outside the camp to be burned, directly foreshadowing how Jesus suffered outside the city gate."
+          }
+        ]
       },
       {
         "type": "quiz",
@@ -126,9 +134,13 @@ export const leviticusModules = [
         "type": "card-quiz",
         "title": "The Calendar Interlude",
         "aiTutorExplanation": "Let's verify your understanding of the chronological gap built into the feast cycle.",
-        "question": "True or False: The long summer break between the spring feasts and autumn feasts represents the historical era of the Church Age.",
-        "correctAnswer": "yes",
-        "explanation": "The long text gap mirrors the current Church Age, running between the first coming of Christ and His eventual second coming."
+        "questions": [
+          {
+            "question": "True or False: The long summer break between the spring feasts and autumn feasts represents the historical era of the Church Age.",
+            "correctAnswer": "yes",
+            "explanation": "The long text gap mirrors the current Church Age, running between the first coming of Christ and His eventual second coming."
+          }
+        ]
       },
       {
         "type": "info",

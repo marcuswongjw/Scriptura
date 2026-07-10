@@ -1,6 +1,6 @@
 // Auto-split from modules.js — wisdom (job-1, job-2, psalms, proverbs, ecclesiastes)
 export const wisdomModules = [
-{
+  {
     "id": "job-1",
     "title": "Job Part 1: The Trial and Human Debates",
     "category": "Job",
@@ -50,9 +50,13 @@ export const wisdomModules = [
         "type": "card-quiz",
         "title": "The Accuser's Argument",
         "aiTutorExplanation": "Identify the primary thesis of the adversary in Job 1.",
-        "question": "True or False: The Accuser argued that Job was secretly committing murder and idolatry in the land of Uz.",
-        "correctAnswer": "no",
-        "explanation": "The Accuser did not deny Job's good behavior; instead, he attacked Job's motives, claiming Job only served God for the physical benefits."
+        "questions": [
+          {
+            "question": "True or False: The Accuser argued that Job was secretly committing murder and idolatry in the land of Uz.",
+            "correctAnswer": "no",
+            "explanation": "The Accuser did not deny Job's good behavior; instead, he attacked Job's motives, claiming Job only served God for the physical benefits."
+          }
+        ]
       },
       {
         "type": "info",
@@ -148,9 +152,13 @@ export const wisdomModules = [
         "type": "card-quiz",
         "title": "Bildad's Thesis",
         "aiTutorExplanation": "Reflect on Bildad's view of divine justice.",
-        "question": "True or False: Bildad asserted that God sometimes allows completely righteous people to suffer permanently without any reason.",
-        "correctAnswer": "no",
-        "explanation": "Bildad adamantly rejected the idea of unexplained suffering, claiming that God never rejects a blameless person or strengthens evildoers."
+        "questions": [
+          {
+            "question": "True or False: Bildad asserted that God sometimes allows completely righteous people to suffer permanently without any reason.",
+            "correctAnswer": "no",
+            "explanation": "Bildad adamantly rejected the idea of unexplained suffering, claiming that God never rejects a blameless person or strengthens evildoers."
+          }
+        ]
       },
       {
         "type": "info",
@@ -173,8 +181,7 @@ export const wisdomModules = [
       }
     ]
   },
-
-{
+  {
     "id": "job-2",
     "title": "Job Part 2: The Whirlwind and Divine Vindication",
     "category": "Job",
@@ -328,9 +335,13 @@ export const wisdomModules = [
         "type": "card-quiz",
         "title": "Leviathan Conquest",
         "aiTutorExplanation": "Consider who is capable of conquering Leviathan.",
-        "question": "True or False: God presents Leviathan as a beast that humans can easily tame and use as a pet.",
-        "correctAnswer": "no",
-        "explanation": "God explicitly states that no human can tame or capture Leviathan. Only God has the power to stand against this king of pride."
+        "questions": [
+          {
+            "question": "True or False: God presents Leviathan as a beast that humans can easily tame and use as a pet.",
+            "correctAnswer": "no",
+            "explanation": "God explicitly states that no human can tame or capture Leviathan. Only God has the power to stand against this king of pride."
+          }
+        ]
       },
       {
         "type": "info",
@@ -405,8 +416,7 @@ export const wisdomModules = [
       }
     ]
   },
-
-{
+  {
     "id": "psalms",
     "category": "Psalms",
     "title": "Psalms: The Heart of the Saint and the Messianic King",
@@ -591,8 +601,7 @@ export const wisdomModules = [
       }
     ]
   },
-
-{
+  {
     "id": "proverbs",
     "category": "Proverbs",
     "title": "Proverbs: Practical Wisdom for Daily Living",
@@ -777,8 +786,7 @@ export const wisdomModules = [
       }
     ]
   },
-
-{
+  {
     "id": "ecclesiastes",
     "category": "Ecclesiastes",
     "title": "Ecclesiastes: Life Under the Sun and the Fear of God",

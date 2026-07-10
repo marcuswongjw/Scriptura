@@ -1,11 +1,37 @@
 // Feature module: lesson (Phase 2)
-import { modules } from '../modules.js?v=2.0.29';
-import { formatMarkdown } from './utils.js?v=2.0.29';
-import { showToast } from './toast.js?v=2.0.29';
-import { el } from './dom.js?v=2.0.29';
-import { state } from './state.js?v=2.0.29';
-import { switchTab } from './routing.js?v=2.0.29';
-import { awardXP, isModuleReleased, logActivity, logQuizAnswer, recordActivity, saveState } from './user.js?v=2.0.29';
+import { modules } from '../modules.js?v=2.0.30';
+import { formatMarkdown } from './utils.js?v=2.0.30';
+import { showToast } from './toast.js?v=2.0.30';
+import { el } from './dom.js?v=2.0.30';
+import { state } from './state.js?v=2.0.30';
+import { switchTab } from './routing.js?v=2.0.30';
+import { awardXP, isModuleReleased, logActivity, logQuizAnswer, recordActivity, saveState } from './user.js?v=2.0.30';
+
+function ensureQuizClearedMap() {
+  if (!state.userState.lessonQuizCleared || typeof state.userState.lessonQuizCleared !== 'object') {
+    state.userState.lessonQuizCleared = {};
+  }
+}
+
+function isSlideQuizCleared(moduleId, slideIndex) {
+  ensureQuizClearedMap();
+  const arr = state.userState.lessonQuizCleared[moduleId];
+  return Array.isArray(arr) && arr.includes(slideIndex);
+}
+
+function markSlideQuizCleared(moduleId, slideIndex) {
+  ensureQuizClearedMap();
+  const arr = state.userState.lessonQuizCleared[moduleId] || [];
+  if (!arr.includes(slideIndex)) {
+    state.userState.lessonQuizCleared[moduleId] = [...arr, slideIndex];
+    saveState();
+  }
+}
+
+function clearModuleQuizCleared(moduleId) {
+  ensureQuizClearedMap();
+  delete state.userState.lessonQuizCleared[moduleId];
+}
 
 /** Highest slide index the learner may open (reached before, or completed = all). */
 function getFurthestUnlockedIndex() {
@@ -97,6 +123,7 @@ export function startModule(moduleId, pushState = true, options = {}) {
   if (forceRestart) {
     // Clear slide progress so unlocks and resume start fresh (keep completion history for stats).
     state.userState.lessonProgress[moduleId] = 0;
+    clearModuleQuizCleared(moduleId);
     // If restarting a completed module intentionally, allow full playthrough again.
     if (isCompleted) {
       state.userState.completedModules = state.userState.completedModules.filter(id => id !== moduleId);
@@ -319,10 +346,15 @@ export function renderSlide() {
     state.isQuizAnswered = true;
 
   } else if (slide.type === 'quiz') {
+    const alreadyCleared = isSlideQuizCleared(state.activeModule.id, state.currentSlideIndex);
     const optionsHtml = slide.options.map((opt, idx) => {
       const letter = String.fromCharCode(65 + idx);
+      const isCorrectOpt = idx === slide.correctAnswer;
+      const extra = alreadyCleared && isCorrectOpt ? ' correct' : '';
+      const dim = alreadyCleared && !isCorrectOpt ? ' style="opacity:0.45"' : '';
+      const dis = alreadyCleared ? ' disabled' : '';
       return `
-        <button class="quiz-option" data-index="${idx}">
+        <button class="quiz-option${extra}" data-index="${idx}"${dim}${dis}>
           <span class="option-letter">${letter}</span>
           <span class="option-text">${opt}</span>
         </button>
@@ -333,21 +365,29 @@ export function renderSlide() {
       <div class="quiz-slide">
         <p class="quiz-question">${slide.question}</p>
         <div class="quiz-options" id="quiz-options">${optionsHtml}</div>
-        <div id="quiz-feedback-box" class="quiz-feedback hidden" hidden>
+        <div id="quiz-feedback-box" class="quiz-feedback ${alreadyCleared ? 'correct' : 'hidden'}" ${alreadyCleared ? 'style="display:flex"' : 'hidden'}>
           <span class="feedback-icon" id="feedback-icon">✓</span>
           <div class="feedback-text">
-            <h4 id="feedback-title">Correct!</h4>
-            <p id="feedback-desc"></p>
+            <h4 id="feedback-title">${alreadyCleared ? 'Already answered' : 'Correct!'}</h4>
+            <p id="feedback-desc">${alreadyCleared ? (slide.explanation || 'You cleared this quiz earlier — continue when ready.') : ''}</p>
           </div>
         </div>
       </div>
     `;
 
-    state.selectedOptionIndex = null;
-    state.isQuizAnswered = false;
-    state.currentQuestionFirstAttempt = true;
-    el.nextBtnText.textContent = 'SUBMIT';
-    el.nextSlideBtn.disabled = true;
+    if (alreadyCleared) {
+      state.selectedOptionIndex = slide.correctAnswer;
+      state.isQuizAnswered = true;
+      state.currentQuestionFirstAttempt = false;
+      el.nextBtnText.textContent = 'CONTINUE';
+      el.nextSlideBtn.disabled = false;
+    } else {
+      state.selectedOptionIndex = null;
+      state.isQuizAnswered = false;
+      state.currentQuestionFirstAttempt = true;
+      el.nextBtnText.textContent = 'SUBMIT';
+      el.nextSlideBtn.disabled = true;
+    }
 
   } else if (slide.type === 'card-quiz') {
     const qs = slide.questions || [{
@@ -355,34 +395,59 @@ export function renderSlide() {
       correctAnswer: slide.correctAnswer,
       explanation: slide.explanation
     }];
-    if (state.cardQuizSubIndex >= qs.length) state.cardQuizSubIndex = 0;
-    const currentQ = qs[state.cardQuizSubIndex];
+    const alreadyCleared = isSlideQuizCleared(state.activeModule.id, state.currentSlideIndex);
 
-    cardHtml = `
-      <div class="cardquiz-screen">
-        <p class="cardquiz-prompt">DO YOU THINK THE FOLLOWING IS TRUE? (${state.cardQuizSubIndex + 1}/${qs.length})</p>
-        <div class="stack-wrapper">
-          <div class="stack-card-shadow-2"></div>
-          <div class="stack-card-shadow-1"></div>
-          <div class="stack-card-main">${currentQ.question}</div>
+    if (alreadyCleared) {
+      cardHtml = `
+        <div class="cardquiz-screen">
+          <p class="cardquiz-prompt">CARD QUIZ COMPLETE</p>
+          <div class="stack-wrapper">
+            <div class="stack-card-shadow-2"></div>
+            <div class="stack-card-shadow-1"></div>
+            <div class="stack-card-main">You already cleared this set (${qs.length} card${qs.length === 1 ? '' : 's'}). Continue to the next slide.</div>
+          </div>
+          <div id="quiz-feedback-box" class="cardquiz-feedback correct" style="display:flex; flex-direction: column;">
+            <div class="cardquiz-feedback-title" id="feedback-title">✓ Already completed</div>
+            <p id="feedback-desc">No need to re-answer — pick up where you left off.</p>
+          </div>
         </div>
-        <div class="yes-no-row">
-          <button class="yn-btn yes" data-val="yes">yes</button>
-          <button class="yn-btn no" data-val="no">no</button>
-        </div>
-        <div id="quiz-feedback-box" class="cardquiz-feedback hidden" style="display:none; flex-direction: column;">
-          <div class="cardquiz-feedback-title" id="feedback-title">Correct!</div>
-          <p id="feedback-desc"></p>
-          <button id="cardquiz-continue-btn" class="cardquiz-continue-btn hidden" style="display:none;">Continue</button>
-        </div>
-      </div>
-    `;
+      `;
+      state.selectedOptionIndex = null;
+      state.isQuizAnswered = true;
+      state.currentQuestionFirstAttempt = false;
+      state.cardQuizSubIndex = 0;
+      el.nextBtnText.textContent = 'CONTINUE';
+      el.nextSlideBtn.disabled = false;
+    } else {
+      if (state.cardQuizSubIndex >= qs.length) state.cardQuizSubIndex = 0;
+      const currentQ = qs[state.cardQuizSubIndex];
 
-    state.selectedOptionIndex = null;
-    state.isQuizAnswered = false;
-    state.currentQuestionFirstAttempt = true;
-    el.nextBtnText.textContent = 'SUBMIT';
-    el.nextSlideBtn.disabled = true;
+      cardHtml = `
+        <div class="cardquiz-screen">
+          <p class="cardquiz-prompt">DO YOU THINK THE FOLLOWING IS TRUE? (${state.cardQuizSubIndex + 1}/${qs.length})</p>
+          <div class="stack-wrapper">
+            <div class="stack-card-shadow-2"></div>
+            <div class="stack-card-shadow-1"></div>
+            <div class="stack-card-main">${currentQ.question}</div>
+          </div>
+          <div class="yes-no-row">
+            <button class="yn-btn yes" data-val="yes">yes</button>
+            <button class="yn-btn no" data-val="no">no</button>
+          </div>
+          <div id="quiz-feedback-box" class="cardquiz-feedback hidden" style="display:none; flex-direction: column;">
+            <div class="cardquiz-feedback-title" id="feedback-title">Correct!</div>
+            <p id="feedback-desc"></p>
+            <button id="cardquiz-continue-btn" class="cardquiz-continue-btn hidden" style="display:none;">Continue</button>
+          </div>
+        </div>
+      `;
+
+      state.selectedOptionIndex = null;
+      state.isQuizAnswered = false;
+      state.currentQuestionFirstAttempt = true;
+      el.nextBtnText.textContent = 'SUBMIT';
+      el.nextSlideBtn.disabled = true;
+    }
 
   } else if (slide.type === 'summary') {
     cardHtml = `
@@ -487,6 +552,7 @@ export function checkQuizAnswer() {
       }
       state.userState.quizStats.totalQuestions += 1;
       state.isQuizAnswered = true;
+      markSlideQuizCleared(state.activeModule.id, state.currentSlideIndex);
       recordActivity();
       el.nextBtnText.textContent = 'CONTINUE';
       el.activeCard.querySelectorAll('.quiz-option').forEach(opt => {
@@ -587,6 +653,7 @@ export function checkCardQuizAnswer() {
           state.cardQuizSubIndex += 1;
           renderSlide();
         } else {
+          markSlideQuizCleared(state.activeModule.id, state.currentSlideIndex);
           state.cardQuizSubIndex = 0;
           if (state.currentSlideIndex < state.activeModule.slides.length - 1) {
             state.currentSlideIndex += 1;
@@ -629,6 +696,10 @@ export function handleNextClick() {
   } else if (slide.type === 'card-quiz' && !state.isQuizAnswered) {
     checkCardQuizAnswer();
   } else {
+    // Leaving a cleared quiz/card-quiz (resume or just finished)
+    if ((slide.type === 'quiz' || slide.type === 'card-quiz') && state.isQuizAnswered) {
+      markSlideQuizCleared(state.activeModule.id, state.currentSlideIndex);
+    }
     if (state.currentSlideIndex < state.activeModule.slides.length - 1) {
       state.currentSlideIndex += 1;
       state.cardQuizSubIndex = 0;

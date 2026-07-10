@@ -1,6 +1,6 @@
 // Auto-split from modules.js — genesis (genesis-1, genesis-2, genesis-3)
 export const genesisModules = [
-{
+  {
     "id": "genesis-1",
     "title": "Genesis Part 1: Symmetry of Creation",
     "category": "Genesis",
@@ -68,9 +68,13 @@ export const genesisModules = [
         "type": "card-quiz",
         "title": "Sourcing the Initial Light",
         "aiTutorExplanation": "Think carefully about the chronological timeline of the luminaries.",
-        "question": "True or False: The physical light that appeared on Day One of creation originated from the sun.",
-        "correctAnswer": "no",
-        "explanation": "The light on Day 1 came directly from God Himself; the physical sun was not formed until Day 4."
+        "questions": [
+          {
+            "question": "True or False: The physical light that appeared on Day One of creation originated from the sun.",
+            "correctAnswer": "no",
+            "explanation": "The light on Day 1 came directly from God Himself; the physical sun was not formed until Day 4."
+          }
+        ]
       },
       {
         "type": "info",
@@ -132,9 +136,13 @@ export const genesisModules = [
         "type": "card-quiz",
         "title": "The Meaning of YHWH",
         "aiTutorExplanation": "Let's review the character revelation hidden inside God's personal name.",
-        "question": "True or False: The Hebrew name YHWH is a generic title that means an unknown cosmic energy force.",
-        "correctAnswer": "no",
-        "explanation": "YHWH is a deeply personal, descriptive name that means 'ALWAYS' or eternal, revealing His unchanging presence."
+        "questions": [
+          {
+            "question": "True or False: The Hebrew name YHWH is a generic title that means an unknown cosmic energy force.",
+            "correctAnswer": "no",
+            "explanation": "YHWH is a deeply personal, descriptive name that means 'ALWAYS' or eternal, revealing His unchanging presence."
+          }
+        ]
       },
       {
         "type": "info",
@@ -196,9 +204,13 @@ export const genesisModules = [
         "type": "card-quiz",
         "title": "The Marital Blueprint",
         "aiTutorExplanation": "Reflect on the design limits God set for household management before the Fall.",
-        "question": "True or False: The Bible mandates that a newly married couple should remain structurally absorbed inside their parents' extended household.",
-        "correctAnswer": "no",
-        "explanation": "Genesis 2:24 commands couples to leave and cleave, building an independent nuclear family unit to prevent relational friction."
+        "questions": [
+          {
+            "question": "True or False: The Bible mandates that a newly married couple should remain structurally absorbed inside their parents' extended household.",
+            "correctAnswer": "no",
+            "explanation": "Genesis 2:24 commands couples to leave and cleave, building an independent nuclear family unit to prevent relational friction."
+          }
+        ]
       },
       {
         "type": "summary",
@@ -209,8 +221,7 @@ export const genesisModules = [
       }
     ]
   },
-
-{
+  {
     "id": "genesis-2",
     "title": "Genesis Part 2: Spread of the Sin Pandemic",
     "category": "Genesis",
@@ -250,9 +261,13 @@ export const genesisModules = [
         "type": "card-quiz",
         "title": "The Limits of the Command",
         "aiTutorExplanation": "Let's review the precise data boundaries around God's original instruction.",
-        "question": "True or False: God's literal directive to Adam explicitly stated that they were prohibited from even touching the bark of the forbidden tree.",
-        "correctAnswer": "no",
-        "explanation": "God only prohibited eating its fruit; Eve added the 'touch' restriction, distorting the rule through personal exaggeration."
+        "questions": [
+          {
+            "question": "True or False: God's literal directive to Adam explicitly stated that they were prohibited from even touching the bark of the forbidden tree.",
+            "correctAnswer": "no",
+            "explanation": "God only prohibited eating its fruit; Eve added the 'touch' restriction, distorting the rule through personal exaggeration."
+          }
+        ]
       },
       {
         "type": "info",
@@ -300,9 +315,13 @@ export const genesisModules = [
         "type": "card-quiz",
         "title": "The Source of Salvation",
         "aiTutorExplanation": "Reflect on who takes the first step in the redemption story.",
-        "question": "True or False: Human-centric religions match Christianity because Adam was the one who actively sought out God to confess his sin.",
-        "correctAnswer": "no",
-        "explanation": "Adam hid in fear; God unilaterally took the initiative to search for and rescue him, establishing the foundation of grace."
+        "questions": [
+          {
+            "question": "True or False: Human-centric religions match Christianity because Adam was the one who actively sought out God to confess his sin.",
+            "correctAnswer": "no",
+            "explanation": "Adam hid in fear; God unilaterally took the initiative to search for and rescue him, establishing the foundation of grace."
+          }
+        ]
       },
       {
         "type": "info",
@@ -364,9 +383,13 @@ export const genesisModules = [
         "type": "card-quiz",
         "title": "The Blueprint of the Ark",
         "aiTutorExplanation": "Consider the logistical and definitions tracking inside Chapter 6.",
-        "question": "True or False: To make the Ark story realistic, Noah was required to pack separate pairs of every single modern breed of dog and cat.",
-        "correctAnswer": "no",
-        "explanation": "Noah only carried the core ancestral genetic 'kinds,' allowing rapid natural diversification across species after the Flood."
+        "questions": [
+          {
+            "question": "True or False: To make the Ark story realistic, Noah was required to pack separate pairs of every single modern breed of dog and cat.",
+            "correctAnswer": "no",
+            "explanation": "Noah only carried the core ancestral genetic 'kinds,' allowing rapid natural diversification across species after the Flood."
+          }
+        ]
       },
       {
         "type": "summary",
@@ -377,8 +400,7 @@ export const genesisModules = [
       }
     ]
   },
-
-{
+  {
     "id": "genesis-3",
     "title": "Genesis Part 3: Covenants and Patriarchs",
     "category": "Genesis",
@@ -446,9 +468,13 @@ export const genesisModules = [
         "type": "card-quiz",
         "title": "The Age of Isaac",
         "aiTutorExplanation": "Let's correct a standard storybook misconception using text chronological logs.",
-        "question": "True or False: According to Jewish historical context and subsequent chapters, Isaac was a helpless little toddler when bound on Mount Moriah.",
-        "correctAnswer": "no",
-        "explanation": "Isaac was a mature, capable man of roughly 37 years who willingly submitted to his father's actions without protest."
+        "questions": [
+          {
+            "question": "True or False: According to Jewish historical context and subsequent chapters, Isaac was a helpless little toddler when bound on Mount Moriah.",
+            "correctAnswer": "no",
+            "explanation": "Isaac was a mature, capable man of roughly 37 years who willingly submitted to his father's actions without protest."
+          }
+        ]
       },
       {
         "type": "info",
@@ -482,9 +508,13 @@ export const genesisModules = [
         "type": "card-quiz",
         "title": "God's Hidden Plan",
         "aiTutorExplanation": "Let's reflect on Joseph's life. His brothers had wicked motives, but God used the trials for a greater redemptive purpose.",
-        "question": "True or False: Joseph's brothers sold him into slavery out of love to prepare him to become the prime minister of Egypt.",
-        "correctAnswer": "no",
-        "explanation": "Joseph's brothers sold him out of jealousy and malice; however, God sovereignly redirected their evil intentions to preserve the family line."
+        "questions": [
+          {
+            "question": "True or False: Joseph's brothers sold him into slavery out of love to prepare him to become the prime minister of Egypt.",
+            "correctAnswer": "no",
+            "explanation": "Joseph's brothers sold him out of jealousy and malice; however, God sovereignly redirected their evil intentions to preserve the family line."
+          }
+        ]
       },
       {
         "type": "quiz",
@@ -518,9 +548,13 @@ export const genesisModules = [
         "type": "card-quiz",
         "title": "The Messianic Expectation",
         "aiTutorExplanation": "Reflect on how Israel tracked the timing of the Messiah's arrival.",
-        "question": "True or False: Israel actively anticipated the Messiah's birth under Roman rule because the tribe of Judah had finally lost its self-governing sceptre.",
-        "correctAnswer": "yes",
-        "explanation": "When Rome installed a governor over Israel, the sceptre left Judah, signaling to the Jews that Shiloh (Jesus) was due to arrive."
+        "questions": [
+          {
+            "question": "True or False: Israel actively anticipated the Messiah's birth under Roman rule because the tribe of Judah had finally lost its self-governing sceptre.",
+            "correctAnswer": "yes",
+            "explanation": "When Rome installed a governor over Israel, the sceptre left Judah, signaling to the Jews that Shiloh (Jesus) was due to arrive."
+          }
+        ]
       },
       {
         "type": "summary",

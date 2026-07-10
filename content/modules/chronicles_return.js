@@ -1,6 +1,6 @@
 // Auto-split from modules.js — chronicles_return (1chronicles, 2chronicles, ezra, nehemiah, esther-1, esther-2)
 export const chronicles_returnModules = [
-{
+  {
     "id": "1chronicles",
     "title": "1 Chronicles: Temple Blueprints and Royal Lineage",
     "category": "1 Chronicles",
@@ -76,9 +76,13 @@ export const chronicles_returnModules = [
         "type": "card-quiz",
         "title": "Northern Tribes Check",
         "aiTutorExplanation": "Let's review the fate of the Northern Kingdom in the Chronicler's genealogies.",
-        "question": "True or False: The Northern Kingdom tribes were completely obliterated during the Assyrian captivity, leaving no remnant in the genealogies of Chronicles.",
-        "correctAnswer": "no",
-        "explanation": "Chronicles explicitly documents remnants from Northern tribes (like Ephraim, Manasseh, and Asher) joining the Southern tribes, preserving the ideal of a unified all Israel."
+        "questions": [
+          {
+            "question": "True or False: The Northern Kingdom tribes were completely obliterated during the Assyrian captivity, leaving no remnant in the genealogies of Chronicles.",
+            "correctAnswer": "no",
+            "explanation": "Chronicles explicitly documents remnants from Northern tribes (like Ephraim, Manasseh, and Asher) joining the Southern tribes, preserving the ideal of a unified all Israel."
+          }
+        ]
       },
       {
         "type": "info",
@@ -153,8 +157,7 @@ export const chronicles_returnModules = [
       }
     ]
   },
-
-{
+  {
     "id": "2chronicles",
     "title": "2 Chronicles: Solomon and the Kings of Judah",
     "category": "2 Chronicles",
@@ -178,9 +181,13 @@ export const chronicles_returnModules = [
         "type": "card-quiz",
         "title": "Northern Kings in Chronicles",
         "aiTutorExplanation": "Let's review the geopolitical scope of the Book of Chronicles.",
-        "question": "True or False: The Book of Chronicles focuses almost exclusively on the Southern Kingdom of Judah, largely ignoring the kings of the Northern Kingdom of Israel.",
-        "correctAnswer": "yes",
-        "explanation": "Because the Northern Kingdom rejected the Temple and the Davidic line, Chronicles focuses on the Southern Kingdom of Judah where the Messianic seed was preserved."
+        "questions": [
+          {
+            "question": "True or False: The Book of Chronicles focuses almost exclusively on the Southern Kingdom of Judah, largely ignoring the kings of the Northern Kingdom of Israel.",
+            "correctAnswer": "yes",
+            "explanation": "Because the Northern Kingdom rejected the Temple and the Davidic line, Chronicles focuses on the Southern Kingdom of Judah where the Messianic seed was preserved."
+          }
+        ]
       },
       {
         "type": "info",
@@ -359,8 +366,7 @@ export const chronicles_returnModules = [
       }
     ]
   },
-
-{
+  {
     "id": "ezra",
     "title": "Ezra: Temple and Torah Restoration",
     "category": "Ezra",
@@ -462,9 +468,13 @@ export const chronicles_returnModules = [
         "type": "card-quiz",
         "title": "Glory Cloud Check",
         "aiTutorExplanation": "Consider the presence of God in the second temple compared to the first.",
-        "question": "True or False: The dedication of the second temple was marked by the visible descent of the glory cloud, matching the dedication of Solomon's temple.",
-        "correctAnswer": "no",
-        "explanation": "Unlike Solomon's temple, there is no biblical record of the glory cloud filling the second temple, highlighting a bittersweet spiritual reality."
+        "questions": [
+          {
+            "question": "True or False: The dedication of the second temple was marked by the visible descent of the glory cloud, matching the dedication of Solomon's temple.",
+            "correctAnswer": "no",
+            "explanation": "Unlike Solomon's temple, there is no biblical record of the glory cloud filling the second temple, highlighting a bittersweet spiritual reality."
+          }
+        ]
       },
       {
         "type": "info",
@@ -508,9 +518,13 @@ export const chronicles_returnModules = [
         "type": "card-quiz",
         "title": "Return Wave Comparison",
         "aiTutorExplanation": "Compare the scale of the two main return waves.",
-        "question": "True or False: Ezra led a much larger return wave of over forty thousand people compared to the small group that returned under Zerubbabel.",
-        "correctAnswer": "no",
-        "explanation": "Zerubbabel led the massive first wave of around 42,000 people, while Ezra led a much smaller second wave of about 1,500 men (around 5,000 total with families)."
+        "questions": [
+          {
+            "question": "True or False: Ezra led a much larger return wave of over forty thousand people compared to the small group that returned under Zerubbabel.",
+            "correctAnswer": "no",
+            "explanation": "Zerubbabel led the massive first wave of around 42,000 people, while Ezra led a much smaller second wave of about 1,500 men (around 5,000 total with families)."
+          }
+        ]
       },
       {
         "type": "info",
@@ -533,8 +547,7 @@ export const chronicles_returnModules = [
       }
     ]
   },
-
-{
+  {
     "id": "nehemiah",
     "title": "Nehemiah: Wall Rebuilding and Covenant Renewal",
     "category": "Nehemiah",
@@ -558,9 +571,13 @@ export const chronicles_returnModules = [
         "type": "card-quiz",
         "title": "Cupbearer Risks",
         "aiTutorExplanation": "Consider the strict rules of the ancient Persian royal court.",
-        "question": "True or False: Showing sadness or mourning in the presence of the Persian king carried a potential penalty of execution.",
-        "correctAnswer": "yes",
-        "explanation": "Persian kings demanded absolute joy in their presence. Displaying grief indicated dissatisfaction, which could be interpreted as treason, making Nehemiah's petition extremely risky."
+        "questions": [
+          {
+            "question": "True or False: Showing sadness or mourning in the presence of the Persian king carried a potential penalty of execution.",
+            "correctAnswer": "yes",
+            "explanation": "Persian kings demanded absolute joy in their presence. Displaying grief indicated dissatisfaction, which could be interpreted as treason, making Nehemiah's petition extremely risky."
+          }
+        ]
       },
       {
         "type": "info",
@@ -682,9 +699,13 @@ export const chronicles_returnModules = [
         "type": "card-quiz",
         "title": "Success Evaluation",
         "aiTutorExplanation": "Think about the ending of Nehemiah and the durability of the reforms.",
-        "question": "True or False: The Book of Nehemiah ends with the community permanently maintaining their covenant vows and establishing a holy kingdom.",
-        "correctAnswer": "no",
-        "explanation": "The final chapter details how the people quickly violated all three core covenant vows, showing that external walls cannot cure a broken human heart."
+        "questions": [
+          {
+            "question": "True or False: The Book of Nehemiah ends with the community permanently maintaining their covenant vows and establishing a holy kingdom.",
+            "correctAnswer": "no",
+            "explanation": "The final chapter details how the people quickly violated all three core covenant vows, showing that external walls cannot cure a broken human heart."
+          }
+        ]
       },
       {
         "type": "info",
@@ -707,8 +728,7 @@ export const chronicles_returnModules = [
       }
     ]
   },
-
-{
+  {
     "id": "esther-1",
     "title": "Esther Part 1: Diaspora and the Evil Decree",
     "category": "Esther",
@@ -732,9 +752,13 @@ export const chronicles_returnModules = [
         "type": "card-quiz",
         "title": "Divine Name Check",
         "aiTutorExplanation": "Think about the literary structure of the Book of Esther.",
-        "question": "True or False: The name of God is completely absent from the Hebrew text of the Book of Esther.",
-        "correctAnswer": "yes",
-        "explanation": "The author intentionally omits the name of God to highlight how God operates behind the scenes, through coincidences and human decisions, even when He appears silent."
+        "questions": [
+          {
+            "question": "True or False: The name of God is completely absent from the Hebrew text of the Book of Esther.",
+            "correctAnswer": "yes",
+            "explanation": "The author intentionally omits the name of God to highlight how God operates behind the scenes, through coincidences and human decisions, even when He appears silent."
+          }
+        ]
       },
       {
         "type": "info",
@@ -835,8 +859,7 @@ export const chronicles_returnModules = [
       }
     ]
   },
-
-{
+  {
     "id": "esther-2",
     "title": "Esther Part 2: Deliverance and Ironic Reversals",
     "category": "Esther",
@@ -886,9 +909,13 @@ export const chronicles_returnModules = [
         "type": "card-quiz",
         "title": "Sleepless Night Timing",
         "aiTutorExplanation": "Analyze the sequence of events during this crucial turning point.",
-        "question": "True or False: The king's insomnia occurred on the exact night before Esther planned to expose Haman at the second banquet.",
-        "correctAnswer": "yes",
-        "explanation": "This perfect timing is a classic showcase of divine providence, occurring precisely when Haman had prepared the gallows for Mordecai."
+        "questions": [
+          {
+            "question": "True or False: The king's insomnia occurred on the exact night before Esther planned to expose Haman at the second banquet.",
+            "correctAnswer": "yes",
+            "explanation": "This perfect timing is a classic showcase of divine providence, occurring precisely when Haman had prepared the gallows for Mordecai."
+          }
+        ]
       },
       {
         "type": "info",
