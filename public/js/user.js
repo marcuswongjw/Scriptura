@@ -1,11 +1,11 @@
 // Feature module: user (Phase 2)
-import { auth, db } from './firebase.js?v=2.0.14';
+import { auth, db } from './firebase.js?v=2.0.15';
 import { doc, getDoc, setDoc, collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-import { concentrations, modules } from '../modules.js?v=2.0.14';
-import { createDefaultUserState } from './constants.js?v=2.0.14';
-import { el } from './dom.js?v=2.0.14';
-import { state } from './state.js?v=2.0.14';
-import { updateStatsDisplay } from './stats.js?v=2.0.14';
+import { concentrations, modules } from '../modules.js?v=2.0.15';
+import { createDefaultUserState } from './constants.js?v=2.0.15';
+import { el } from './dom.js?v=2.0.15';
+import { state } from './state.js?v=2.0.15';
+import { updateStatsDisplay } from './stats.js?v=2.0.15';
 
 export async function fetchAndMergeCustomModules() {
   try {

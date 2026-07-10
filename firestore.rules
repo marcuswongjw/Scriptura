@@ -83,5 +83,36 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow write: if isAdmin();
     }
+
+    // Daily reading reflections: one entry per user per local calendar day.
+    // Aggregated for the community under daily_reflections/{YYYY-MM-DD}/entries/{uid}
+    match /daily_reflections/{dateId}/entries/{userId} {
+      allow read: if isSignedIn();
+
+      allow create: if isSignedIn()
+        && request.auth.uid == userId
+        && request.resource.data.authorUid == request.auth.uid
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 1200
+        && request.resource.data.dateKey == dateId;
+
+      allow update: if isSignedIn()
+        && request.auth.uid == userId
+        && resource.data.authorUid == request.auth.uid
+        && request.resource.data.authorUid == resource.data.authorUid
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 1200;
+
+      allow delete: if isSignedIn()
+        && (request.auth.uid == userId || isAdmin());
+    }
+
+    // Parent date docs (unused, but deny client writes if created).
+    match /daily_reflections/{dateId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
   }
 }

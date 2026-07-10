@@ -1,11 +1,11 @@
 // Feature module: lesson (Phase 2)
-import { modules } from '../modules.js?v=2.0.14';
-import { formatMarkdown } from './utils.js?v=2.0.14';
-import { showToast } from './toast.js?v=2.0.14';
-import { el } from './dom.js?v=2.0.14';
-import { state } from './state.js?v=2.0.14';
-import { switchTab } from './routing.js?v=2.0.14';
-import { awardXP, isModuleReleased, logActivity, logQuizAnswer, recordActivity, saveState } from './user.js?v=2.0.14';
+import { modules } from '../modules.js?v=2.0.15';
+import { formatMarkdown } from './utils.js?v=2.0.15';
+import { showToast } from './toast.js?v=2.0.15';
+import { el } from './dom.js?v=2.0.15';
+import { state } from './state.js?v=2.0.15';
+import { switchTab } from './routing.js?v=2.0.15';
+import { awardXP, isModuleReleased, logActivity, logQuizAnswer, recordActivity, saveState } from './user.js?v=2.0.15';
 
 export function startModule(moduleId, pushState = true) {
   if (!isModuleReleased(moduleId)) {

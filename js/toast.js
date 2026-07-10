@@ -1,6 +1,6 @@
 // Toast notifications (Phase 1 extract)
-import { sanitizeHTML } from './utils.js?v=2.0.14';
-import { toastIcons, toastTitles } from './constants.js?v=2.0.14';
+import { sanitizeHTML } from './utils.js?v=2.0.15';
+import { toastIcons, toastTitles } from './constants.js?v=2.0.15';
 
 function ensureToastContainer() {
   let container = document.querySelector('.toast-container');

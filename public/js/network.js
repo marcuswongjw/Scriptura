@@ -1,12 +1,12 @@
 // Feature module: network (Phase 2) — Community hub UI
-import { auth, db } from './firebase.js?v=2.0.14';
+import { auth, db } from './firebase.js?v=2.0.15';
 import { collection, getDocs, onSnapshot, addDoc, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-import { modules } from '../modules.js?v=2.0.14';
-import { sanitizeHTML, debounce } from './utils.js?v=2.0.14';
-import { showToast } from './toast.js?v=2.0.14';
-import { el } from './dom.js?v=2.0.14';
-import { state } from './state.js?v=2.0.14';
-import { checkAdminNavVisibility, saveState, updateHeaderProfile } from './user.js?v=2.0.14';
+import { modules } from '../modules.js?v=2.0.15';
+import { sanitizeHTML, debounce } from './utils.js?v=2.0.15';
+import { showToast } from './toast.js?v=2.0.15';
+import { el } from './dom.js?v=2.0.15';
+import { state } from './state.js?v=2.0.15';
+import { checkAdminNavVisibility, saveState, updateHeaderProfile } from './user.js?v=2.0.15';
 
 /** Prefer stored country; default Singapore for untagged learners. */
 export function effectiveCountry(userOrCode) {

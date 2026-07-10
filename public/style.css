@@ -4268,14 +4268,21 @@ html {
 
 /* ==========================================================================
    COMMUNITY / NETWORK — 2026 redesign
+   Matches #main-content width (720 / 960) like Home, Courses, Stats
    ========================================================================== */
+#view-network.tab-view {
+  width: 100%;
+}
+
 .network-shell {
-  max-width: 920px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
   padding: 0 1rem 2rem;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1rem;
+  box-sizing: border-box;
 }
 
 .network-hero {
@@ -4284,7 +4291,7 @@ html {
   align-items: flex-end;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1.5rem 1.25rem 0.25rem;
+  padding: 1.25rem 0 0.15rem;
 }
 
 .network-kicker {
@@ -4389,9 +4396,10 @@ html {
 
 .network-body {
   padding: 0;
-  max-width: none;
+  max-width: 100%;
   margin: 0;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .net-subview {
@@ -5116,15 +5124,42 @@ html {
   margin: 0;
 }
 
+/* Network responsive — mobile first, then tablet/desktop */
 @media (max-width: 640px) {
+  .network-shell {
+    padding: 0 0.85rem 1.75rem;
+    gap: 0.85rem;
+  }
   .network-hero {
-    padding-top: 1rem;
+    padding-top: 0.85rem;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .network-hero-stats {
+    width: 100%;
+  }
+  .net-stat-chip {
+    flex: 1;
   }
   .network-tabs {
     top: calc(var(--topbar-height) + 0.35rem);
+    border-radius: var(--r-lg);
+  }
+  .network-tabs .net-nav-item {
+    padding: 0.55rem 0.7rem;
+    font-size: 0.8rem;
+  }
+  .net-tab-icon {
+    display: none; /* more room for labels on narrow screens */
   }
   .you-card-inner {
     flex-wrap: wrap;
+  }
+  .you-card-inner .secondary-btn {
+    width: 100%;
+  }
+  .location-cards {
+    grid-template-columns: 1fr 1fr;
   }
   .event-card {
     flex-direction: column;
@@ -5139,5 +5174,349 @@ html {
   }
   .people-grid {
     grid-template-columns: 1fr;
+  }
+  .chat-container {
+    height: min(460px, 58dvh);
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1023px) {
+  .network-shell {
+    padding: 0 1.25rem 2rem;
+  }
+  .location-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .people-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .network-shell {
+    padding: 0 1.5rem 2.5rem;
+    gap: 1.25rem;
+  }
+  .network-hero {
+    padding-top: 1.5rem;
+  }
+  .location-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .people-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .chat-container {
+    height: min(560px, 62dvh);
+  }
+  .network-tabs .net-nav-item {
+    padding: 0.7rem 1.1rem;
+  }
+}
+
+/* ==========================================================================
+   DAILY READING + REFLECTIONS
+   ========================================================================== */
+.daily-reading-card {
+  margin: 0 1rem 1rem;
+}
+
+.daily-reading-card-inner {
+  background: linear-gradient(135deg, #fff7ed 0%, #fff 100%);
+  border: 1px solid #fed7aa;
+  border-radius: var(--r-xl);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.daily-reading-glow {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 80px;
+  height: 80px;
+  background: radial-gradient(circle, rgba(249,115,22,0.08) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.daily-reading-top {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.daily-reading-kicker {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--brand-coral);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.daily-reading-day-pill {
+  margin-left: auto;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--gray-400);
+  background: var(--gray-50);
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+}
+
+.daily-reading-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: var(--gray-900);
+  margin-bottom: 0.35rem;
+}
+
+.daily-reading-verse {
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--gray-700);
+  margin-bottom: 0.75rem;
+}
+
+.daily-reading-verse em {
+  font-style: italic;
+  color: var(--gray-600);
+}
+
+.daily-reading-ref {
+  font-weight: 700;
+  color: var(--brand-coral);
+  white-space: nowrap;
+  font-style: normal;
+}
+
+.daily-reading-body {
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--gray-600);
+  margin-bottom: 0.75rem;
+}
+
+.daily-reading-prompt {
+  background: #fff;
+  border-left: 3px solid var(--brand-coral);
+  padding: 0.65rem 0.85rem;
+  border-radius: 0 var(--r-md) var(--r-md) 0;
+  margin-bottom: 1rem;
+}
+
+.daily-reading-prompt p {
+  font-size: 0.85rem;
+  color: var(--gray-600);
+  margin: 0;
+}
+
+.daily-reflection-box {
+  background: #fff;
+  border: 1px solid var(--gray-100);
+  border-radius: var(--r-lg);
+  padding: 0.85rem;
+  margin-bottom: 0.85rem;
+}
+
+.daily-reflection-label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--gray-700);
+  margin-bottom: 0.45rem;
+}
+
+.daily-reflection-textarea {
+  width: 100%;
+  min-height: 96px;
+  resize: vertical;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--r-md);
+  padding: 0.75rem 0.85rem;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--gray-800);
+  background: var(--gray-50);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.daily-reflection-textarea:focus {
+  border-color: rgba(225, 29, 72, 0.4);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.08);
+}
+
+.daily-reflection-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+  font-size: 0.72rem;
+  color: var(--gray-400);
+}
+
+.daily-reading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.daily-reading-progress {
+  font-size: 0.75rem;
+  color: var(--gray-400);
+}
+
+.daily-reading-actions .primary-btn,
+.daily-reading-actions .secondary-btn {
+  min-width: 140px;
+  width: auto;
+  margin: 0;
+}
+
+.daily-reading-actions-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.daily-reading-done {
+  background: #d1fae5 !important;
+  color: #065f46 !important;
+  border-color: rgba(6, 95, 70, 0.2) !important;
+}
+
+/* Community reflections feed */
+.daily-reflections-feed {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(253, 186, 116, 0.45);
+}
+
+.daily-reflections-feed-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.daily-reflections-feed-title {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--gray-800);
+  margin: 0;
+}
+
+.daily-reflections-count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--gray-500);
+  background: var(--gray-50);
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}
+
+.reflections-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.reflection-item {
+  display: flex;
+  gap: 0.65rem;
+  background: #fff;
+  border: 1px solid var(--gray-100);
+  border-radius: var(--r-lg);
+  padding: 0.75rem;
+}
+
+.reflection-item.is-mine {
+  border-color: rgba(225, 29, 72, 0.2);
+  background: #fffafb;
+}
+
+.reflection-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--gray-100);
+}
+
+.reflection-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.reflection-author-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.reflection-author {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--gray-800);
+}
+
+.reflection-time {
+  font-size: 0.7rem;
+  color: var(--gray-400);
+}
+
+.reflection-text {
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--gray-700);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.reflections-empty {
+  font-size: 0.85rem;
+  color: var(--gray-500);
+  text-align: center;
+  padding: 0.75rem;
+}
+
+@media (min-width: 1024px) {
+  .daily-reading-card {
+    margin: 0 1.5rem 1.25rem;
+  }
+  .daily-reading-card-inner {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .daily-reading-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .daily-reading-actions-btns {
+    width: 100%;
+  }
+  .daily-reading-actions-btns .primary-btn,
+  .daily-reading-actions-btns .secondary-btn {
+    flex: 1;
   }
 }
