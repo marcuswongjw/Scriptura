@@ -1,12 +1,12 @@
 // Feature module: routing (Phase 2)
-import { el } from './dom.js?v=2.0.15';
-import { state } from './state.js?v=2.0.15';
-import { renderAdminDashboard } from './admin.js?v=2.0.15';
-import { openOnboarding, renderCoursesCatalog } from './catalog.js?v=2.0.15';
-import { renderCurriculumGrid, renderDashboard } from './dashboard.js?v=2.0.15';
-import { startModule } from './lesson.js?v=2.0.15';
-import { updateNetworkView } from './network.js?v=2.0.15';
-import { updateStatsDisplay } from './stats.js?v=2.0.15';
+import { el } from './dom.js?v=2.0.16';
+import { state } from './state.js?v=2.0.16';
+import { renderAdminDashboard } from './admin.js?v=2.0.16';
+import { openOnboarding, renderCoursesCatalog } from './catalog.js?v=2.0.16';
+import { renderCurriculumGrid, renderDashboard } from './dashboard.js?v=2.0.16';
+import { startModule } from './lesson.js?v=2.0.16';
+import { updateNetworkView } from './network.js?v=2.0.16';
+import { updateStatsDisplay } from './stats.js?v=2.0.16';
 
 export function switchTab(tabId, pushState = true) {
   state.currentTab = tabId;

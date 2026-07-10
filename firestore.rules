@@ -9,14 +9,12 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Role stored on users/{uid}. Bootstrap first admin via Firebase Console.
     function isAdmin() {
       return isSignedIn()
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Treat missing role as 'user' so legacy docs can still update progress.
     function currentRole() {
       return ('role' in resource.data) ? resource.data.role : 'user';
     }
@@ -25,10 +23,6 @@ service cloud.firestore {
       return request.resource.data.role == currentRole();
     }
 
-    // Users: anyone signed in can read (network/admin lists).
-    // Create: owner only, role forced to 'user'.
-    // Update: owner may update own fields but cannot change role;
-    //         admins may update any user (including role promote/demote).
     match /users/{userId} {
       allow read: if isSignedIn();
 
@@ -41,33 +35,72 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // Chat: auth read; create only as self; edit/delete own or admin.
     match /messages/{msgId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn()
-        && request.resource.data.senderUid == request.auth.uid;
+        && request.resource.data.senderUid == request.auth.uid
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 2000;
       allow update, delete: if isSignedIn()
         && (resource.data.senderUid == request.auth.uid || isAdmin());
     }
 
-    // Events + special doc events/module_schedules (admin-only writes).
+    function onlyAttendeeFieldsChanged() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly(['attendees']);
+    }
+
+    function attendeesList(data) {
+      return ('attendees' in data) ? data.attendees : [];
+    }
+
+    // Self-only RSVP: list size changes by 1 and the only delta involves auth.uid
+    function isSelfRsvpJoin() {
+      let before = attendeesList(resource.data);
+      let after = attendeesList(request.resource.data);
+      return after.size() == before.size() + 1
+        && request.auth.uid in after
+        && !(request.auth.uid in before)
+        && after.size() <= 100;
+    }
+
+    function isSelfRsvpLeave() {
+      let before = attendeesList(resource.data);
+      let after = attendeesList(request.resource.data);
+      return after.size() == before.size() - 1
+        && request.auth.uid in before
+        && !(request.auth.uid in after);
+    }
+
     match /events/{eventId} {
       allow read: if isSignedIn();
 
       allow create: if isSignedIn() && (
         (eventId == 'module_schedules' && isAdmin())
         || (eventId != 'module_schedules'
-            && request.resource.data.hostUid == request.auth.uid)
+            && request.resource.data.hostUid == request.auth.uid
+            && request.resource.data.title is string
+            && request.resource.data.title.size() > 0
+            && request.resource.data.title.size() <= 200)
       );
 
-      allow update, delete: if isSignedIn() && (
+      allow update: if isSignedIn() && (
+        (eventId == 'module_schedules' && isAdmin())
+        || (eventId != 'module_schedules' && (
+          resource.data.hostUid == request.auth.uid
+          || isAdmin()
+          || (onlyAttendeeFieldsChanged() && (isSelfRsvpJoin() || isSelfRsvpLeave()))
+        ))
+      );
+
+      allow delete: if isSignedIn() && (
         (eventId == 'module_schedules' && isAdmin())
         || (eventId != 'module_schedules'
             && (resource.data.hostUid == request.auth.uid || isAdmin()))
       );
     }
 
-    // Curriculum / publisher content: admin write only.
     match /custom_modules/{modId} {
       allow read: if isSignedIn();
       allow write: if isAdmin();
@@ -78,16 +111,18 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Aggregated dashboard stats: auth read, admin write.
     match /stats/{docId} {
       allow read: if isSignedIn();
       allow write: if isAdmin();
     }
 
-    // Daily reading reflections: one entry per user per local calendar day.
-    // Aggregated for the community under daily_reflections/{YYYY-MM-DD}/entries/{uid}
+    // Reflections: public readable to all signed-in; private only to author/admin
     match /daily_reflections/{dateId}/entries/{userId} {
-      allow read: if isSignedIn();
+      allow read: if isSignedIn() && (
+        !('isPublic' in resource.data) || resource.data.isPublic == true
+        || resource.data.authorUid == request.auth.uid
+        || isAdmin()
+      );
 
       allow create: if isSignedIn()
         && request.auth.uid == userId
@@ -95,24 +130,57 @@ service cloud.firestore {
         && request.resource.data.text is string
         && request.resource.data.text.size() > 0
         && request.resource.data.text.size() <= 1200
-        && request.resource.data.dateKey == dateId;
+        && request.resource.data.dateKey == dateId
+        && request.resource.data.isPublic is bool;
 
-      allow update: if isSignedIn()
-        && request.auth.uid == userId
-        && resource.data.authorUid == request.auth.uid
-        && request.resource.data.authorUid == resource.data.authorUid
-        && request.resource.data.text is string
-        && request.resource.data.text.size() > 0
-        && request.resource.data.text.size() <= 1200;
+      allow update: if isSignedIn() && (
+        // Owner full content update
+        (
+          request.auth.uid == userId
+          && resource.data.authorUid == request.auth.uid
+          && request.resource.data.authorUid == resource.data.authorUid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 1200
+        )
+        // Anyone can soft-report (flag only)
+        || (
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['reported', 'reportedBy', 'reportedAt'])
+          && request.resource.data.reported == true
+        )
+        // Admin can clear reports / moderate
+        || isAdmin()
+      );
 
       allow delete: if isSignedIn()
         && (request.auth.uid == userId || isAdmin());
     }
 
-    // Parent date docs (unused, but deny client writes if created).
     match /daily_reflections/{dateId} {
       allow read: if isSignedIn();
       allow write: if false;
+    }
+
+    // In-app notification fanout
+    match /notifications/{notifId} {
+      allow read: if isSignedIn()
+        && resource.data.recipientUid == request.auth.uid;
+
+      allow create: if isSignedIn()
+        && request.resource.data.recipientUid is string
+        && request.resource.data.recipientUid != request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.title.size() <= 120
+        && request.resource.data.body is string
+        && request.resource.data.body.size() <= 400;
+
+      allow update: if isSignedIn()
+        && resource.data.recipientUid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+
+      allow delete: if isSignedIn()
+        && (resource.data.recipientUid == request.auth.uid || isAdmin());
     }
   }
 }

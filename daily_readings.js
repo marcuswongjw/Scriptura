@@ -1,6 +1,6 @@
 // Daily Devotional Readings for Scriptura
 // Each reading includes a verse, reflection, and optional reflection question.
-// Readings cycle based on day of year; 30 entries = ~1 month of content.
+// Readings cycle based on day of year; 60 entries ≈ two months of content.
 
 export const dailyReadings = [
   {
@@ -242,5 +242,245 @@ export const dailyReadings = [
     reference: "Philippians 3:14",
     reflection: "The Christian life is not a sprint but a marathon. Paul, toward the end of his life, was still pressing forward. He had not arrived at perfection, but he was not discouraged. The key to finishing well is keeping our eyes fixed on the goal — not our past failures or successes, but the upward call of God in Christ. Today is not the finish line, but it is another step forward.",
     question: "What is one area where you need to forget what lies behind and press forward toward God's call?"
+  },
+  {
+    day: 31,
+    title: "New Every Morning",
+    verse: "The steadfast love of the LORD never ceases; his mercies never come to an end; they are new every morning; great is your faithfulness.",
+    reference: "Lamentations 3:22-23",
+    reflection: "Even after seasons of loss and lament, God's mercies rise with the dawn. Yesterday's failures do not exhaust today's grace. Each morning is a fresh invitation to trust the faithful God who never runs out of compassion.",
+    question: "How can you receive God's new mercies intentionally as this day begins?"
+  },
+  {
+    day: 32,
+    title: "Abide in the Vine",
+    verse: "I am the vine; you are the branches. Whoever abides in me and I in him, he it is that bears much fruit, for apart from me you can do nothing.",
+    reference: "John 15:5",
+    reflection: "Fruitfulness is not first a matter of striving harder but of remaining closer. Jesus does not ask branches to manufacture grapes; He asks them to stay connected. Prayer, Scripture, and obedience keep us in the flow of His life.",
+    question: "What habit helps you abide in Christ today, and what distracts you from it?"
+  },
+  {
+    day: 33,
+    title: "The Gentle Shepherd",
+    verse: "The LORD is my shepherd; I shall not want. He makes me lie down in green pastures. He leads me beside still waters.",
+    reference: "Psalm 23:1-2",
+    reflection: "Sheep do not find still waters on their own; they are led. Rest is not laziness when God commands it — it is trust. The Shepherd knows when you need pasture and when you need quiet, and He is not in a hurry with your soul.",
+    question: "Where do you need the Shepherd to lead you into rest rather than more effort?"
+  },
+  {
+    day: 34,
+    title: "Light in the Darkness",
+    verse: "The light shines in the darkness, and the darkness has not overcome it.",
+    reference: "John 1:5",
+    reflection: "Darkness is real, but it is not ultimate. John's Gospel opens with a declaration of invincible light — the Word who entered our shadowed world and was not extinguished. Your hardest night cannot snuff out Christ's presence.",
+    question: "Where do you need to trust that Christ's light is still shining?"
+  },
+  {
+    day: 35,
+    title: "Cast Your Cares",
+    verse: "Cast all your anxiety on him because he cares for you.",
+    reference: "1 Peter 5:7",
+    reflection: "Anxiety often clings because we keep carrying what God invites us to throw. Casting is an active verb — a deliberate transfer of weight. The reason we can cast is not that our problems are small, but that our Shepherd's care is personal and sure.",
+    question: "Name one anxiety you will deliberately cast on God in prayer today."
+  },
+  {
+    day: 36,
+    title: "One Another Love",
+    verse: "A new commandment I give to you, that you love one another: just as I have loved you, you also are to love one another.",
+    reference: "John 13:34",
+    reflection: "Jesus raises the standard of love from 'as yourself' to 'as I have loved you' — self-giving, foot-washing, cross-bearing love. Christian community is not optional décor; it is the stage where His love becomes visible to the world.",
+    question: "Who in your community needs a concrete act of Christlike love from you this week?"
+  },
+  {
+    day: 37,
+    title: "The Word as Lamp",
+    verse: "Your word is a lamp to my feet and a light to my path.",
+    reference: "Psalm 119:105",
+    reflection: "A lamp does not flood the whole journey at once; it gives enough light for the next step. Scripture guides us the same way — not always with a five-year plan, but with enough truth to walk faithfully today.",
+    question: "What next step of obedience is Scripture lighting for you right now?"
+  },
+  {
+    day: 38,
+    title: "Strength in Weakness",
+    verse: "My grace is sufficient for you, for my power is made perfect in weakness.",
+    reference: "2 Corinthians 12:9",
+    reflection: "Paul's unanswered prayer for relief became a revelation of sufficient grace. Weakness is not the end of usefulness in the kingdom; it is often the doorway. God's power does not wait for our competence — it rests on our dependence.",
+    question: "How might God be displaying His power through a weakness you wish would disappear?"
+  },
+  {
+    day: 39,
+    title: "Seek First the Kingdom",
+    verse: "But seek first the kingdom of God and his righteousness, and all these things will be added to you.",
+    reference: "Matthew 6:33",
+    reflection: "Jesus reorders our anxieties about food, clothing, and status by giving us a first priority: the reign of God. When the kingdom is first, secondary things find their place. Worry shrinks when worship grows.",
+    question: "What would it look like to put God's kingdom first in one decision you face today?"
+  },
+  {
+    day: 40,
+    title: "The Joy of the Lord",
+    verse: "Do not be grieved, for the joy of the LORD is your strength.",
+    reference: "Nehemiah 8:10",
+    reflection: "After hearing the Law, the people wept — and were told to feast. Holy joy is not denial of brokenness; it is strength drawn from who God is. When delight in the Lord fills the heart, weary hands find courage again.",
+    question: "What truth about God can you rejoice in today, even if circumstances feel heavy?"
+  },
+  {
+    day: 41,
+    title: "Open Hands, Open Heart",
+    verse: "It is more blessed to give than to receive.",
+    reference: "Acts 20:35",
+    reflection: "Jesus flips the world's math of blessing. Generosity is not loss but participation in God's own nature. Whether time, attention, or resources, open hands become channels of grace rather than clenched fists of fear.",
+    question: "What is one thing you can give today that costs you something meaningful?"
+  },
+  {
+    day: 42,
+    title: "Run with Endurance",
+    verse: "Let us run with endurance the race that is set before us, looking to Jesus, the founder and perfecter of our faith.",
+    reference: "Hebrews 12:1-2",
+    reflection: "The Christian life is a race marked out for us — not someone else's course. Endurance grows when our eyes stay on Jesus rather than on the crowd or the distance left. He started our faith and will finish it.",
+    question: "What distraction do you need to lay aside to run your race with clearer focus?"
+  },
+  {
+    day: 43,
+    title: "Be Still",
+    verse: "Be still, and know that I am God.",
+    reference: "Psalm 46:10",
+    reflection: "Stillness is not inactivity; it is surrendered attention. In a noisy world, quiet before God is a radical act of faith — declaring that He is God and we are not. Knowing grows where striving pauses.",
+    question: "When can you practice five minutes of still silence before God today?"
+  },
+  {
+    day: 44,
+    title: "The Ministry of Reconciliation",
+    verse: "All this is from God, who through Christ reconciled us to himself and gave us the ministry of reconciliation.",
+    reference: "2 Corinthians 5:18",
+    reflection: "We are not only recipients of peace with God; we are ambassadors of that peace. Reconciliation is God's work through us — in families, churches, and fractured relationships. The gospel we received is the gospel we extend.",
+    question: "Is there a relationship where you can take a reconciling step this week?"
+  },
+  {
+    day: 45,
+    title: "Taste and See",
+    verse: "Oh, taste and see that the LORD is good! Blessed is the man who takes refuge in him!",
+    reference: "Psalm 34:8",
+    reflection: "Faith is not merely intellectual assent; it is experiential trust. God invites us to taste — to try His goodness in prayer, obedience, and worship. Refuge is found not in ideas about God but in the God who is good.",
+    question: "How have you 'tasted' God's goodness recently, and how can you share that with someone?"
+  },
+  {
+    day: 46,
+    title: "Clothed with Compassion",
+    verse: "Put on then, as God's chosen ones, holy and beloved, compassionate hearts, kindness, humility, meekness, and patience.",
+    reference: "Colossians 3:12",
+    reflection: "Paul dresses the Christian life in relational virtues. These are not optional accessories for nice days; they are the uniform of people who know they are chosen and loved. We wear what our identity already is in Christ.",
+    question: "Which of these virtues — compassion, kindness, humility, meekness, patience — do you most need to 'put on' today?"
+  },
+  {
+    day: 47,
+    title: "Ask, Seek, Knock",
+    verse: "Ask, and it will be given to you; seek, and you will find; knock, and it will be opened to you.",
+    reference: "Matthew 7:7",
+    reflection: "Jesus encourages persistent, confident prayer. Asking acknowledges need; seeking pursues God's will; knocking refuses to walk away too soon. The Father delights to respond to children who keep coming.",
+    question: "What request have you stopped bringing to God that He may want you to bring again?"
+  },
+  {
+    day: 48,
+    title: "The Body of Christ",
+    verse: "For just as the body is one and has many members, and all the members of the body, though many, are one body, so it is with Christ.",
+    reference: "1 Corinthians 12:12",
+    reflection: "No believer is a spare part. The Spirit distributes gifts so that the church thrives through mutual dependence. Isolation starves gifts; community activates them. You need the body, and the body needs you.",
+    question: "How can you serve or receive from your church community more intentionally?"
+  },
+  {
+    day: 49,
+    title: "Guard Your Heart",
+    verse: "Keep your heart with all vigilance, for from it flow the springs of life.",
+    reference: "Proverbs 4:23",
+    reflection: "The heart is the wellspring — thoughts, desires, and loves shape the whole life. Guarding it is not fearfulness but wise stewardship of what we watch, believe, and dwell on. Input becomes overflow.",
+    question: "What is one influence you need to limit to better guard your heart?"
+  },
+  {
+    day: 50,
+    title: "The Hope of Glory",
+    verse: "Christ in you, the hope of glory.",
+    reference: "Colossians 1:27",
+    reflection: "The Christian hope is not vague optimism; it is a Person dwelling within. Glory is not only a future destination but a present union with Christ by the Spirit. What He has begun, He will complete.",
+    question: "How does 'Christ in you' change how you face something difficult today?"
+  },
+  {
+    day: 51,
+    title: "Speak the Truth in Love",
+    verse: "Rather, speaking the truth in love, we are to grow up in every way into him who is the head, into Christ.",
+    reference: "Ephesians 4:15",
+    reflection: "Truth without love wounds; love without truth misleads. Maturity holds both — honesty that aims at another's good, and kindness that refuses flattery. Growing up into Christ means our words start to sound like His.",
+    question: "Is there a conversation where you need more truth, more love, or both?"
+  },
+  {
+    day: 52,
+    title: "Do Not Grow Weary",
+    verse: "And let us not grow weary of doing good, for in due season we will reap, if we do not give up.",
+    reference: "Galatians 6:9",
+    reflection: "Good work often feels slow. Paul reminds us that harvest has a season — delayed, not denied. Perseverance is faith stretched over time. Keep sowing kindness, prayer, and obedience; God is not mocked, and He sees.",
+    question: "Where are you tempted to quit doing good, and what would it look like to take one more faithful step?"
+  },
+  {
+    day: 53,
+    title: "The Mind of Christ",
+    verse: "Have this mind among yourselves, which is yours in Christ Jesus, who, though he was in the form of God, did not count equality with God a thing to be grasped.",
+    reference: "Philippians 2:5-6",
+    reflection: "Jesus' mindset was humble self-emptying service. The call is not to invent humility but to put on the mind already given us in Him. Status-grasping dies where cross-shaped love lives.",
+    question: "Where can you choose the lower place in service of someone else today?"
+  },
+  {
+    day: 54,
+    title: "He Will Hold You Fast",
+    verse: "And I am sure of this, that he who began a good work in you will bring it to completion at the day of Jesus Christ.",
+    reference: "Philippians 1:6",
+    reflection: "Sanctification is God's project before it is ours. Confidence rests not on our grip on Him but on His grip on us. The One who started the good work is faithful to finish it — including on the days we feel unfinished.",
+    question: "How does God's commitment to complete His work free you from despair about slow growth?"
+  },
+  {
+    day: 55,
+    title: "Salt and Light",
+    verse: "You are the salt of the earth… You are the light of the world.",
+    reference: "Matthew 5:13-14",
+    reflection: "Jesus does not say 'try to become' salt and light; He says you are. Identity precedes mission. Disciples preserve what is good and illuminate what is true — not by withdrawing from the world, but by living distinctly within it.",
+    question: "In one ordinary setting today, how can your presence bring preserving salt or hopeful light?"
+  },
+  {
+    day: 56,
+    title: "Pray Without Ceasing",
+    verse: "Rejoice always, pray without ceasing, give thanks in all circumstances; for this is the will of God in Christ Jesus for you.",
+    reference: "1 Thessalonians 5:16-18",
+    reflection: "Unceasing prayer is less about endless words and more about continual communion — turning the face of the heart toward God in every circumstance. Joy, prayer, and gratitude form a threefold cord for resilient discipleship.",
+    question: "How can you turn one routine moment today into a brief prayer of thanks?"
+  },
+  {
+    day: 57,
+    title: "The Armor of God",
+    verse: "Put on the whole armor of God, that you may be able to stand against the schemes of the devil.",
+    reference: "Ephesians 6:11",
+    reflection: "Spiritual life is contested ground. Paul does not call us to panic but to stand — equipped with truth, righteousness, peace, faith, salvation, and the Word. Armor is God's provision; wearing it is our daily dependence.",
+    question: "Which piece of God's armor do you most need to 'put on' intentionally today?"
+  },
+  {
+    day: 58,
+    title: "Rivers of Living Water",
+    verse: "Whoever believes in me, as the Scripture has said, 'Out of his heart will flow rivers of living water.'",
+    reference: "John 7:38",
+    reflection: "Jesus promises not a trickle of religious effort but rivers of Spirit-life overflowing to others. Belief opens the heart; the Spirit supplies the flow. We are channels, not reservoirs hoarding grace for ourselves alone.",
+    question: "Who might be refreshed if the Spirit's life flowed more freely through you this week?"
+  },
+  {
+    day: 59,
+    title: "Fix Your Eyes",
+    verse: "We look not to the things that are seen but to the things that are unseen. For the things that are seen are transient, but the things that are unseen are eternal.",
+    reference: "2 Corinthians 4:18",
+    reflection: "Visible pressures shout; eternal realities whisper — unless we train our gaze. Faith reorders vision. What lasts forever deserves more attention than what fades by nightfall.",
+    question: "What unseen eternal reality do you need to fix your eyes on more than a present worry?"
+  },
+  {
+    day: 60,
+    title: "Come to Me and Rest",
+    verse: "Come to me, all who labor and are heavy laden, and I will give you rest. Take my yoke upon you, and learn from me, for I am gentle and lowly in heart, and you will find rest for your souls.",
+    reference: "Matthew 11:28-29",
+    reflection: "Jesus' invitation is personal: Come to me. Rest is not found in emptying the calendar alone but in yoking ourselves to a gentle King. His yoke fits; His pace restores. The weary are not turned away — they are welcomed.",
+    question: "What burden will you bring to Jesus today, trusting His gentle rest?"
   }
 ];

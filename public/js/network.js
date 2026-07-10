@@ -1,12 +1,13 @@
 // Feature module: network (Phase 2) — Community hub UI
-import { auth, db } from './firebase.js?v=2.0.15';
-import { collection, getDocs, onSnapshot, addDoc, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-import { modules } from '../modules.js?v=2.0.15';
-import { sanitizeHTML, debounce } from './utils.js?v=2.0.15';
-import { showToast } from './toast.js?v=2.0.15';
-import { el } from './dom.js?v=2.0.15';
-import { state } from './state.js?v=2.0.15';
-import { checkAdminNavVisibility, saveState, updateHeaderProfile } from './user.js?v=2.0.15';
+import { auth, db } from './firebase.js?v=2.0.16';
+import { collection, getDocs, onSnapshot, addDoc, query, orderBy, limit, doc, updateDoc, arrayUnion, arrayRemove } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { modules } from '../modules.js?v=2.0.16';
+import { sanitizeHTML, debounce } from './utils.js?v=2.0.16';
+import { showToast } from './toast.js?v=2.0.16';
+import { el } from './dom.js?v=2.0.16';
+import { state } from './state.js?v=2.0.16';
+import { checkAdminNavVisibility, saveState, updateHeaderProfile } from './user.js?v=2.0.16';
+import { notifyCommunityOfEvent, getNotificationPrefs, setNotificationPrefs } from './notifications.js?v=2.0.16';
 
 /** Prefer stored country; default Singapore for untagged learners. */
 export function effectiveCountry(userOrCode) {
@@ -399,7 +400,6 @@ export function loadEvents() {
     el.eventsList.innerHTML = '';
     const events = [];
     snapshot.forEach(docSnap => {
-      // Skip non-event docs such as module_schedules
       const data = docSnap.data();
       if (!data.title || docSnap.id === 'module_schedules') return;
       events.push({ id: docSnap.id, ...data });
@@ -419,6 +419,8 @@ export function loadEvents() {
       return;
     }
 
+    const myUid = auth.currentUser?.uid;
+
     events.forEach(ev => {
       let timeStr = 'TBD';
       try {
@@ -428,20 +430,33 @@ export function loadEvents() {
         });
       } catch (_) { /* keep TBD */ }
       const hostAvatar = ev.hostPhoto || `https://api.dicebear.com/7.x/bottts/svg?seed=${ev.hostUid}`;
+      const attendees = Array.isArray(ev.attendees) ? ev.attendees : [];
+      const count = attendees.length;
+      const joined = myUid && attendees.includes(myUid);
+      const avatars = attendees.slice(0, 5).map(uid =>
+        `<img class="rsvp-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=${uid}" alt="" title="Learner">`
+      ).join('');
+      const more = count > 5 ? `<span class="rsvp-more">+${count - 5}</span>` : '';
 
       const html = `
-        <article class="event-card">
+        <article class="event-card" data-event-id="${ev.id}">
           <div class="event-info">
             <span class="event-time-badge">${sanitizeHTML(timeStr)}</span>
             <h4 class="event-title">${sanitizeHTML(ev.title)}</h4>
             <p class="event-desc">${sanitizeHTML(ev.description || '')}</p>
             <div class="event-host">
               <img class="event-host-avatar" src="${hostAvatar}" alt="">
-              <span>${sanitizeHTML(ev.hostName || 'Host')}</span>
+              <span>Hosted by ${sanitizeHTML(ev.hostName || 'Host')}</span>
+            </div>
+            <div class="event-rsvp-row">
+              <div class="rsvp-avatars">${count ? avatars + more : '<span class="rsvp-empty">No RSVPs yet</span>'}</div>
+              <span class="rsvp-count">${count} going</span>
             </div>
           </div>
           <div class="event-actions">
-            <button type="button" class="primary-btn compact-btn join-event-btn" data-event-id="${ev.id}">I'm interested</button>
+            <button type="button" class="primary-btn compact-btn join-event-btn ${joined ? 'is-joined' : ''}" data-event-id="${ev.id}" data-joined="${joined ? '1' : '0'}">
+              ${joined ? 'Cancel RSVP' : "I'm interested"}
+            </button>
           </div>
         </article>
       `;
@@ -449,10 +464,25 @@ export function loadEvents() {
     });
 
     document.querySelectorAll('.join-event-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        showToast("You're on the list — see you there!", 'success');
-        btn.textContent = 'Saved';
+      btn.addEventListener('click', async () => {
+        if (!auth.currentUser) return;
+        const eventId = btn.dataset.eventId;
+        const joined = btn.dataset.joined === '1';
         btn.disabled = true;
+        try {
+          const ref = doc(db, 'events', eventId);
+          if (joined) {
+            await updateDoc(ref, { attendees: arrayRemove(auth.currentUser.uid) });
+            showToast('RSVP cancelled.', 'info');
+          } else {
+            await updateDoc(ref, { attendees: arrayUnion(auth.currentUser.uid) });
+            showToast("You're on the list — see you there!", 'success');
+          }
+        } catch (err) {
+          console.error('RSVP failed:', err);
+          showToast('Could not update RSVP. Try again.', 'error');
+          btn.disabled = false;
+        }
       });
     });
   }, (err) => {
@@ -469,18 +499,21 @@ export async function handleCreateEvent(e) {
   const time = el.eventTimeInput.value;
 
   try {
-    await addDoc(collection(db, 'events'), {
+    const payload = {
       title,
       description,
       time,
       hostUid: auth.currentUser.uid,
       hostName: state.userState.name || auth.currentUser.displayName || 'Scriptura Learner',
-      hostPhoto: state.userState.photo || `https://api.dicebear.com/7.x/bottts/svg?seed=${auth.currentUser.uid}`
-    });
+      hostPhoto: state.userState.photo || `https://api.dicebear.com/7.x/bottts/svg?seed=${auth.currentUser.uid}`,
+      attendees: [auth.currentUser.uid]
+    };
+    await addDoc(collection(db, 'events'), payload);
 
     el.eventCreateForm.reset();
     el.eventDialog.classList.add('hidden');
     showToast('Event scheduled!', 'success');
+    notifyCommunityOfEvent(payload).catch(() => {});
   } catch (err) {
     console.error('Failed to create event:', err);
     showToast('Failed to schedule event. Please try again.', 'error');
@@ -668,6 +701,14 @@ export function openProfileDialog() {
   const uploadInput = document.getElementById('profile-photo-upload');
   if (uploadInput) uploadInput.value = '';
 
+  const prefs = getNotificationPrefs();
+  const pd = document.getElementById('pref-daily-reminder');
+  const pe = document.getElementById('pref-event-alerts');
+  const pr = document.getElementById('pref-reflection-alerts');
+  if (pd) pd.checked = prefs.dailyReminder !== false;
+  if (pe) pe.checked = prefs.eventAlerts !== false;
+  if (pr) pr.checked = prefs.reflectionAlerts !== false;
+
   renderAvatarPresets();
   el.profileDialog.classList.remove('hidden');
 }
@@ -714,6 +755,15 @@ export async function handleProfileSave(e) {
   } else {
     state.userState.role = 'user';
   }
+
+  const pd = document.getElementById('pref-daily-reminder');
+  const pe = document.getElementById('pref-event-alerts');
+  const pr = document.getElementById('pref-reflection-alerts');
+  await setNotificationPrefs({
+    dailyReminder: pd ? pd.checked : true,
+    eventAlerts: pe ? pe.checked : true,
+    reflectionAlerts: pr ? pr.checked : true
+  });
 
   await saveState();
   updateHeaderProfile();

@@ -1,5 +1,5 @@
 // Shared mutable application state (Phase 2)
-import { createDefaultUserState } from './constants.js?v=2.0.15';
+import { createDefaultUserState } from './constants.js?v=2.0.16';
 
 export const state = {
   userState: createDefaultUserState(),
@@ -39,6 +39,7 @@ export const state = {
     US: { name: 'United States', flag: '🇺🇸', region: 'North America' },
     GB: { name: 'United Kingdom', flag: '🇬🇧', region: 'Europe' },
     CA: { name: 'Canada', flag: '🇨🇦', region: 'North America' },
-    ZA: { name: 'South Africa', flag: '🇿🇦', region: 'Africa' }
+    ZA: { name: 'South Africa', flag: '🇿🇦', region: 'Africa' },
+    OTHER: { name: 'Other', flag: '🌍', region: 'Worldwide' }
   }
 };

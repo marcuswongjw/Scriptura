@@ -8,7 +8,7 @@
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#e11d48">
-  <link rel="stylesheet" href="style.css?v=2.0.15">
+  <link rel="stylesheet" href="style.css?v=2.0.16">
 </head>
 <body>
 
@@ -632,6 +632,51 @@
   <!-- ============================================================
        AUTH PORTAL OVERLAY
        ============================================================ -->
+
+  <!-- First-run onboarding -->
+  <div id="onboarding-overlay" class="onboarding-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="onboard-title-h">
+    <div class="onboarding-card">
+      <p class="onboarding-kicker">Welcome to Scriptura</p>
+      <h2 id="onboard-title-h" class="onboarding-title">Let’s get you set up</h2>
+      <p class="onboarding-sub">A few details help the community know you — and personalize your study path.</p>
+      <form id="onboard-form" class="onboarding-form">
+        <label class="form-field">
+          <span>Your name</span>
+          <input type="text" id="onboard-name" required maxlength="80" placeholder="How should we greet you?" autocomplete="name">
+        </label>
+        <label class="form-field">
+          <span>Church / fellowship <em>(optional)</em></span>
+          <input type="text" id="onboard-church" maxlength="120" placeholder="e.g. Philife Center">
+        </label>
+        <label class="form-field">
+          <span>Location</span>
+          <select id="onboard-country" required>
+            <option value="SG">🇸🇬 Singapore</option>
+            <option value="PH">🇵🇭 Philippines</option>
+            <option value="MY">🇲🇾 Malaysia</option>
+            <option value="HK">🇭🇰 Hong Kong</option>
+            <option value="AU">🇦🇺 Australia</option>
+            <option value="US">🇺🇸 United States</option>
+            <option value="GB">🇬🇧 United Kingdom</option>
+            <option value="OTHER">🌍 Other</option>
+          </select>
+        </label>
+        <label class="onboard-check">
+          <input type="checkbox" id="onboard-daily-reminder" checked>
+          <span>Remind me about the daily reading</span>
+        </label>
+        <label class="onboard-check">
+          <input type="checkbox" id="onboard-start-lesson" checked>
+          <span id="onboard-module-hint">Start with a suggested first lesson</span>
+        </label>
+        <div class="onboarding-actions">
+          <button type="button" id="onboard-skip-btn" class="secondary-btn">Skip for now</button>
+          <button type="submit" class="primary-btn">Continue</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div id="auth-portal" class="auth-overlay">
     <div class="auth-card">
       <div class="auth-logo">📜 Scriptura</div>
@@ -753,6 +798,14 @@
         </div>
 
         <div class="form-field">
+          
+          <div class="form-field notify-prefs-block">
+            <span class="form-label-strong">Notification preferences</span>
+            <label class="onboard-check"><input type="checkbox" id="pref-daily-reminder" checked> Daily reading reminder</label>
+            <label class="onboard-check"><input type="checkbox" id="pref-event-alerts" checked> New study events</label>
+            <label class="onboard-check"><input type="checkbox" id="pref-reflection-alerts" checked> Community reflections</label>
+          </div>
+
           <label for="profile-role-select">Account Role</label>
           <div class="select-wrapper dark">
             <select id="profile-role-select">
@@ -971,6 +1024,6 @@
     </button>
   </nav>
 
-  <script type="module" src="app.js?v=2.0.15"></script>
+  <script type="module" src="app.js?v=2.0.16"></script>
 </body>
 </html>

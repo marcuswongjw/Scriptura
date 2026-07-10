@@ -90,6 +90,15 @@ export function createDefaultUserState() {
     social: '',
     lessonProgress: {},
     timeSpent: 0,
-    activityLog: []
+    activityLog: [],
+    onboardingCompleted: false,
+    notificationPrefs: {
+      dailyReminder: true,
+      reminderHour: 8,
+      eventAlerts: true,
+      reflectionAlerts: true
+    },
+    dailyReflectionDates: [],
+    lastDailyReminderDate: null
   };
 }
