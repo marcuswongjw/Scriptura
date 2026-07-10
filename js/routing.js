@@ -4,7 +4,7 @@ import { state } from './state.js?v=2.0.24';
 import { renderAdminDashboard } from './admin.js?v=2.0.24';
 import { openOnboarding, renderCoursesCatalog } from './catalog.js?v=2.0.24';
 import { renderCurriculumGrid, renderDashboard } from './dashboard.js?v=2.0.24';
-import { closeLesson, saveActiveLessonProgress, startModule } from './lesson.js?v=2.0.28';
+import { saveActiveLessonProgress, startModule } from './lesson.js?v=2.0.28';
 import { updateNetworkView } from './network.js?v=2.0.24';
 import { updateStatsDisplay } from './stats.js?v=2.0.24';
 
