@@ -1,11 +1,11 @@
 // Feature module: lesson (Phase 2)
-import { modules } from '../modules.js?v=2.0.30';
-import { formatMarkdown } from './utils.js?v=2.0.30';
-import { showToast } from './toast.js?v=2.0.30';
-import { el } from './dom.js?v=2.0.30';
-import { state } from './state.js?v=2.0.30';
-import { switchTab } from './routing.js?v=2.0.30';
-import { awardXP, isModuleReleased, logActivity, logQuizAnswer, recordActivity, saveState } from './user.js?v=2.0.30';
+import { modules } from '../modules.js?v=2.0.31';
+import { formatMarkdown, sanitizeHTML } from './utils.js?v=2.0.31';
+import { showToast } from './toast.js?v=2.0.31';
+import { el } from './dom.js?v=2.0.31';
+import { state } from './state.js?v=2.0.31';
+import { switchTab } from './routing.js?v=2.0.31';
+import { awardXP, isModuleReleased, logActivity, logQuizAnswer, recordActivity, saveState } from './user.js?v=2.0.31';
 
 function ensureQuizClearedMap() {
   if (!state.userState.lessonQuizCleared || typeof state.userState.lessonQuizCleared !== 'object') {
@@ -297,10 +297,15 @@ export function renderSlide() {
     el.takeawayBanner.classList.add('hidden');
   }
 
-  if (slide.type === 'card-quiz') {
+  const cardQuizAlreadyCleared = slide.type === 'card-quiz'
+    && isSlideQuizCleared(state.activeModule.id, state.currentSlideIndex);
+
+  if (slide.type === 'card-quiz' && !cardQuizAlreadyCleared) {
     el.lessonView.classList.add('cardquiz-mode');
     el.lessonTopbar.style.background = 'var(--brand-purple-bg)';
     el.lessonProgressBar.style.background = 'var(--brand-purple)';
+    // Hide bottom bar during active multi-card flow — use in-card Continue.
+    // (Keyboard Enter still goes through handleNextClick, which steps cards safely.)
     el.nextSlideBtn.style.display = 'none';
   } else {
     el.lessonView.classList.remove('cardquiz-mode');
@@ -314,16 +319,19 @@ export function renderSlide() {
   if (slide.type === 'info') {
     const trans = state.userState.translation;
     const scriptureText = slide.scriptureText?.[trans] || slide.scriptureText?.['ESV'] || '';
+    const safeTitle = sanitizeHTML(slide.title || '');
+    const safeScripture = sanitizeHTML(slide.scripture || '');
+    const safeScriptureText = sanitizeHTML(scriptureText);
 
     let bodyHtml = '';
     if (slide.content && (slide.content.includes('Luke:') || slide.content.includes('Ben:'))) {
       bodyHtml = slide.content.split('\n\n').map(p => {
         if (p.startsWith('Luke:')) {
-          return `<div class="dialogue-block"><div class="dialogue-speaker">Luke (Student)</div>${p.replace('Luke:', '').trim()}</div>`;
+          return `<div class="dialogue-block"><div class="dialogue-speaker">Luke (Student)</div>${sanitizeHTML(p.replace('Luke:', '').trim())}</div>`;
         } else if (p.startsWith('Ben:')) {
-          return `<div class="dialogue-block"><div class="dialogue-speaker tutor">Ben (Mentor)</div>${p.replace('Ben:', '').trim()}</div>`;
+          return `<div class="dialogue-block"><div class="dialogue-speaker tutor">Ben (Mentor)</div>${sanitizeHTML(p.replace('Ben:', '').trim())}</div>`;
         }
-        return `<p>${p.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>`;
+        return `<p>${sanitizeHTML(p).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>`;
       }).join('');
     } else {
       bodyHtml = formatMarkdown(slide.content);
@@ -331,11 +339,11 @@ export function renderSlide() {
 
     cardHtml = `
       <div class="info-slide">
-        <h2 class="slide-title">${slide.title}</h2>
+        <h2 class="slide-title">${safeTitle}</h2>
         ${scriptureText ? `
         <div class="scripture-callout">
-          <div class="scripture-text">"${scriptureText}"</div>
-          <span class="scripture-ref">— ${slide.scripture} (${trans})</span>
+          <div class="scripture-text">"${safeScriptureText}"</div>
+          <span class="scripture-ref">— ${safeScripture} (${sanitizeHTML(trans)})</span>
         </div>` : ''}
         <div class="slide-body">${bodyHtml}</div>
       </div>
@@ -356,20 +364,23 @@ export function renderSlide() {
       return `
         <button class="quiz-option${extra}" data-index="${idx}"${dim}${dis}>
           <span class="option-letter">${letter}</span>
-          <span class="option-text">${opt}</span>
+          <span class="option-text">${sanitizeHTML(opt)}</span>
         </button>
       `;
     }).join('');
 
+    const safeQ = sanitizeHTML(slide.question || '');
+    const safeExpl = sanitizeHTML(slide.explanation || 'You cleared this quiz earlier — continue when ready.');
+
     cardHtml = `
       <div class="quiz-slide">
-        <p class="quiz-question">${slide.question}</p>
+        <p class="quiz-question">${safeQ}</p>
         <div class="quiz-options" id="quiz-options">${optionsHtml}</div>
         <div id="quiz-feedback-box" class="quiz-feedback ${alreadyCleared ? 'correct' : 'hidden'}" ${alreadyCleared ? 'style="display:flex"' : 'hidden'}>
           <span class="feedback-icon" id="feedback-icon">✓</span>
           <div class="feedback-text">
             <h4 id="feedback-title">${alreadyCleared ? 'Already answered' : 'Correct!'}</h4>
-            <p id="feedback-desc">${alreadyCleared ? (slide.explanation || 'You cleared this quiz earlier — continue when ready.') : ''}</p>
+            <p id="feedback-desc">${alreadyCleared ? safeExpl : ''}</p>
           </div>
         </div>
       </div>
@@ -395,7 +406,7 @@ export function renderSlide() {
       correctAnswer: slide.correctAnswer,
       explanation: slide.explanation
     }];
-    const alreadyCleared = isSlideQuizCleared(state.activeModule.id, state.currentSlideIndex);
+    const alreadyCleared = cardQuizAlreadyCleared;
 
     if (alreadyCleared) {
       cardHtml = `
@@ -428,7 +439,7 @@ export function renderSlide() {
           <div class="stack-wrapper">
             <div class="stack-card-shadow-2"></div>
             <div class="stack-card-shadow-1"></div>
-            <div class="stack-card-main">${currentQ.question}</div>
+            <div class="stack-card-main">${sanitizeHTML(currentQ.question || '')}</div>
           </div>
           <div class="yes-no-row">
             <button class="yn-btn yes" data-val="yes">yes</button>
@@ -452,8 +463,8 @@ export function renderSlide() {
   } else if (slide.type === 'summary') {
     cardHtml = `
       <div class="summary-slide">
-        <span class="summary-emoji">${slide.illustration || '🏆'}</span>
-        <h2 class="summary-title">${slide.title}</h2>
+        <span class="summary-emoji">${sanitizeHTML(slide.illustration || '🏆')}</span>
+        <h2 class="summary-title">${sanitizeHTML(slide.title || '')}</h2>
         <div class="summary-body">${formatMarkdown(slide.content)}</div>
       </div>
     `;
@@ -468,19 +479,19 @@ export function renderSlide() {
     el.activeCard.querySelectorAll('.quiz-option').forEach(opt => {
       opt.addEventListener('click', () => selectQuizOption(parseInt(opt.getAttribute('data-index'))));
     });
-  } else if (slide.type === 'card-quiz') {
+  } else if (slide.type === 'card-quiz' && !cardQuizAlreadyCleared) {
     el.activeCard.querySelectorAll('.yn-btn').forEach(btn => {
       btn.addEventListener('click', () => selectYesNoOption(btn.getAttribute('data-val')));
     });
   }
 
-  const currentQaiTutor = (slide.type === 'card-quiz') ? 
-    (((slide.questions && slide.questions[state.cardQuizSubIndex]) || {}).aiTutorExplanation || slide.aiTutorExplanation) : 
-    slide.aiTutorExplanation;
+  const currentQaiTutor = (slide.type === 'card-quiz')
+    ? (((slide.questions && slide.questions[state.cardQuizSubIndex]) || {}).aiTutorExplanation || slide.aiTutorExplanation)
+    : slide.aiTutorExplanation;
 
   if (currentQaiTutor) {
     el.aiTutorTrigger.classList.remove('hidden');
-    if (slide.type === 'card-quiz') {
+    if (slide.type === 'card-quiz' && !cardQuizAlreadyCleared) {
       el.aiTutorTrigger.classList.add('dark-mode');
     } else {
       el.aiTutorTrigger.classList.remove('dark-mode');
@@ -490,7 +501,7 @@ export function renderSlide() {
   }
 
   el.tutorExplanationText.innerHTML = currentQaiTutor
-    ? `<p>${currentQaiTutor}</p>`
+    ? `<p>${sanitizeHTML(currentQaiTutor)}</p>`
     : `<p>This slide provides theological and historical context on the scriptures.</p>`;
 }
 
@@ -630,7 +641,7 @@ export function checkCardQuizAnswer() {
 
     feedbackBox.className = 'cardquiz-feedback correct';
     feedbackTitle.textContent = '✓ Correct!';
-    feedbackDesc.textContent  = currentQ.explanation;
+    feedbackDesc.textContent = currentQ.explanation || '';
 
     if (state.currentQuestionFirstAttempt) {
       state.userState.quizStats.correctFirstTry += 1;
@@ -691,22 +702,51 @@ export function handleNextClick() {
   if (!state.activeModule) return;
   const slide = state.activeModule.slides[state.currentSlideIndex];
   if (!slide) return;
+
+  // Multi-choice quiz: submit first
   if (slide.type === 'quiz' && !state.isQuizAnswered) {
     checkQuizAnswer();
-  } else if (slide.type === 'card-quiz' && !state.isQuizAnswered) {
+    return;
+  }
+
+  // Card-quiz: submit current card if not yet answered
+  if (slide.type === 'card-quiz' && !state.isQuizAnswered) {
     checkCardQuizAnswer();
-  } else {
-    // Leaving a cleared quiz/card-quiz (resume or just finished)
-    if ((slide.type === 'quiz' || slide.type === 'card-quiz') && state.isQuizAnswered) {
-      markSlideQuizCleared(state.activeModule.id, state.currentSlideIndex);
-    }
-    if (state.currentSlideIndex < state.activeModule.slides.length - 1) {
-      state.currentSlideIndex += 1;
-      state.cardQuizSubIndex = 0;
+    return;
+  }
+
+  // Card-quiz mid-set: after a correct card, advance to the NEXT CARD — never skip remaining cards
+  // (Enter key / bottom bar must not jump to the next lesson slide early).
+  if (slide.type === 'card-quiz' && state.isQuizAnswered) {
+    const qs = slide.questions || [{
+      question: slide.question,
+      correctAnswer: slide.correctAnswer,
+      explanation: slide.explanation
+    }];
+    const fullyCleared = isSlideQuizCleared(state.activeModule.id, state.currentSlideIndex);
+
+    if (!fullyCleared && state.cardQuizSubIndex < qs.length - 1) {
+      state.cardQuizSubIndex += 1;
+      state.selectedOptionIndex = null;
+      state.isQuizAnswered = false;
+      state.currentQuestionFirstAttempt = true;
       renderSlide();
-    } else {
-      completeActiveModule();
+      return;
     }
+
+    // Last card finished (or set already cleared on resume)
+    markSlideQuizCleared(state.activeModule.id, state.currentSlideIndex);
+    state.cardQuizSubIndex = 0;
+  } else if (slide.type === 'quiz' && state.isQuizAnswered) {
+    markSlideQuizCleared(state.activeModule.id, state.currentSlideIndex);
+  }
+
+  if (state.currentSlideIndex < state.activeModule.slides.length - 1) {
+    state.currentSlideIndex += 1;
+    state.cardQuizSubIndex = 0;
+    renderSlide();
+  } else {
+    completeActiveModule();
   }
 }
 

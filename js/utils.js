@@ -32,13 +32,16 @@ export function getDayOfYear(date = new Date()) {
 
 export function formatMarkdown(content) {
   if (!content) return '';
-  return content.split('\n\n').map(p => {
+  // Escape HTML first so untrusted/admin content cannot inject tags; then apply
+  // trusted markdown transforms on the escaped plain text.
+  const safe = sanitizeHTML(String(content));
+  return safe.split('\n\n').map(p => {
     const lines = p.split('\n');
     let isList = false;
     let isNumbered = false;
     const listItems = [];
     const nonListItems = [];
-    
+
     const applyInline = t => t
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       // Replace single asterisks that are not part of a ** pair.
@@ -46,6 +49,7 @@ export function formatMarkdown(content) {
       .replace(/^###\s*(.+)/, '<h3>$1</h3>')
       .replace(/^##\s*(.+)/, '<h2>$1</h2>')
       .replace(/^#\s*(.+)/, '<h1>$1</h1>')
+      .replace(/^&gt; (.+)/, '<blockquote>$1</blockquote>')
       .replace(/^> (.+)/, '<blockquote>$1</blockquote>');
 
     lines.forEach(line => {
@@ -56,8 +60,9 @@ export function formatMarkdown(content) {
       } else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
         isList = true;
         listItems.push(`<li>${applyInline(trimmed.substring(2))}</li>`);
-      } else if (trimmed.startsWith('> ')) {
-        nonListItems.push(`<blockquote>${applyInline(trimmed.substring(2))}</blockquote>`);
+      } else if (trimmed.startsWith('&gt; ') || trimmed.startsWith('> ')) {
+        const body = trimmed.startsWith('&gt; ') ? trimmed.substring(5) : trimmed.substring(2);
+        nonListItems.push(`<blockquote>${applyInline(body)}</blockquote>`);
       } else if (trimmed.startsWith('### ')) {
         nonListItems.push(`<h3>${applyInline(trimmed.substring(4))}</h3>`);
       } else if (trimmed.startsWith('## ')) {
@@ -68,7 +73,7 @@ export function formatMarkdown(content) {
         nonListItems.push(applyInline(line));
       }
     });
-    
+
     if (isNumbered) {
       return `${nonListItems.length > 0 ? `<p>${nonListItems.join('<br>')}</p>` : ''}<ol>${listItems.join('')}</ol>`;
     } else if (isList) {

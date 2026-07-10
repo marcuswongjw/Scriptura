@@ -1,22 +1,22 @@
 // Scriptura app entry — wires Phase 1 + Phase 2 modules
-import { auth } from './js/firebase.js?v=2.0.30';
+import { auth } from './js/firebase.js?v=2.0.31';
 import { signOut, onAuthStateChanged, setPersistence, browserSessionPersistence } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
-import { debounce } from './js/utils.js?v=2.0.30';
-import { showToast } from './js/toast.js?v=2.0.30';
-import { el } from './js/dom.js?v=2.0.30';
-import { state } from './js/state.js?v=2.0.30';
-import { handlePublisherFileInput, handlePublisherSubmit, handleTemplateToggle, wireVisualEditor } from './js/admin.js?v=2.0.30';
-import { handleGoogleSignIn, handleLoginSubmit, handleRegisterSubmit, switchAuthTab } from './js/auth_ui.js?v=2.0.30';
-import { renderCoursesCatalog, updateFilterTagsUI } from './js/catalog.js?v=2.0.30';
-import { renderDashboard } from './js/dashboard.js?v=2.0.30';
-import { closeLesson, handleNextClick, handlePrevClick, renderSlide, startModule } from './js/lesson.js?v=2.0.30';
-import { handleProfileSave, initNetworkViewer, openProfileDialog, setupPhotoUpload } from './js/network.js?v=2.0.30';
-import { checkAndSyncPushToken, registerServiceWorker } from './js/push.js?v=2.0.30';
-import { routeToPath, switchDashboardSubtab, switchTab } from './js/routing.js?v=2.0.30';
-import { updateStatsDisplay } from './js/stats.js?v=2.0.30';
-import { checkAdminNavVisibility, fetchAndMergeCustomModules, loadModuleSchedules, loadUserCloudData, resetLocalState, saveState, updateHeaderProfile, updateStreak } from './js/user.js?v=2.0.30';
-import { wireOnboarding, maybeShowOnboarding } from './js/onboarding.js?v=2.0.30';
-import { maybeSendDailyReadingReminder, surfaceUnreadNotifications } from './js/notifications.js?v=2.0.30';
+import { debounce } from './js/utils.js?v=2.0.31';
+import { showToast } from './js/toast.js?v=2.0.31';
+import { el } from './js/dom.js?v=2.0.31';
+import { state } from './js/state.js?v=2.0.31';
+import { handlePublisherFileInput, handlePublisherSubmit, handleTemplateToggle, wireVisualEditor } from './js/admin.js?v=2.0.31';
+import { handleGoogleSignIn, handleLoginSubmit, handleRegisterSubmit, switchAuthTab } from './js/auth_ui.js?v=2.0.31';
+import { renderCoursesCatalog, updateFilterTagsUI } from './js/catalog.js?v=2.0.31';
+import { renderDashboard } from './js/dashboard.js?v=2.0.31';
+import { closeLesson, handleNextClick, handlePrevClick, renderSlide, startModule } from './js/lesson.js?v=2.0.31';
+import { handleProfileSave, initNetworkViewer, openProfileDialog, setupPhotoUpload } from './js/network.js?v=2.0.31';
+import { checkAndSyncPushToken, registerServiceWorker } from './js/push.js?v=2.0.31';
+import { routeToPath, switchDashboardSubtab, switchTab } from './js/routing.js?v=2.0.31';
+import { updateStatsDisplay } from './js/stats.js?v=2.0.31';
+import { checkAdminNavVisibility, fetchAndMergeCustomModules, loadModuleSchedules, loadUserCloudData, resetLocalState, saveState, updateHeaderProfile, updateStreak } from './js/user.js?v=2.0.31';
+import { wireOnboarding, maybeShowOnboarding } from './js/onboarding.js?v=2.0.31';
+import { maybeSendDailyReadingReminder, surfaceUnreadNotifications } from './js/notifications.js?v=2.0.31';
 
 async function init() {
   setupEventListeners();

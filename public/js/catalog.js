@@ -1,12 +1,12 @@
 // Feature module: catalog (Phase 2)
-import { concentrations, modules } from '../modules.js?v=2.0.30';
-import { conIcons } from './constants.js?v=2.0.30';
-import { showToast } from './toast.js?v=2.0.30';
-import { el } from './dom.js?v=2.0.30';
-import { state } from './state.js?v=2.0.30';
-import { startModule } from './lesson.js?v=2.0.30';
-import { switchTab } from './routing.js?v=2.0.30';
-import { isModuleReleased } from './user.js?v=2.0.30';
+import { concentrations, modules } from '../modules.js?v=2.0.31';
+import { conIcons } from './constants.js?v=2.0.31';
+import { showToast } from './toast.js?v=2.0.31';
+import { el } from './dom.js?v=2.0.31';
+import { state } from './state.js?v=2.0.31';
+import { startModule } from './lesson.js?v=2.0.31';
+import { switchTab } from './routing.js?v=2.0.31';
+import { isModuleReleased } from './user.js?v=2.0.31';
 
 export function updateFilterTagsUI() {
   document.querySelectorAll('.filter-tag-btn').forEach(btn => {
@@ -118,13 +118,21 @@ export function renderCoursesCatalog() {
     return;
   }
 
-  // Group concentrations by topic
+  // Group concentrations by topic (preserve array order = biblical order in concentrations.js)
   const groups = {};
   filteredConcentrations.forEach(con => {
     const tName = con.group || 'Books of the Bible';
     if (!groups[tName]) groups[tName] = [];
     groups[tName].push(con);
   });
+  // Defensive: keep Books of the Bible in concentrations.js order even if filter reorders
+  if (groups['Books of the Bible']) {
+    const order = concentrations.map(c => c.id);
+    groups['Books of the Bible'].sort((a, b) => {
+      if (a.isLockedTopic || b.isLockedTopic) return 0;
+      return order.indexOf(a.id) - order.indexOf(b.id);
+    });
+  }
 
   matchedLockedTopics.forEach(lt => {
     const tName = lt.title;

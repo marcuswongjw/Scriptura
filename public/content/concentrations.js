@@ -1,4 +1,5 @@
 // Berea Course & Module Data based on "The Beautiful Book Study Guide"
+// Concentrations ordered by Protestant biblical canon (OT → NT), with intro first and topical tracks last.
 
 export const concentrations = [
   {
@@ -124,60 +125,6 @@ export const concentrations = [
     ]
   },
   {
-    "id": "psalms",
-    "title": "Psalms",
-    "group": "Books of the Bible",
-    "description": "The emotional processed worship of the saints, the twin gateway pillars, and messianic suffering shadows.",
-    "modules": [
-      "psalms"
-    ]
-  },
-  {
-    "id": "proverbs",
-    "title": "Proverbs",
-    "group": "Books of the Bible",
-    "description": "Applied wisdom in daily relationships, the fear of the Lord, generational transfers, and cosmic design.",
-    "modules": [
-      "proverbs"
-    ]
-  },
-  {
-    "id": "ecclesiastes",
-    "title": "Ecclesiastes",
-    "group": "Books of the Bible",
-    "description": "Qoheleth's search for meaning under the sun and the call to fear God and keep His commandments.",
-    "modules": [
-      "ecclesiastes"
-    ]
-  },
-  {
-    "id": "hosea",
-    "title": "Hosea",
-    "group": "Books of the Bible",
-    "description": "Hosea's marriage as a living metaphor exposing Israel's spiritual adultery and demonstrating God's pursuing Chesed love.",
-    "modules": [
-      "hosea"
-    ]
-  },
-  {
-    "id": "joel",
-    "title": "Joel",
-    "group": "Books of the Bible",
-    "description": "The ecological catastrophe of locusts, the concept of the Day of the Lord, and the promise of the Spirit.",
-    "modules": [
-      "joel"
-    ]
-  },
-  {
-    "id": "habakkuk",
-    "title": "Habakkuk",
-    "group": "Books of the Bible",
-    "description": "A prophet's dialogue with God over injustice, Babylon, and living by faith until joy returns on the heights.",
-    "modules": [
-      "habakkuk"
-    ]
-  },
-  {
     "id": "1chronicles",
     "title": "1 Chronicles",
     "group": "Books of the Bible",
@@ -231,6 +178,60 @@ export const concentrations = [
     "modules": [
       "job-1",
       "job-2"
+    ]
+  },
+  {
+    "id": "psalms",
+    "title": "Psalms",
+    "group": "Books of the Bible",
+    "description": "The emotional processed worship of the saints, the twin gateway pillars, and messianic suffering shadows.",
+    "modules": [
+      "psalms"
+    ]
+  },
+  {
+    "id": "proverbs",
+    "title": "Proverbs",
+    "group": "Books of the Bible",
+    "description": "Applied wisdom in daily relationships, the fear of the Lord, generational transfers, and cosmic design.",
+    "modules": [
+      "proverbs"
+    ]
+  },
+  {
+    "id": "ecclesiastes",
+    "title": "Ecclesiastes",
+    "group": "Books of the Bible",
+    "description": "Qoheleth's search for meaning under the sun and the call to fear God and keep His commandments.",
+    "modules": [
+      "ecclesiastes"
+    ]
+  },
+  {
+    "id": "hosea",
+    "title": "Hosea",
+    "group": "Books of the Bible",
+    "description": "Hosea's marriage as a living metaphor exposing Israel's spiritual adultery and demonstrating God's pursuing Chesed love.",
+    "modules": [
+      "hosea"
+    ]
+  },
+  {
+    "id": "joel",
+    "title": "Joel",
+    "group": "Books of the Bible",
+    "description": "The ecological catastrophe of locusts, the concept of the Day of the Lord, and the promise of the Spirit.",
+    "modules": [
+      "joel"
+    ]
+  },
+  {
+    "id": "habakkuk",
+    "title": "Habakkuk",
+    "group": "Books of the Bible",
+    "description": "A prophet's dialogue with God over injustice, Babylon, and living by faith until joy returns on the heights.",
+    "modules": [
+      "habakkuk"
     ]
   },
   {
