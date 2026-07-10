@@ -44,7 +44,7 @@ self.addEventListener('notificationclick', (event) => {
 // ---------------------------------------------------------------------------
 // PWA cache — network-first for HTML shell; stale-while-revalidate for assets
 // ---------------------------------------------------------------------------
-const CACHE_NAME = 'scriptura-pwa-cache-v1.0.18';
+const CACHE_NAME = 'scriptura-pwa-cache-v2.0.29';
 
 self.addEventListener('install', (e) => {
   e.waitUntil(self.skipWaiting());

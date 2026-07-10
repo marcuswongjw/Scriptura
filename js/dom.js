@@ -61,6 +61,7 @@ export const el = {
   onboardBulletPoints: document.getElementById('onboard-bullet-points'),
   onboardLessonCount: document.getElementById('onboard-lesson-count'),
   startOnboardedLesson: document.getElementById('start-onboarded-lesson'),
+  restartOnboardedLesson: document.getElementById('restart-onboarded-lesson'),
 
   // Network View
   // Profile Modal (Enriched)

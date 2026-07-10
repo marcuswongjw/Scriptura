@@ -1,12 +1,12 @@
 // Feature module: catalog (Phase 2)
-import { concentrations, modules } from '../modules.js?v=2.0.26';
-import { conIcons } from './constants.js?v=2.0.24';
-import { showToast } from './toast.js?v=2.0.24';
-import { el } from './dom.js?v=2.0.24';
-import { state } from './state.js?v=2.0.24';
-import { startModule } from './lesson.js?v=2.0.28';
-import { switchTab } from './routing.js?v=2.0.24';
-import { isModuleReleased } from './user.js?v=2.0.24';
+import { concentrations, modules } from '../modules.js?v=2.0.29';
+import { conIcons } from './constants.js?v=2.0.29';
+import { showToast } from './toast.js?v=2.0.29';
+import { el } from './dom.js?v=2.0.29';
+import { state } from './state.js?v=2.0.29';
+import { startModule } from './lesson.js?v=2.0.29';
+import { switchTab } from './routing.js?v=2.0.29';
+import { isModuleReleased } from './user.js?v=2.0.29';
 
 export function updateFilterTagsUI() {
   document.querySelectorAll('.filter-tag-btn').forEach(btn => {
@@ -271,8 +271,25 @@ export function openOnboarding(concentrationId, pushState = true) {
     nextUpTitle.textContent = isAllComplete ? `ALL LESSONS COMPLETED` : `NEXT UP: ${nextUpLesson.title}`;
   }
 
+  const nextProgress = Number(state.userState.lessonProgress?.[nextUpLesson.id] || 0);
+  const nextInProgress = !isAllComplete && nextProgress > 0;
+
   el.startOnboardedLesson.setAttribute('data-id', nextUpLesson.id);
-  el.startOnboardedLesson.textContent = isAllComplete ? 'REVIEW COURSE' : 'RESUME';
+  if (isAllComplete) {
+    el.startOnboardedLesson.textContent = 'REVIEW COURSE';
+  } else if (nextInProgress) {
+    el.startOnboardedLesson.textContent = 'RESUME';
+  } else {
+    el.startOnboardedLesson.textContent = 'START';
+  }
+
+  // Restart when there is something to reset (in progress or completed / review).
+  if (el.restartOnboardedLesson) {
+    el.restartOnboardedLesson.setAttribute('data-id', nextUpLesson.id);
+    const showRestart = nextInProgress || isAllComplete
+      || state.userState.completedModules.includes(nextUpLesson.id);
+    el.restartOnboardedLesson.classList.toggle('hidden', !showRestart);
+  }
 
   const completedCount = conLessons.filter(l => state.userState.completedModules.includes(l.id)).length;
   el.onboardLessonCount.textContent = `${completedCount} OF ${conLessons.length} LESSONS COMPLETED`;

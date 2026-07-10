@@ -1,11 +1,11 @@
 // Feature module: lesson (Phase 2)
-import { modules } from '../modules.js?v=2.0.26';
-import { formatMarkdown } from './utils.js?v=2.0.24';
-import { showToast } from './toast.js?v=2.0.24';
-import { el } from './dom.js?v=2.0.24';
-import { state } from './state.js?v=2.0.24';
-import { switchTab } from './routing.js?v=2.0.24';
-import { awardXP, isModuleReleased, logActivity, logQuizAnswer, recordActivity, saveState } from './user.js?v=2.0.24';
+import { modules } from '../modules.js?v=2.0.29';
+import { formatMarkdown } from './utils.js?v=2.0.29';
+import { showToast } from './toast.js?v=2.0.29';
+import { el } from './dom.js?v=2.0.29';
+import { state } from './state.js?v=2.0.29';
+import { switchTab } from './routing.js?v=2.0.29';
+import { awardXP, isModuleReleased, logActivity, logQuizAnswer, recordActivity, saveState } from './user.js?v=2.0.29';
 
 /** Highest slide index the learner may open (reached before, or completed = all). */
 function getFurthestUnlockedIndex() {
@@ -73,7 +73,12 @@ export function goToSlide(targetIndex) {
   renderSlide();
 }
 
-export function startModule(moduleId, pushState = true) {
+/**
+ * @param {string} moduleId
+ * @param {boolean} [pushState=true]
+ * @param {{ forceRestart?: boolean }} [options]
+ */
+export function startModule(moduleId, pushState = true, options = {}) {
   if (!isModuleReleased(moduleId)) {
     showToast('This course is not yet released!', 'warning');
     switchTab('courses');
@@ -83,17 +88,30 @@ export function startModule(moduleId, pushState = true) {
   state.activeModule = modules.find(m => m.id === moduleId);
   if (!state.activeModule) return;
 
+  const forceRestart = options.forceRestart === true;
   const total = state.activeModule.slides.length;
   const last = Math.max(0, total - 1);
   const isCompleted = state.userState.completedModules?.includes(moduleId);
   if (!state.userState.lessonProgress) state.userState.lessonProgress = {};
-  const savedRaw = Number(state.userState.lessonProgress[moduleId] || 0);
 
-  // Resume incomplete lessons at furthest reached slide; completed restarts at 0 for review.
-  if (!isCompleted && savedRaw > 0) {
-    state.currentSlideIndex = Math.min(savedRaw, last);
-  } else {
+  if (forceRestart) {
+    // Clear slide progress so unlocks and resume start fresh (keep completion history for stats).
+    state.userState.lessonProgress[moduleId] = 0;
+    // If restarting a completed module intentionally, allow full playthrough again.
+    if (isCompleted) {
+      state.userState.completedModules = state.userState.completedModules.filter(id => id !== moduleId);
+    }
     state.currentSlideIndex = 0;
+    saveState();
+    showToast('Restarted from the beginning', 'info');
+  } else {
+    const savedRaw = Number(state.userState.lessonProgress[moduleId] || 0);
+    // Resume incomplete lessons at furthest reached slide; completed restarts at 0 for review.
+    if (!isCompleted && savedRaw > 0) {
+      state.currentSlideIndex = Math.min(savedRaw, last);
+    } else {
+      state.currentSlideIndex = 0;
+    }
   }
 
   state.cardQuizSubIndex = 0;
@@ -105,6 +123,9 @@ export function startModule(moduleId, pushState = true) {
   if (!state.userState.modulesStarted.includes(moduleId)) {
     state.userState.modulesStarted.push(moduleId);
     logActivity('module_started', { moduleId, moduleTitle: state.activeModule.title });
+    saveState();
+  } else if (forceRestart) {
+    logActivity('module_restarted', { moduleId, moduleTitle: state.activeModule.title });
     saveState();
   }
 
@@ -119,7 +140,7 @@ export function startModule(moduleId, pushState = true) {
   el.header.classList.add('hidden');
   el.lessonView.classList.remove('hidden');
 
-  if (!isCompleted && state.currentSlideIndex > 0) {
+  if (!forceRestart && !isCompleted && state.currentSlideIndex > 0) {
     showToast(`Resumed at slide ${state.currentSlideIndex + 1} of ${total}`, 'info');
   }
 

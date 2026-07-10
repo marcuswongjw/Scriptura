@@ -3617,6 +3617,33 @@ select option[disabled] {
   background: #7C3AED;
 }
 
+.next-up-restart-btn {
+  width: 100%;
+  max-width: 240px;
+  background: transparent;
+  color: var(--gray-600);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--r-md);
+  padding: 0.65rem 1.25rem;
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  margin-top: 0.15rem;
+}
+
+.next-up-restart-btn:hover {
+  background: var(--gray-50);
+  border-color: var(--gray-300);
+  color: var(--gray-800);
+}
+
+.next-up-restart-btn.hidden {
+  display: none;
+}
+
 .course-chapter-section {
   margin-top: 1.5rem;
 }

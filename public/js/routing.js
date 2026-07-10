@@ -1,12 +1,12 @@
 // Feature module: routing (Phase 2)
-import { el } from './dom.js?v=2.0.24';
-import { state } from './state.js?v=2.0.24';
-import { renderAdminDashboard } from './admin.js?v=2.0.24';
-import { openOnboarding, renderCoursesCatalog } from './catalog.js?v=2.0.24';
-import { renderCurriculumGrid, renderDashboard } from './dashboard.js?v=2.0.24';
-import { saveActiveLessonProgress, startModule } from './lesson.js?v=2.0.28';
-import { updateNetworkView } from './network.js?v=2.0.24';
-import { updateStatsDisplay } from './stats.js?v=2.0.24';
+import { el } from './dom.js?v=2.0.29';
+import { state } from './state.js?v=2.0.29';
+import { renderAdminDashboard } from './admin.js?v=2.0.29';
+import { openOnboarding, renderCoursesCatalog } from './catalog.js?v=2.0.29';
+import { renderCurriculumGrid, renderDashboard } from './dashboard.js?v=2.0.29';
+import { saveActiveLessonProgress, startModule } from './lesson.js?v=2.0.29';
+import { updateNetworkView } from './network.js?v=2.0.29';
+import { updateStatsDisplay } from './stats.js?v=2.0.29';
 
 export function switchTab(tabId, pushState = true) {
   // Browser back / tab changes used to hide the lesson without saving progress.
