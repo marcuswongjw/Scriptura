@@ -1,7 +1,7 @@
 // Feature module: network (Phase 2) — Community hub UI
 import { auth, db } from './firebase.js?v=2.0.24';
 import { collection, getDocs, onSnapshot, addDoc, query, orderBy, limit, doc, updateDoc, arrayUnion, arrayRemove } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-import { modules } from '../modules.js?v=2.0.25';
+import { modules } from '../modules.js?v=2.0.26';
 import { sanitizeHTML, debounce } from './utils.js?v=2.0.24';
 import { showToast } from './toast.js?v=2.0.24';
 import { el } from './dom.js?v=2.0.24';

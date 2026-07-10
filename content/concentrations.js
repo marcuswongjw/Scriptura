@@ -234,6 +234,15 @@ export const concentrations = [
     ]
   },
   {
+    "id": "1corinthians",
+    "title": "1 Corinthians",
+    "group": "Books of the Bible",
+    "description": "Gospel for a messy church: divisions, holiness, liberty, gifts, agape love, and the bodily resurrection.",
+    "modules": [
+      "1corinthians"
+    ]
+  },
+  {
     "id": "1peter",
     "title": "1 Peter",
     "group": "Books of the Bible",

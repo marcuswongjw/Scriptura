@@ -13,6 +13,7 @@ import { wisdomModules } from './content/modules/wisdom.js';
 import { prophetsModules } from './content/modules/prophets.js';
 import { heavenModules } from './content/modules/heaven.js';
 import { peterModules } from './content/modules/peter.js';
+import { corinthiansModules } from './content/modules/corinthians.js';
 
 export { concentrations };
 
@@ -29,4 +30,5 @@ export const modules = [
   ...prophetsModules,
   ...heavenModules,
   ...peterModules,
+  ...corinthiansModules,
 ];

@@ -38,6 +38,7 @@ export const moduleIcons = {
   'heaven-3': '👑',
   '1peter': '🪨',
   '2peter': '🕯️',
+  '1corinthians': '⚓',
 };
 
 /** Shared concentration icons (catalog, onboarding, stats) */
@@ -69,6 +70,7 @@ export const conIcons = {
   'job': '🌪️',
   '1peter': '🪨',
   '2peter': '🕯️',
+  '1corinthians': '⚓',
   'heaven': '🌤️'
 };
 
