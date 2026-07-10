@@ -169,6 +169,15 @@ export const concentrations = [
     ]
   },
   {
+    "id": "habakkuk",
+    "title": "Habakkuk",
+    "group": "Books of the Bible",
+    "description": "A prophet's dialogue with God over injustice, Babylon, and living by faith until joy returns on the heights.",
+    "modules": [
+      "habakkuk"
+    ]
+  },
+  {
     "id": "1chronicles",
     "title": "1 Chronicles",
     "group": "Books of the Bible",

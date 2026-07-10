@@ -1,5 +1,5 @@
 // Feature module: dashboard (Phase 2)
-import { concentrations, modules } from '../modules.js?v=2.0.24';
+import { concentrations, modules } from '../modules.js?v=2.0.25';
 import { el } from './dom.js?v=2.0.24';
 import { state } from './state.js?v=2.0.24';
 import { openOnboarding, renderCoursesCatalog, updateFilterTagsUI } from './catalog.js?v=2.0.24';

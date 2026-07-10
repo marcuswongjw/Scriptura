@@ -1,5 +1,5 @@
 // Feature module: lesson (Phase 2)
-import { modules } from '../modules.js?v=2.0.24';
+import { modules } from '../modules.js?v=2.0.25';
 import { formatMarkdown } from './utils.js?v=2.0.24';
 import { showToast } from './toast.js?v=2.0.24';
 import { el } from './dom.js?v=2.0.24';
