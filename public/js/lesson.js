@@ -1,11 +1,11 @@
 // Feature module: lesson (Phase 2)
-import { modules } from '../modules.js?v=2.0.17';
-import { formatMarkdown } from './utils.js?v=2.0.17';
-import { showToast } from './toast.js?v=2.0.17';
-import { el } from './dom.js?v=2.0.17';
-import { state } from './state.js?v=2.0.17';
-import { switchTab } from './routing.js?v=2.0.17';
-import { awardXP, isModuleReleased, logActivity, logQuizAnswer, recordActivity, saveState } from './user.js?v=2.0.17';
+import { modules } from '../modules.js?v=2.0.18';
+import { formatMarkdown } from './utils.js?v=2.0.18';
+import { showToast } from './toast.js?v=2.0.18';
+import { el } from './dom.js?v=2.0.18';
+import { state } from './state.js?v=2.0.18';
+import { switchTab } from './routing.js?v=2.0.18';
+import { awardXP, isModuleReleased, logActivity, logQuizAnswer, recordActivity, saveState } from './user.js?v=2.0.18';
 
 export function startModule(moduleId, pushState = true) {
   if (!isModuleReleased(moduleId)) {
@@ -89,6 +89,15 @@ export function renderProgressDots() {
     ? Math.round((state.currentSlideIndex / (total - 1)) * 100)
     : (state.currentSlideIndex === 0 ? 0 : 100);
   el.lessonProgressBar.style.width = `${progressPercent}%`;
+
+  const counter = document.getElementById('lesson-slide-counter');
+  if (counter) {
+    counter.textContent = `${state.currentSlideIndex + 1} / ${total}`;
+  }
+  const modTitle = document.getElementById('lesson-module-title');
+  if (modTitle) {
+    modTitle.textContent = state.activeModule.title || '';
+  }
 }
 
 export function renderSlide() {
@@ -187,7 +196,7 @@ export function renderSlide() {
       <div class="quiz-slide">
         <p class="quiz-question">${slide.question}</p>
         <div class="quiz-options" id="quiz-options">${optionsHtml}</div>
-        <div id="quiz-feedback-box" class="quiz-feedback hidden" style="display:none;">
+        <div id="quiz-feedback-box" class="quiz-feedback hidden" hidden>
           <span class="feedback-icon" id="feedback-icon">✓</span>
           <div class="feedback-text">
             <h4 id="feedback-title">Correct!</h4>
@@ -362,8 +371,13 @@ export function checkQuizAnswer() {
     }
   }
 
+  feedbackBox.hidden = false;
   feedbackBox.style.display = 'flex';
   feedbackBox.classList.remove('hidden');
+  // Bring feedback into view on mobile
+  requestAnimationFrame(() => {
+    feedbackBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
 }
 
 export function checkCardQuizAnswer() {
@@ -400,8 +414,12 @@ export function checkCardQuizAnswer() {
   yesBtn.setAttribute('disabled', 'true');
   noBtn.setAttribute('disabled', 'true');
 
+  feedbackBox.hidden = false;
   feedbackBox.style.display = 'flex';
   feedbackBox.classList.remove('hidden');
+  requestAnimationFrame(() => {
+    feedbackBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
 
   if (isCorrect) {
     if (state.selectedOptionIndex === 'yes') yesBtn.style.background = 'var(--brand-green)';

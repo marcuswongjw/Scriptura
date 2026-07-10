@@ -8,7 +8,7 @@
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#e11d48">
-  <link rel="stylesheet" href="style.css?v=2.0.17">
+  <link rel="stylesheet" href="style.css?v=2.0.18">
 </head>
 <body>
 
@@ -330,6 +330,20 @@
           </div>
         </div>
 
+        <!-- Moderation -->
+        <div class="admin-panel-card" style="grid-column: 1 / -1;">
+          <div class="admin-panel-head-row">
+            <div>
+              <h3 class="admin-panel-title">Reflection moderation</h3>
+              <p class="admin-panel-subtitle">Reported community reflections from the last 30 days</p>
+            </div>
+            <button type="button" id="admin-refresh-moderation" class="secondary-btn compact-btn">Refresh</button>
+          </div>
+          <div id="admin-moderation-list" class="admin-moderation-list">
+            <p class="admin-muted">Loading…</p>
+          </div>
+        </div>
+
         <!-- Manage Roles -->
         <div class="admin-panel-card">
           <h3 class="admin-panel-title">Learner Roles Management</h3>
@@ -568,17 +582,21 @@
 
     <!-- Lesson Top Bar: progress dots + nav -->
     <div id="lesson-topbar" class="lesson-topbar">
-      <button id="prev-slide" class="lesson-nav-btn" disabled>
+      <button id="prev-slide" class="lesson-nav-btn" disabled aria-label="Previous slide">
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M13 4L7 10L13 16" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
-      <div class="lesson-dots-bar" id="lesson-dots-bar">
-        <!-- Hexagonal/pill dots injected dynamically -->
+      <div class="lesson-topbar-center">
+        <div class="lesson-dots-bar" id="lesson-dots-bar"></div>
+        <div class="lesson-slide-meta">
+          <span id="lesson-slide-counter" class="lesson-slide-counter">1 / 1</span>
+          <span id="lesson-module-title" class="lesson-module-title"></span>
+        </div>
       </div>
-      <button id="close-lesson" class="lesson-close-x">✕</button>
+      <button id="close-lesson" class="lesson-close-x" aria-label="Close lesson">✕</button>
     </div>
 
     <!-- Progress bar (thin line under topbar) -->
-    <div class="lesson-progress-track">
+    <div class="lesson-progress-track" aria-hidden="true">
       <div id="lesson-progress-bar" class="lesson-progress-fill"></div>
     </div>
 
@@ -1067,6 +1085,6 @@
     </button>
   </nav>
 
-  <script type="module" src="app.js?v=2.0.17"></script>
+  <script type="module" src="app.js?v=2.0.18"></script>
 </body>
 </html>

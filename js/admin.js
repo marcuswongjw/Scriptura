@@ -1,15 +1,15 @@
 // Feature module: admin (Phase 2)
-import { auth, db } from './firebase.js?v=2.0.17';
-import { doc, getDoc, setDoc, collection, getDocs, addDoc, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-import { concentrations, modules } from '../modules.js?v=2.0.17';
-import { sanitizeHTML } from './utils.js?v=2.0.17';
-import { showToast, showStatusEl } from './toast.js?v=2.0.17';
-import { state } from './state.js?v=2.0.17';
-import { renderCoursesCatalog } from './catalog.js?v=2.0.17';
-import { renderDashboard } from './dashboard.js?v=2.0.17';
-import { fetchRegisteredUsers } from './network.js?v=2.0.17';
-import { switchTab } from './routing.js?v=2.0.17';
-import { checkAdminNavVisibility, fetchAndMergeCustomModules, loadModuleSchedules, saveState } from './user.js?v=2.0.17';
+import { auth, db } from './firebase.js?v=2.0.18';
+import { doc, getDoc, setDoc, collection, getDocs, addDoc, query, orderBy, limit, where, updateDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { concentrations, modules } from '../modules.js?v=2.0.18';
+import { sanitizeHTML } from './utils.js?v=2.0.18';
+import { showToast, showStatusEl } from './toast.js?v=2.0.18';
+import { state } from './state.js?v=2.0.18';
+import { renderCoursesCatalog } from './catalog.js?v=2.0.18';
+import { renderDashboard } from './dashboard.js?v=2.0.18';
+import { fetchRegisteredUsers } from './network.js?v=2.0.18';
+import { switchTab } from './routing.js?v=2.0.18';
+import { checkAdminNavVisibility, fetchAndMergeCustomModules, loadModuleSchedules, saveState } from './user.js?v=2.0.18';
 
 export function handleTemplateToggle(e) {
   const templateBox = document.getElementById('publisher-template-box');
@@ -216,6 +216,7 @@ export async function renderAdminDashboard() {
 
   await fetchRegisteredUsers();
   await loadModuleSchedules();
+  loadModerationPanel();
 
   // Use aggregated stats for fast dashboard rendering.
   const stats = await loadAdminStats();
@@ -833,6 +834,116 @@ export function wireVisualEditor() {
         showToast(`Failed to save module modifications: ${err.message}`, 'error');
       }
     });
+  }
+}
+
+
+
+function getLocalDateKeyOffset(daysAgo = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+async function loadReportedReflections() {
+  const results = [];
+  // Scan last 30 local days for reported entries (no collection group index required).
+  const jobs = [];
+  for (let i = 0; i < 30; i++) {
+    const dateKey = getLocalDateKeyOffset(i);
+    jobs.push((async () => {
+      try {
+        const col = collection(db, 'daily_reflections', dateKey, 'entries');
+        const snap = await getDocs(query(col, where('reported', '==', true), limit(30)));
+        snap.forEach(docSnap => {
+          results.push({ id: docSnap.id, dateKey, ...docSnap.data() });
+        });
+      } catch (err) {
+        // day folder may not exist
+      }
+    })());
+  }
+  await Promise.all(jobs);
+  results.sort((a, b) => (a.reportedAt < b.reportedAt ? 1 : -1));
+  return results;
+}
+
+export async function loadModerationPanel() {
+  const listEl = document.getElementById('admin-moderation-list');
+  if (!listEl) return;
+  listEl.innerHTML = `<p class="admin-muted">Scanning reported reflections…</p>`;
+
+  const refreshBtn = document.getElementById('admin-refresh-moderation');
+  if (refreshBtn && !refreshBtn.dataset.wired) {
+    refreshBtn.dataset.wired = '1';
+    refreshBtn.addEventListener('click', () => loadModerationPanel());
+  }
+
+  try {
+    const items = await loadReportedReflections();
+    if (!items.length) {
+      listEl.innerHTML = `<div class="empty-state soft"><p class="empty-state-title">All clear</p><p class="empty-state-text">No reported reflections in the last 30 days.</p></div>`;
+      return;
+    }
+
+    listEl.innerHTML = items.map(item => {
+      const text = (item.text || '').slice(0, 280);
+      const when = item.reportedAt ? new Date(item.reportedAt).toLocaleString() : item.dateKey;
+      return `
+        <article class="moderation-card" data-date="${item.dateKey}" data-uid="${item.id}">
+          <div class="moderation-card-top">
+            <div>
+              <strong>${sanitizeHTML(item.authorName || 'Learner')}</strong>
+              <span class="admin-muted"> · ${sanitizeHTML(item.dateKey)} · ${sanitizeHTML(item.readingTitle || '')}</span>
+            </div>
+            <span class="moderation-flag">Reported</span>
+          </div>
+          <p class="moderation-text">${sanitizeHTML(text)}</p>
+          <div class="moderation-meta">Reported ${sanitizeHTML(when)}${item.reportedBy ? ` · by ${sanitizeHTML(item.reportedBy.slice(0, 8))}…` : ''}</div>
+          <div class="moderation-actions">
+            <button type="button" class="secondary-btn compact-btn mod-clear-btn" data-date="${item.dateKey}" data-uid="${item.id}">Keep & clear flag</button>
+            <button type="button" class="primary-btn compact-btn mod-delete-btn" data-date="${item.dateKey}" data-uid="${item.id}" style="background:#b91c1c;">Delete reflection</button>
+          </div>
+        </article>
+      `;
+    }).join('');
+
+    listEl.querySelectorAll('.mod-clear-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        try {
+          await updateDoc(doc(db, 'daily_reflections', btn.dataset.date, 'entries', btn.dataset.uid), {
+            reported: false,
+            reportedBy: null,
+            reportedAt: null
+          });
+          showToast('Report cleared — reflection visible again.', 'success');
+          loadModerationPanel();
+        } catch (err) {
+          console.error(err);
+          showToast('Could not clear report.', 'error');
+        }
+      });
+    });
+
+    listEl.querySelectorAll('.mod-delete-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Permanently delete this reflection?')) return;
+        try {
+          await deleteDoc(doc(db, 'daily_reflections', btn.dataset.date, 'entries', btn.dataset.uid));
+          showToast('Reflection deleted.', 'success');
+          loadModerationPanel();
+        } catch (err) {
+          console.error(err);
+          showToast('Could not delete.', 'error');
+        }
+      });
+    });
+  } catch (err) {
+    console.error(err);
+    listEl.innerHTML = `<p class="admin-muted">Failed to load moderation queue.</p>`;
   }
 }
 

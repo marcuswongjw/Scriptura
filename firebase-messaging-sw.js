@@ -11,72 +11,119 @@ const firebaseConfig = {
   messagingSenderId: "672733276555"
 };
 
-// Initialize Firebase App inside Service Worker context
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
-// Handle background notification triggers
 messaging.onBackgroundMessage((payload) => {
-  console.log('[firebase-messaging-sw.js] Received background message ', payload);
-  const notificationTitle = payload.notification?.title || 'Scriptura Notification';
+  const notificationTitle = payload.notification?.title || 'Scriptura';
   const notificationOptions = {
     body: payload.notification?.body || '',
     icon: '/icon-192.png',
     badge: '/icon-192.png',
-    data: payload.data
+    data: payload.data || {}
   };
   self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
-// PWA Caching logic
-const CACHE_NAME = 'scriptura-pwa-cache-v1.0.17';
-const ASSETS = [
-  '/',
-  '/index.html',
-  '/style.css',
-  '/app.js',
-  '/modules.js',
-  '/manifest.json',
-  '/favicon.png',
-  '/icon-192.png',
-  '/icon-512.png'
-];
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = event.notification?.data?.url || '/';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const client of list) {
+        if ('focus' in client) {
+          client.navigate?.(url);
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) return clients.openWindow(url);
+    })
+  );
+});
+
+// ---------------------------------------------------------------------------
+// PWA cache — network-first for HTML shell; stale-while-revalidate for assets
+// ---------------------------------------------------------------------------
+const CACHE_NAME = 'scriptura-pwa-cache-v1.0.18';
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS);
-    }).then(() => self.skipWaiting())
-  );
+  e.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
-      );
-    }).then(() => self.clients.claim())
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+    ).then(() => self.clients.claim())
   );
 });
 
+function isFirebaseApi(url) {
+  return (
+    url.includes('firestore.googleapis.com') ||
+    url.includes('firebaseinstallations.googleapis.com') ||
+    url.includes('fcmregistrations.googleapis.com') ||
+    url.includes('identitytoolkit.googleapis.com') ||
+    url.includes('securetoken.googleapis.com') ||
+    url.includes('googleapis.com') ||
+    url.includes('gstatic.com')
+  );
+}
+
+function isHtmlNavigation(request, url) {
+  if (request.mode === 'navigate') return true;
+  const path = url.pathname;
+  return path === '/' || path.endsWith('.html') || path.endsWith('/');
+}
+
+function isAppShellAsset(url) {
+  const path = url.pathname;
+  return (
+    path.endsWith('.js') ||
+    path.endsWith('.css') ||
+    path.endsWith('.json') ||
+    path.endsWith('.png') ||
+    path.endsWith('.svg') ||
+    path.endsWith('.ico')
+  );
+}
+
 self.addEventListener('fetch', (e) => {
-  // Let external calls (like Firestore API) bypass PWA caching
-  if (
-    e.request.url.includes('firestore.googleapis.com') ||
-    e.request.url.includes('firebaseinstallations.googleapis.com') ||
-    e.request.url.includes('fcmregistrations.googleapis.com') ||
-    e.request.url.includes('identitytoolkit.googleapis.com')
-  ) {
+  const url = new URL(e.request.url);
+  if (e.request.method !== 'GET') return;
+  if (isFirebaseApi(url.href)) return;
+  // Only same-origin
+  if (url.origin !== self.location.origin) return;
+
+  // HTML / navigations: network-first so deploys are visible immediately
+  if (isHtmlNavigation(e.request, url)) {
+    e.respondWith(
+      fetch(e.request)
+        .then((response) => {
+          if (response && response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(e.request, copy));
+          }
+          return response;
+        })
+        .catch(() => caches.match(e.request).then((c) => c || caches.match('/index.html')))
+    );
     return;
   }
-  e.respondWith(
-    caches.match(e.request).then((cachedResponse) => {
-      return cachedResponse || fetch(e.request);
-    })
-  );
+
+  // JS/CSS/images: stale-while-revalidate
+  if (isAppShellAsset(url)) {
+    e.respondWith(
+      caches.open(CACHE_NAME).then(async (cache) => {
+        const cached = await cache.match(e.request);
+        const networkPromise = fetch(e.request)
+          .then((response) => {
+            if (response && response.ok) cache.put(e.request, response.clone());
+            return response;
+          })
+          .catch(() => cached);
+        return cached || networkPromise;
+      })
+    );
+  }
 });

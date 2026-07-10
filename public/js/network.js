@@ -1,13 +1,13 @@
 // Feature module: network (Phase 2) — Community hub UI
-import { auth, db } from './firebase.js?v=2.0.17';
+import { auth, db } from './firebase.js?v=2.0.18';
 import { collection, getDocs, onSnapshot, addDoc, query, orderBy, limit, doc, updateDoc, arrayUnion, arrayRemove } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-import { modules } from '../modules.js?v=2.0.17';
-import { sanitizeHTML, debounce } from './utils.js?v=2.0.17';
-import { showToast } from './toast.js?v=2.0.17';
-import { el } from './dom.js?v=2.0.17';
-import { state } from './state.js?v=2.0.17';
-import { checkAdminNavVisibility, saveState, updateHeaderProfile } from './user.js?v=2.0.17';
-import { notifyCommunityOfEvent, getNotificationPrefs, setNotificationPrefs } from './notifications.js?v=2.0.17';
+import { modules } from '../modules.js?v=2.0.18';
+import { sanitizeHTML, debounce } from './utils.js?v=2.0.18';
+import { showToast } from './toast.js?v=2.0.18';
+import { el } from './dom.js?v=2.0.18';
+import { state } from './state.js?v=2.0.18';
+import { checkAdminNavVisibility, saveState, updateHeaderProfile } from './user.js?v=2.0.18';
+import { notifyCommunityOfEvent, getNotificationPrefs, setNotificationPrefs } from './notifications.js?v=2.0.18';
 
 /** Prefer stored country; default Singapore for untagged learners. */
 export function effectiveCountry(userOrCode) {

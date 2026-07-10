@@ -11,13 +11,13 @@ import {
   limit,
   updateDoc
 } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-import { dailyReadings } from '../daily_readings.js?v=2.0.17';
-import { auth, db } from './firebase.js?v=2.0.17';
-import { sanitizeHTML, getDayOfYear } from './utils.js?v=2.0.17';
-import { showToast } from './toast.js?v=2.0.17';
-import { state } from './state.js?v=2.0.17';
-import { awardXP, logActivity, recordActivity, saveState } from './user.js?v=2.0.17';
-import { notifyCommunityOfReflection } from './notifications.js?v=2.0.17';
+import { dailyReadings } from '../daily_readings.js?v=2.0.18';
+import { auth, db } from './firebase.js?v=2.0.18';
+import { sanitizeHTML, getDayOfYear } from './utils.js?v=2.0.18';
+import { showToast } from './toast.js?v=2.0.18';
+import { state } from './state.js?v=2.0.18';
+import { awardXP, logActivity, recordActivity, saveState } from './user.js?v=2.0.18';
+import { notifyCommunityOfReflection } from './notifications.js?v=2.0.18';
 
 const REFLECTION_MAX = 1200;
 

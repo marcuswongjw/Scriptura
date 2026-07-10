@@ -1,11 +1,11 @@
 // Feature module: dashboard (Phase 2)
-import { concentrations, modules } from '../modules.js?v=2.0.17';
-import { el } from './dom.js?v=2.0.17';
-import { state } from './state.js?v=2.0.17';
-import { openOnboarding, renderCoursesCatalog, updateFilterTagsUI } from './catalog.js?v=2.0.17';
-import { renderDailyReading } from './daily.js?v=2.0.17';
-import { switchTab } from './routing.js?v=2.0.17';
-import { isModuleReleased } from './user.js?v=2.0.17';
+import { concentrations, modules } from '../modules.js?v=2.0.18';
+import { el } from './dom.js?v=2.0.18';
+import { state } from './state.js?v=2.0.18';
+import { openOnboarding, renderCoursesCatalog, updateFilterTagsUI } from './catalog.js?v=2.0.18';
+import { renderDailyReading } from './daily.js?v=2.0.18';
+import { switchTab } from './routing.js?v=2.0.18';
+import { isModuleReleased } from './user.js?v=2.0.18';
 
 export function renderDashboard() {
   try {
