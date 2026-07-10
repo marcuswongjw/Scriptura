@@ -132,25 +132,33 @@ export function startModule(moduleId, pushState = true) {
   }
 }
 
-export function closeLesson(pushState = true) {
-  // Ensure furthest progress is saved before leaving.
-  if (state.activeModule) {
-    if (!state.userState.lessonProgress) state.userState.lessonProgress = {};
-    const moduleId = state.activeModule.id;
-    if (!state.userState.completedModules?.includes(moduleId)) {
-      const prev = Number(state.userState.lessonProgress[moduleId] || 0);
-      const idx = state.currentSlideIndex || 0;
-      if (idx > prev) state.userState.lessonProgress[moduleId] = idx;
-      saveState();
-    }
-  }
+/** Save furthest slide progress without tearing down UI (used by close + tab routing). */
+export function saveActiveLessonProgress() {
+  if (!state.activeModule) return;
+  if (!state.userState.lessonProgress) state.userState.lessonProgress = {};
+  const moduleId = state.activeModule.id;
+  if (state.userState.completedModules?.includes(moduleId)) return;
+  const prev = Number(state.userState.lessonProgress[moduleId] || 0);
+  const idx = state.currentSlideIndex || 0;
+  if (idx > prev) state.userState.lessonProgress[moduleId] = idx;
+  saveState();
+}
+
+/**
+ * Leave the lesson overlay. When navigateAway is false, only hides UI
+ * (caller handles tab/route). Always persists progress first.
+ */
+export function closeLesson(pushState = true, navigateAway = true) {
+  saveActiveLessonProgress();
 
   state.activeModule = null;
   el.lessonView.classList.add('hidden');
   el.lessonView.classList.remove('cardquiz-mode');
   el.bottomNav.classList.remove('hidden');
   el.header.classList.remove('hidden');
-  switchTab('courses', pushState);
+  if (navigateAway) {
+    switchTab('courses', pushState);
+  }
 }
 
 export function renderProgressDots() {
