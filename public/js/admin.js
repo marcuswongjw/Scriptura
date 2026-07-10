@@ -1,15 +1,15 @@
 // Feature module: admin (Phase 2)
-import { auth, db } from './firebase.js?v=2.0.20';
+import { auth, db } from './firebase.js?v=2.0.21';
 import { doc, getDoc, setDoc, collection, getDocs, addDoc, query, orderBy, limit, where, updateDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-import { concentrations, modules } from '../modules.js?v=2.0.20';
-import { sanitizeHTML } from './utils.js?v=2.0.20';
-import { showToast, showStatusEl } from './toast.js?v=2.0.20';
-import { state } from './state.js?v=2.0.20';
-import { renderCoursesCatalog } from './catalog.js?v=2.0.20';
-import { renderDashboard } from './dashboard.js?v=2.0.20';
-import { fetchRegisteredUsers } from './network.js?v=2.0.20';
-import { switchTab } from './routing.js?v=2.0.20';
-import { checkAdminNavVisibility, fetchAndMergeCustomModules, loadModuleSchedules, saveState } from './user.js?v=2.0.20';
+import { concentrations, modules } from '../modules.js?v=2.0.21';
+import { sanitizeHTML } from './utils.js?v=2.0.21';
+import { showToast, showStatusEl } from './toast.js?v=2.0.21';
+import { state } from './state.js?v=2.0.21';
+import { renderCoursesCatalog } from './catalog.js?v=2.0.21';
+import { renderDashboard } from './dashboard.js?v=2.0.21';
+import { fetchRegisteredUsers } from './network.js?v=2.0.21';
+import { switchTab } from './routing.js?v=2.0.21';
+import { checkAdminNavVisibility, fetchAndMergeCustomModules, loadModuleSchedules, saveState } from './user.js?v=2.0.21';
 
 export function handleTemplateToggle(e) {
   const templateBox = document.getElementById('publisher-template-box');
@@ -578,112 +578,159 @@ export function openVisualEditor(moduleId) {
   document.getElementById('visual-editor-dialog').classList.remove('hidden');
 }
 
+function escapeEditorAttr(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;');
+}
+
 export function renderEditorSlides() {
   const container = document.getElementById('editor-slides-container');
   if (!container) return;
   container.innerHTML = '';
 
+  const countEl = document.getElementById('editor-slide-count');
+  if (countEl) {
+    const n = state.editorSlides.length;
+    countEl.textContent = `${n} slide${n === 1 ? '' : 's'}`;
+  }
+
   if (state.editorSlides.length === 0) {
-    container.innerHTML = `<div style="text-align: center; color: var(--gray-400); font-size: 0.85rem; padding: 1rem; border: 1px dashed var(--gray-200); border-radius: var(--r-md);">No slides added yet. Click "+ Add Slide" to start.</div>`;
+    container.innerHTML = `<div class="ved-empty">No slides yet. Click <strong>+ Add slide</strong> to begin.</div>`;
     return;
   }
 
   state.editorSlides.forEach((slide, idx) => {
-    const slideId = `editor-slide-${idx}`;
     const slideCard = document.createElement('div');
-    slideCard.className = 'admin-panel-card';
-    slideCard.style.padding = '1rem';
-    slideCard.style.background = '#f8fafc';
-    slideCard.style.border = '1px solid var(--gray-250)';
-    slideCard.style.borderRadius = 'var(--r-md)';
+    slideCard.className = 'ved-slide-card';
 
     let typeFieldsHtml = '';
     if (slide.type === 'info') {
       typeFieldsHtml = `
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.5rem;">
+        <div class="ved-grid-2">
           <div class="form-field">
-            <label style="font-size:0.75rem;">Illustration (Emoji)</label>
-            <input type="text" class="slide-illustration" value="${slide.illustration || '📖'}" style="padding: 0.4rem;">
+            <label>Illustration (emoji)</label>
+            <input type="text" class="slide-illustration" value="${escapeEditorAttr(slide.illustration || '📖')}">
           </div>
           <div class="form-field">
-            <label style="font-size:0.75rem;">Key Takeaway</label>
-            <input type="text" class="slide-takeaway" value="${slide.keyTakeaway || ''}" style="padding: 0.4rem;">
+            <label>Key takeaway</label>
+            <input type="text" class="slide-takeaway" value="${escapeEditorAttr(slide.keyTakeaway || '')}">
           </div>
         </div>
-        <div class="form-field" style="margin-top: 0.5rem;">
-          <label style="font-size:0.75rem;">Content Text (Supports Markdown **bold** & newlines)</label>
-          <textarea class="slide-content" rows="3" style="padding: 0.4rem; font-size: 0.82rem;">${slide.content || ''}</textarea>
+        <div class="form-field">
+          <label>Content (markdown **bold**, blank lines = paragraphs)</label>
+          <textarea class="slide-content" rows="4">${escapeEditorAttr(slide.content || '')}</textarea>
         </div>
       `;
     } else if (slide.type === 'card-quiz') {
       typeFieldsHtml = `
-        <div class="form-field" style="margin-top: 0.5rem;">
-          <label style="font-size:0.75rem;">Quiz Question</label>
-          <input type="text" class="slide-question" value="${slide.question || ''}" style="padding: 0.4rem;">
+        <div class="form-field">
+          <label>Quiz question</label>
+          <input type="text" class="slide-question" value="${escapeEditorAttr(slide.question || '')}">
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.5rem;">
+        <div class="ved-grid-2">
           <div class="form-field">
-            <label style="font-size:0.75rem;">Correct Answer Option</label>
-            <select class="slide-correct-answer" style="padding: 0.4rem; background:#fff; border: 1px solid var(--gray-250); border-radius: var(--r-md);">
+            <label>Correct answer</label>
+            <select class="slide-correct-answer">
               <option value="yes" ${slide.correctAnswer === 'yes' ? 'selected' : ''}>Yes</option>
               <option value="no" ${slide.correctAnswer === 'no' ? 'selected' : ''}>No</option>
             </select>
           </div>
           <div class="form-field">
-            <label style="font-size:0.75rem;">Explanation Text</label>
-            <input type="text" class="slide-explanation" value="${slide.explanation || ''}" style="padding: 0.4rem;">
+            <label>Explanation</label>
+            <input type="text" class="slide-explanation" value="${escapeEditorAttr(slide.explanation || '')}">
           </div>
         </div>
       `;
     } else if (slide.type === 'summary') {
       typeFieldsHtml = `
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.5rem;">
-          <div class="form-field">
-            <label style="font-size:0.75rem;">Illustration (Emoji)</label>
-            <input type="text" class="slide-illustration" value="${slide.illustration || '🏆'}" style="padding: 0.4rem;">
-          </div>
+        <div class="form-field">
+          <label>Illustration (emoji)</label>
+          <input type="text" class="slide-illustration" value="${escapeEditorAttr(slide.illustration || '🏆')}">
         </div>
-        <div class="form-field" style="margin-top: 0.5rem;">
-          <label style="font-size:0.75rem;">Summary content text</label>
-          <textarea class="slide-content" rows="2" style="padding: 0.4rem; font-size: 0.82rem;">${slide.content || ''}</textarea>
+        <div class="form-field">
+          <label>Summary content</label>
+          <textarea class="slide-content" rows="3">${escapeEditorAttr(slide.content || '')}</textarea>
+        </div>
+      `;
+    } else if (slide.type === 'quiz') {
+      typeFieldsHtml = `
+        <div class="form-field">
+          <label>Question</label>
+          <input type="text" class="slide-question" value="${escapeEditorAttr(slide.question || '')}">
+        </div>
+        <div class="form-field">
+          <label>Options (one per line)</label>
+          <textarea class="slide-options" rows="4">${escapeEditorAttr((slide.options || []).join('\n'))}</textarea>
+        </div>
+        <div class="ved-grid-2">
+          <div class="form-field">
+            <label>Correct option index (0-based)</label>
+            <input type="number" min="0" class="slide-correct-index" value="${slide.correctAnswer ?? 0}">
+          </div>
+          <div class="form-field">
+            <label>Explanation</label>
+            <input type="text" class="slide-explanation" value="${escapeEditorAttr(slide.explanation || '')}">
+          </div>
         </div>
       `;
     }
 
     slideCard.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-        <span style="font-weight: 700; font-size: 0.85rem; color: var(--gray-700);">Slide #${idx + 1}</span>
-        <div style="display: flex; gap: 0.5rem; align-items: center;">
-          <select class="slide-type-select" style="padding: 0.25rem 0.5rem; font-size: 0.78rem; border-radius: var(--r-md); border: 1px solid var(--gray-250); background:#fff;">
+      <div class="ved-slide-toolbar">
+        <span class="ved-slide-num">Slide ${idx + 1}</span>
+        <div class="ved-slide-tools">
+          <button type="button" class="ved-icon-btn slide-up-btn" title="Move up" ${idx === 0 ? 'disabled' : ''}>↑</button>
+          <button type="button" class="ved-icon-btn slide-down-btn" title="Move down" ${idx === state.editorSlides.length - 1 ? 'disabled' : ''}>↓</button>
+          <select class="slide-type-select" aria-label="Slide type">
             <option value="info" ${slide.type === 'info' ? 'selected' : ''}>Info</option>
-            <option value="card-quiz" ${slide.type === 'card-quiz' ? 'selected' : ''}>Card Quiz</option>
+            <option value="quiz" ${slide.type === 'quiz' ? 'selected' : ''}>Multiple choice</option>
+            <option value="card-quiz" ${slide.type === 'card-quiz' ? 'selected' : ''}>Yes / No</option>
             <option value="summary" ${slide.type === 'summary' ? 'selected' : ''}>Summary</option>
           </select>
-          <button type="button" class="secondary-btn slide-remove-btn" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; color: #b91c1c; border: 1px solid #fee2e2; background: #fef2f2;">Remove</button>
+          <button type="button" class="ved-icon-btn ved-danger slide-remove-btn" title="Remove">Remove</button>
         </div>
       </div>
       <div class="form-field">
-        <label style="font-size:0.75rem;">Slide Title</label>
-        <input type="text" class="slide-title" value="${slide.title || ''}" style="padding: 0.4rem; font-size: 0.85rem;">
+        <label>Slide title</label>
+        <input type="text" class="slide-title" value="${escapeEditorAttr(slide.title || '')}">
       </div>
       ${typeFieldsHtml}
-      <div class="form-field" style="margin-top: 0.5rem;">
-        <label style="font-size:0.75rem;">AI Tutor Deep Explanation</label>
-        <textarea class="slide-aiTutor" rows="2" style="padding: 0.4rem; font-size: 0.82rem;">${slide.aiTutorExplanation || ''}</textarea>
+      <div class="form-field">
+        <label>AI tutor note</label>
+        <textarea class="slide-aiTutor" rows="2">${escapeEditorAttr(slide.aiTutorExplanation || '')}</textarea>
       </div>
     `;
 
-    // Bind inputs to state on changes
     slideCard.querySelector('.slide-type-select').addEventListener('change', (e) => {
       state.editorSlides[idx].type = e.target.value;
+      if (e.target.value === 'quiz' && !state.editorSlides[idx].options) {
+        state.editorSlides[idx].options = ['Option A', 'Option B', 'Option C', 'Option D'];
+        state.editorSlides[idx].correctAnswer = 0;
+      }
       renderEditorSlides();
     });
     slideCard.querySelector('.slide-remove-btn').addEventListener('click', () => {
+      if (!confirm(`Remove slide ${idx + 1}?`)) return;
       state.editorSlides.splice(idx, 1);
       renderEditorSlides();
     });
+    slideCard.querySelector('.slide-up-btn')?.addEventListener('click', () => {
+      if (idx <= 0) return;
+      const tmp = state.editorSlides[idx - 1];
+      state.editorSlides[idx - 1] = state.editorSlides[idx];
+      state.editorSlides[idx] = tmp;
+      renderEditorSlides();
+    });
+    slideCard.querySelector('.slide-down-btn')?.addEventListener('click', () => {
+      if (idx >= state.editorSlides.length - 1) return;
+      const tmp = state.editorSlides[idx + 1];
+      state.editorSlides[idx + 1] = state.editorSlides[idx];
+      state.editorSlides[idx] = tmp;
+      renderEditorSlides();
+    });
 
-    // Save text state synchronously on inputs
     slideCard.querySelectorAll('input, textarea, select').forEach(input => {
       input.addEventListener('input', () => {
         if (input.classList.contains('slide-title')) state.editorSlides[idx].title = input.value;
@@ -694,6 +741,12 @@ export function renderEditorSlides() {
         if (input.classList.contains('slide-correct-answer')) state.editorSlides[idx].correctAnswer = input.value;
         if (input.classList.contains('slide-explanation')) state.editorSlides[idx].explanation = input.value;
         if (input.classList.contains('slide-aiTutor')) state.editorSlides[idx].aiTutorExplanation = input.value;
+        if (input.classList.contains('slide-options')) {
+          state.editorSlides[idx].options = input.value.split('\n').map(s => s.trim()).filter(Boolean);
+        }
+        if (input.classList.contains('slide-correct-index')) {
+          state.editorSlides[idx].correctAnswer = parseInt(input.value, 10) || 0;
+        }
       });
     });
 

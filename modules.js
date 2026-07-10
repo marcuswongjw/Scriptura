@@ -141,6 +141,15 @@ export const concentrations = [
     ]
   },
   {
+    "id": "ecclesiastes",
+    "title": "Ecclesiastes",
+    "group": "Books of the Bible",
+    "description": "Qoheleth's search for meaning under the sun and the call to fear God and keep His commandments.",
+    "modules": [
+      "ecclesiastes"
+    ]
+  },
+  {
     "id": "hosea",
     "title": "Hosea",
     "group": "Books of the Bible",
@@ -5942,6 +5951,150 @@ export const modules = [
         "aiTutorExplanation": "Congratulations! You have completed the study of the North Star Perspective and the New Earth.",
         "content": "\n### Key Takeaways of Lesson 3:\n- **Eternal Navigation:** Living with the New Earth as our North Star guide.\n- **Stewardship Today:** Character and faithfulness preparing us for eternal service.\n- **Reclaiming Hope:** Replacing dread with joyful anticipation of our true home.\n- **Eternal Chapter One:** Beginning the endless adventure of knowing God and exploring His universe.\n",
         "illustration": "🏆"
+      }
+    ]
+  },
+  {
+    "id": "ecclesiastes",
+    "category": "Ecclesiastes",
+    "title": "Ecclesiastes: Life Under the Sun and the Fear of God",
+    "duration": "8 mins",
+    "xpReward": 180,
+    "description": "Trace Qoheleth's search for meaning under the sun, the limits of wisdom and pleasure, and the book's concluding call to fear God and keep His commandments.",
+    "parentConcentrationId": "ecclesiastes",
+    "slides": [
+      {
+        "type": "info",
+        "title": "The Preacher Speaks",
+        "illustration": "📜",
+        "keyTakeaway": "Ecclesiastes is wisdom literature that faces life's futility honestly while driving the reader toward God.",
+        "aiTutorExplanation": "Welcome to Ecclesiastes. The speaker is often called Qoheleth—the Preacher or Assembler. He writes as a royal sage testing what life can deliver without God at the center.",
+        "scripture": "Ecclesiastes 1:2",
+        "scriptureText": {
+          "ESV": "Vanity of vanities, says the Preacher, vanity of vanities! All is vanity.",
+          "NIV": "\"Meaningless! Meaningless!\" says the Teacher. \"Utterly meaningless! Everything is meaningless.\"",
+          "KJV": "Vanity of vanities, saith the Preacher, vanity of vanities; all is vanity."
+        },
+        "content": "\n- **Genre:** Ecclesiastes belongs with Job and Proverbs in the wisdom books, but its tone is darker and more probing.\n- **Voice:** Qoheleth observes life \"under the sun\"—human existence viewed from the ground up, without pretending pain and monotony away.\n- **Purpose:** The book is not cynical nihilism. It clears false hopes so that fear of the Lord can stand as the true foundation.\n"
+      },
+      {
+        "type": "quiz",
+        "title": "Under the Sun",
+        "aiTutorExplanation": "Active recall: what does Qoheleth mean by life under the sun?",
+        "question": "In Ecclesiastes, the phrase \"under the sun\" primarily refers to:",
+        "options": [
+          "Only agricultural labor in ancient Israel",
+          "Human life observed within the created order, often without reference to eternity",
+          "The exclusive domain of angelic beings",
+          "Temple worship on the Day of Atonement"
+        ],
+        "correctAnswer": 1,
+        "explanation": "\"Under the sun\" is Qoheleth's lens for horizontal, earthly experience—where work, pleasure, and wisdom alone cannot secure lasting meaning."
+      },
+      {
+        "type": "info",
+        "title": "The Experiment of Pleasure and Work",
+        "illustration": "🍷",
+        "keyTakeaway": "Pleasure, projects, and productivity cannot permanently fill the human heart.",
+        "aiTutorExplanation": "Qoheleth runs a deliberate experiment: can laughter, wine, gardens, houses, and hard work finally satisfy? The results are sobering.",
+        "scripture": "Ecclesiastes 2:10-11",
+        "scriptureText": {
+          "ESV": "And whatever my eyes desired I did not keep from them... then I considered all that my hands had done... and behold, all was vanity and a striving after wind."
+        },
+        "content": "\n- **Pleasure tested:** Entertainment and indulgence bring temporary joy but leave emptiness.\n- **Work tested:** Great achievements still pass to others who may waste them.\n- **Insight:** If identity is built only on what we enjoy or produce, death and time erase the gain.\n"
+      },
+      {
+        "type": "card-quiz",
+        "title": "Pleasure's Limit",
+        "questions": [
+          {
+            "question": "True or False: Ecclesiastes teaches that enjoyment of food and work is always sinful.",
+            "correctAnswer": "no",
+            "explanation": "False. Qoheleth often affirms simple joys as gifts from God—even while insisting they cannot be ultimate saviors."
+          }
+        ],
+        "aiTutorExplanation": "Notice the balance: gifts are good; idols are deadly."
+      },
+      {
+        "type": "info",
+        "title": "A Time for Everything",
+        "illustration": "⏳",
+        "keyTakeaway": "Human beings live inside God's appointed seasons; control is limited, trust is required.",
+        "aiTutorExplanation": "Chapter 3's poem is famous for a reason. It maps life's rhythms and then asks who can add to what God has done.",
+        "scripture": "Ecclesiastes 3:1",
+        "scriptureText": {
+          "ESV": "For everything there is a season, and a time for every matter under heaven."
+        },
+        "content": "\n- **Seasons:** Birth and death, weeping and laughing, war and peace—life is not one constant state.\n- **God's sovereignty:** The poem leads into confession that God has made everything beautiful in its time and put eternity into the human heart.\n- **Pastoral weight:** We cannot force permanent spring; wisdom learns to walk with God through winter and harvest.\n"
+      },
+      {
+        "type": "quiz",
+        "title": "Eternity in the Heart",
+        "aiTutorExplanation": "Recall the theological claim of Ecclesiastes 3:11.",
+        "question": "According to Ecclesiastes 3:11, God has put eternity into man's heart. What does this primarily imply?",
+        "options": [
+          "Humans can fully comprehend God's entire plan without revelation",
+          "People sense a meaning beyond the moment, yet cannot master all of God's work",
+          "Time is an illusion and history has no significance",
+          "Only priests are allowed to think about the future"
+        ],
+        "correctAnswer": 1,
+        "explanation": "We long for more than the cycle of seasons, but we cannot exhaust God's work from beginning to end—hence humility and trust."
+      },
+      {
+        "type": "info",
+        "title": "The Limits of Wisdom Alone",
+        "illustration": "🧠",
+        "keyTakeaway": "Even great wisdom cannot eliminate injustice, death, or the riddle of life under the sun.",
+        "aiTutorExplanation": "Proverbs celebrates wisdom's value. Ecclesiastes agrees—then shows wisdom's ceiling when death levels wise and foolish alike.",
+        "scripture": "Ecclesiastes 9:11",
+        "scriptureText": {
+          "ESV": "Again I saw that under the sun the race is not to the swift, nor the battle to the strong... but time and chance happen to them all."
+        },
+        "content": "\n- **Wisdom is better than folly**—Qoheleth never denies that.\n- **But death is the great equalizer:** Without resurrection hope fully revealed, even wisdom looks fragile.\n- **Christward horizon:** The New Testament answers the ache of Ecclesiastes with the risen Christ, who is our wisdom from God.\n"
+      },
+      {
+        "type": "card-quiz",
+        "title": "Wisdom's Ceiling",
+        "questions": [
+          {
+            "question": "True or False: Ecclesiastes argues that seeking wisdom is useless and should be abandoned.",
+            "correctAnswer": "no",
+            "explanation": "False. Wisdom is better than folly; the book attacks the idolatry of wisdom as an ultimate savior, not wisdom itself."
+          }
+        ]
+      },
+      {
+        "type": "info",
+        "title": "Fear God and Keep His Commandments",
+        "illustration": "⚖️",
+        "keyTakeaway": "The book's conclusion redirects the reader from vanity to reverent obedience before the Judge of all.",
+        "aiTutorExplanation": "The epilogue is the interpretive key. After the experiment, the final word is not despair—it is discipleship.",
+        "scripture": "Ecclesiastes 12:13-14",
+        "scriptureText": {
+          "ESV": "The end of the matter; all has been heard. Fear God and keep his commandments, for this is the whole duty of man. For God will bring every deed into judgment..."
+        },
+        "content": "\n- **Fear of God:** Reverent awe that puts the Creator—not pleasure, work, or intellect—at the center.\n- **Keep commandments:** Wisdom becomes concrete obedience, not merely clever observation.\n- **Judgment:** Life matters because God will evaluate every deed—hidden and public.\n- **Gospel trajectory:** Judgment and meaning find their center in Christ, who bears judgment for His people and raises them to life that is not vanity.\n"
+      },
+      {
+        "type": "quiz",
+        "title": "The End of the Matter",
+        "aiTutorExplanation": "Lock in the book's concluding charge.",
+        "question": "What is the climactic summary of Ecclesiastes according to 12:13?",
+        "options": [
+          "Eat and drink, for tomorrow we die—nothing else matters",
+          "Fear God and keep His commandments; God will judge every deed",
+          "Withdraw from society and abandon all work",
+          "Trust only in royal power and military strength"
+        ],
+        "correctAnswer": 1,
+        "explanation": "The epilogue frames the whole book: fear God, obey Him, and live before His judgment."
+      },
+      {
+        "type": "summary",
+        "title": "From Vanity to Fear of God",
+        "illustration": "🌅",
+        "content": "\nYou have walked with Qoheleth through pleasure, work, seasons, and the limits of wisdom.\n\n**Remember:**\n- Life under the sun cannot bear the weight of ultimate meaning.\n- God's gifts are real; making them gods produces vanity.\n- The end of the matter is to fear God, keep His commandments, and live before His judgment—fulfilled and secured in Jesus Christ.\n\n**Next step:** Read Ecclesiastes 1–3 slowly this week, noting every place Qoheleth names a gift versus a false ultimate.\n"
       }
     ]
   }

@@ -8,7 +8,7 @@
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#e11d48">
-  <link rel="stylesheet" href="style.css?v=2.0.20">
+  <link rel="stylesheet" href="style.css?v=2.0.21">
 </head>
 <body>
 
@@ -947,95 +947,98 @@
   <!-- ============================================================
        VISUAL MODULE EDITOR DIALOG
        ============================================================ -->
-  <div id="visual-editor-dialog" class="profile-dialog-backdrop hidden" style="z-index: 10000; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
-    <div class="profile-dialog-card" style="max-height: 90vh; overflow-y: auto; width: 90%; max-width: 800px; padding: 2rem; background: #fff; border-radius: var(--r-xl); box-shadow: var(--shadow-2xl); border: 1px solid var(--gray-100); position: relative;">
-      <button id="close-visual-editor-btn" style="position: absolute; top: 1.25rem; right: 1.25rem; border: none; background: none; font-size: 1.25rem; color: var(--gray-400); cursor: pointer;">✕</button>
-      
-      <h3 style="font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; margin-bottom: 0.25rem; color: var(--gray-900);">Visual Module Editor</h3>
-      <p style="font-size: 0.88rem; color: var(--gray-500); margin-bottom: 1.5rem;">Edit course parameters and slides field-by-field. Edits will sync to Firestore with a revision backup.</p>
-      
-      <form id="visual-editor-form" style="display: flex; flex-direction: column; gap: 1.25rem;">
+  <div id="visual-editor-dialog" class="ved-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="ved-title">
+    <div class="ved-card">
+      <header class="ved-header">
+        <div>
+          <p class="ved-kicker">Content</p>
+          <h3 id="ved-title">Module editor</h3>
+          <p class="ved-sub">Edit metadata and slides. Saving creates a revision backup.</p>
+        </div>
+        <button type="button" id="close-visual-editor-btn" class="ved-close" aria-label="Close">✕</button>
+      </header>
+
+      <form id="visual-editor-form" class="ved-form">
         <input type="hidden" id="editor-module-id">
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-          <div class="form-field">
-            <label for="editor-title">Module Title</label>
-            <input type="text" id="editor-title" required placeholder="e.g. Part 4: The Final Restoration">
-          </div>
-          <div class="form-field">
-            <label for="editor-parent-con">Parent Course / Topic</label>
-            <div class="select-wrapper dark">
-              <select id="editor-parent-con" required>
-                <option value="">-- Choose Course --</option>
-                <option value="foundations">Foundations</option>
-                <option value="genesis">Genesis</option>
-                <option value="exodus">Exodus</option>
-                <option value="leviticus">Leviticus</option>
-                <option value="numbers">Numbers</option>
-                <option value="deuteronomy">Deuteronomy</option>
-                <option value="joshua">Joshua</option>
-                <option value="judges">Judges</option>
-                <option value="ruth">Ruth</option>
-                <option value="1samuel">1 Samuel</option>
-                <option value="2samuel">2 Samuel</option>
-                <option value="1kings">1 Kings</option>
-                <option value="2kings">2 Kings</option>
-                <option value="joel">Joel</option>
-                <option value="hosea">Hosea</option>
-                <option value="psalms">Psalms</option>
-                <option value="proverbs">Proverbs</option>
-                <option value="1chronicles">1 Chronicles</option>
-                <option value="2chronicles">2 Chronicles</option>
-                <option value="ezra">Ezra</option>
-                <option value="nehemiah">Nehemiah</option>
-                <option value="esther">Esther</option>
-                <option value="job">Job</option>
-                <option value="heaven">Heaven & The New Earth</option>
-              </select>
+        <div class="ved-scroll">
+          <section class="ved-section">
+            <h4 class="ved-section-title">Module details</h4>
+            <div class="ved-grid-2">
+              <div class="form-field">
+                <label for="editor-title">Title</label>
+                <input type="text" id="editor-title" required placeholder="e.g. Genesis Part 1">
+              </div>
+              <div class="form-field">
+                <label for="editor-parent-con">Parent course</label>
+                <div class="select-wrapper">
+                  <select id="editor-parent-con" required>
+                    <option value="">— Choose course —</option>
+                    <option value="foundations">Foundations</option>
+                    <option value="genesis">Genesis</option>
+                    <option value="exodus">Exodus</option>
+                    <option value="leviticus">Leviticus</option>
+                    <option value="numbers">Numbers</option>
+                    <option value="deuteronomy">Deuteronomy</option>
+                    <option value="joshua">Joshua</option>
+                    <option value="judges">Judges</option>
+                    <option value="ruth">Ruth</option>
+                    <option value="1samuel">1 Samuel</option>
+                    <option value="2samuel">2 Samuel</option>
+                    <option value="1kings">1 Kings</option>
+                    <option value="2kings">2 Kings</option>
+                    <option value="psalms">Psalms</option>
+                    <option value="proverbs">Proverbs</option>
+                    <option value="ecclesiastes">Ecclesiastes</option>
+                    <option value="job">Job</option>
+                    <option value="hosea">Hosea</option>
+                    <option value="joel">Joel</option>
+                    <option value="1chronicles">1 Chronicles</option>
+                    <option value="2chronicles">2 Chronicles</option>
+                    <option value="ezra">Ezra</option>
+                    <option value="nehemiah">Nehemiah</option>
+                    <option value="esther">Esther</option>
+                    <option value="heaven">Heaven &amp; The New Earth</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-field">
+                <label for="editor-category">Category</label>
+                <input type="text" id="editor-category" required placeholder="e.g. Wisdom">
+              </div>
+              <div class="form-field">
+                <label for="editor-duration">Duration</label>
+                <input type="text" id="editor-duration" required placeholder="e.g. 10 mins">
+              </div>
             </div>
-          </div>
+            <div class="form-field">
+              <label for="editor-description">Description</label>
+              <textarea id="editor-description" rows="2" required placeholder="Short summary for the catalog…"></textarea>
+            </div>
+          </section>
+
+          <section class="ved-section">
+            <div class="ved-section-head">
+              <div>
+                <h4 class="ved-section-title">Slides</h4>
+                <p class="ved-section-sub" id="editor-slide-count">0 slides</p>
+              </div>
+              <button type="button" id="editor-add-slide-btn" class="primary-btn compact-btn">+ Add slide</button>
+            </div>
+            <div id="editor-slides-container" class="ved-slides"></div>
+          </section>
+
+          <section class="ved-section ved-section--muted">
+            <h4 class="ved-section-title">Revision history</h4>
+            <p class="ved-section-sub">Restore a previous backup snapshot</p>
+            <div id="editor-backups-list" class="ved-backups"></div>
+          </section>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-          <div class="form-field">
-            <label for="editor-category">Category</label>
-            <input type="text" id="editor-category" required placeholder="e.g. Eschatology">
-          </div>
-          <div class="form-field">
-            <label for="editor-duration">Duration</label>
-            <input type="text" id="editor-duration" required placeholder="e.g. 10 mins">
-          </div>
-        </div>
-
-        <div class="form-field">
-          <label for="editor-description">Description</label>
-          <textarea id="editor-description" rows="2" required placeholder="Brief summary of the module..."></textarea>
-        </div>
-
-        <!-- Slides List Builder -->
-        <div>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-bottom: 1px solid var(--gray-100); padding-bottom: 0.5rem;">
-            <h4 style="font-family: var(--font-display); font-weight: 700; color: var(--gray-800); margin: 0;">Course Slides</h4>
-            <button type="button" id="editor-add-slide-btn" class="primary-btn compact-btn" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">+ Add Slide</button>
-          </div>
-          <div id="editor-slides-container" style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1rem;">
-            <!-- Slides dynamically generated -->
-          </div>
-        </div>
-
-        <!-- Revision History Backups Section -->
-        <div style="margin-top: 1rem; background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--r-lg); padding: 1.25rem;">
-          <h4 style="font-family: var(--font-display); font-weight: 700; color: var(--gray-800); margin-top: 0; margin-bottom: 0.5rem; font-size: 0.95rem;">Module Revision History</h4>
-          <p style="font-size: 0.8rem; color: var(--gray-500); margin-bottom: 0.75rem;">Revert this module to any previous backup snapshot.</p>
-          <div id="editor-backups-list" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 150px; overflow-y: auto;">
-            <div style="font-size: 0.8rem; color: var(--gray-400); text-align: center; padding: 0.5rem;">No revisions saved yet.</div>
-          </div>
-        </div>
-
-        <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem; border-top: 1px solid var(--gray-100); padding-top: 1.25rem;">
-          <button type="button" id="editor-cancel-btn" class="secondary-btn" style="border: 1px solid var(--gray-200); padding: 0.6rem 1.2rem; border-radius: var(--r-md); font-weight: 600; cursor: pointer;">Cancel</button>
-          <button type="submit" class="primary-btn" style="padding: 0.6rem 1.5rem; border-radius: var(--r-md); font-weight: 600; cursor: pointer;">Save Changes</button>
-        </div>
+        <footer class="ved-footer">
+          <button type="button" id="editor-cancel-btn" class="secondary-btn">Cancel</button>
+          <button type="submit" class="primary-btn">Save changes</button>
+        </footer>
       </form>
     </div>
   </div>
@@ -1098,6 +1101,6 @@
     </button>
   </nav>
 
-  <script type="module" src="app.js?v=2.0.20"></script>
+  <script type="module" src="app.js?v=2.0.21"></script>
 </body>
 </html>
