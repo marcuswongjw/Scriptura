@@ -6771,3 +6771,90 @@ html {
     border-radius: var(--r-xl) var(--r-xl) 0 0;
   }
 }
+
+/* Admin daily reading editor */
+.admin-daily-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  background: var(--gray-100);
+  color: var(--gray-600);
+  flex-shrink: 0;
+}
+.admin-daily-badge.is-custom {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+.admin-daily-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  align-items: flex-end;
+  margin: 0.75rem 0 1rem;
+}
+.admin-daily-day-select {
+  min-width: 220px;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--r-md);
+  background: #fff;
+  font-size: 0.9rem;
+}
+.admin-daily-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.admin-daily-form .form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.admin-daily-form label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--gray-700);
+}
+.admin-daily-form input,
+.admin-daily-form textarea {
+  border: 1px solid var(--gray-200);
+  border-radius: var(--r-md);
+  padding: 0.65rem 0.8rem;
+  font-size: 0.92rem;
+  font-family: inherit;
+  background: #fff;
+}
+.admin-daily-form textarea { resize: vertical; }
+.admin-daily-form input:focus,
+.admin-daily-form textarea:focus {
+  outline: none;
+  border-color: rgba(225, 29, 72, 0.45);
+  box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.08);
+}
+.admin-daily-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.35rem;
+}
+.admin-daily-actions .primary-btn,
+.admin-daily-actions .secondary-btn {
+  width: auto;
+  margin: 0;
+}
+.admin-optional {
+  font-weight: 500;
+  color: var(--gray-400);
+}
+.admin-help-list {
+  margin: 0.5rem 0 0;
+  padding-left: 1.2rem;
+  color: var(--gray-600);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+.admin-help-list li { margin-bottom: 0.35rem; }

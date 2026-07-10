@@ -1,15 +1,25 @@
 // Feature module: admin (Phase 2)
-import { auth, db } from './firebase.js?v=2.0.21';
+import { auth, db } from './firebase.js?v=2.0.22';
 import { doc, getDoc, setDoc, collection, getDocs, addDoc, query, orderBy, limit, where, updateDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-import { concentrations, modules } from '../modules.js?v=2.0.21';
-import { sanitizeHTML } from './utils.js?v=2.0.21';
-import { showToast, showStatusEl } from './toast.js?v=2.0.21';
-import { state } from './state.js?v=2.0.21';
-import { renderCoursesCatalog } from './catalog.js?v=2.0.21';
-import { renderDashboard } from './dashboard.js?v=2.0.21';
-import { fetchRegisteredUsers } from './network.js?v=2.0.21';
-import { switchTab } from './routing.js?v=2.0.21';
-import { checkAdminNavVisibility, fetchAndMergeCustomModules, loadModuleSchedules, saveState } from './user.js?v=2.0.21';
+import { concentrations, modules } from '../modules.js?v=2.0.22';
+import { sanitizeHTML, getDayOfYear } from './utils.js?v=2.0.22';
+import { showToast, showStatusEl } from './toast.js?v=2.0.22';
+import { state } from './state.js?v=2.0.22';
+import { renderCoursesCatalog } from './catalog.js?v=2.0.22';
+import { renderDashboard } from './dashboard.js?v=2.0.22';
+import { fetchRegisteredUsers } from './network.js?v=2.0.22';
+import { switchTab } from './routing.js?v=2.0.22';
+import { checkAdminNavVisibility, fetchAndMergeCustomModules, loadModuleSchedules, saveState } from './user.js?v=2.0.22';
+import { dailyReadings } from '../daily_readings.js?v=2.0.22';
+import {
+  getBaseReadingForDay,
+  resolveReadingForDay,
+  resolveTodaysReading,
+  saveReadingContent,
+  resetReadingContentToDefault,
+  clearReadingOverrideCache,
+  renderDailyReading
+} from './daily.js?v=2.0.22';
 
 export function handleTemplateToggle(e) {
   const templateBox = document.getElementById('publisher-template-box');
@@ -226,7 +236,9 @@ export function wireAdminTabs() {
       p.classList.toggle('hidden', !show);
     });
     if (tab === 'moderation') loadModerationPanel();
+    if (tab === 'daily') loadDailyReadingEditor();
   });
+  wireDailyReadingEditor();
 }
 
 export async function renderAdminDashboard() {
@@ -244,6 +256,8 @@ export async function renderAdminDashboard() {
   await fetchRegisteredUsers();
   await loadModuleSchedules();
   loadModerationPanel();
+  // Prefill daily editor in background so tab opens quickly
+  loadDailyReadingEditor().catch(() => {});
 
   // Use aggregated stats for fast dashboard rendering.
   const stats = await loadAdminStats();
@@ -1029,3 +1043,133 @@ export async function loadModerationPanel() {
   }
 }
 
+// ==========================================================================
+// Daily reading content editor (Home card)
+// ==========================================================================
+
+function populateDailyDaySelect() {
+  const sel = document.getElementById('admin-daily-day-select');
+  if (!sel || sel.dataset.filled) return;
+  const days = (dailyReadings || []).slice().sort((a, b) => a.day - b.day);
+  sel.innerHTML = days.map(r =>
+    `<option value="${r.day}">Day ${r.day}: ${escapeHtmlLite(r.title)}</option>`
+  ).join('');
+  sel.dataset.filled = '1';
+}
+
+function escapeHtmlLite(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/"/g, '&quot;');
+}
+
+function fillDailyForm(reading) {
+  if (!reading) return;
+  document.getElementById('admin-daily-title').value = reading.title || '';
+  document.getElementById('admin-daily-reference').value = reading.reference || '';
+  document.getElementById('admin-daily-verse').value = reading.verse || '';
+  document.getElementById('admin-daily-reflection').value = reading.reflection || '';
+  document.getElementById('admin-daily-question').value = reading.question || '';
+
+  const badge = document.getElementById('admin-daily-source-badge');
+  if (badge) {
+    if (reading._fromFirestore) {
+      badge.textContent = 'Custom (Firestore)';
+      badge.classList.add('is-custom');
+    } else {
+      badge.textContent = 'Built-in catalog';
+      badge.classList.remove('is-custom');
+    }
+  }
+  const meta = document.getElementById('admin-daily-updated-meta');
+  if (meta) {
+    if (reading._fromFirestore && reading._updatedAt) {
+      meta.textContent = `Last saved ${new Date(reading._updatedAt).toLocaleString()}${reading._updatedBy ? ` · ${reading._updatedBy}` : ''}`;
+    } else {
+      meta.textContent = 'Using the default text from the app catalog (daily_readings.js). Save to create an editable override.';
+    }
+  }
+}
+
+export async function loadDailyReadingEditor(dayNumber) {
+  const panel = document.getElementById('admin-panel-daily');
+  if (!panel) return;
+
+  populateDailyDaySelect();
+  const sel = document.getElementById('admin-daily-day-select');
+  const todayBase = await resolveTodaysReading();
+  const todayDay = todayBase?.day || ((getDayOfYear() - 1) % Math.max(dailyReadings?.length || 1, 1)) + 1;
+
+  const hint = document.getElementById('admin-daily-today-hint');
+  if (hint) {
+    hint.textContent = `Today's Home card uses catalog Day ${todayDay} (day-of-year rotation).`;
+  }
+
+  let day = dayNumber != null ? Number(dayNumber) : Number(sel?.value || todayDay);
+  if (!day || Number.isNaN(day)) day = todayDay;
+  if (sel) sel.value = String(day);
+
+  const reading = await resolveReadingForDay(day);
+  fillDailyForm(reading);
+}
+
+export function wireDailyReadingEditor() {
+  const form = document.getElementById('admin-daily-form');
+  if (!form || form.dataset.wired) return;
+  form.dataset.wired = '1';
+
+  document.getElementById('admin-daily-day-select')?.addEventListener('change', (e) => {
+    loadDailyReadingEditor(Number(e.target.value));
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const day = Number(document.getElementById('admin-daily-day-select')?.value);
+    if (!day) {
+      showToast('Pick a day number first.', 'warning');
+      return;
+    }
+    const btn = document.getElementById('admin-daily-save-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+    try {
+      await saveReadingContent(day, {
+        title: document.getElementById('admin-daily-title').value,
+        verse: document.getElementById('admin-daily-verse').value,
+        reference: document.getElementById('admin-daily-reference').value,
+        reflection: document.getElementById('admin-daily-reflection').value,
+        question: document.getElementById('admin-daily-question').value
+      });
+      showToast(`Day ${day} daily reading saved. Learners see it on Home.`, 'success');
+      await loadDailyReadingEditor(day);
+      try { await renderDailyReading(); } catch (_) {}
+    } catch (err) {
+      console.error(err);
+      showToast('Could not save daily reading. Check admin access.', 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = 'Save daily reading'; }
+    }
+  });
+
+  document.getElementById('admin-daily-reset-btn')?.addEventListener('click', async () => {
+    const day = Number(document.getElementById('admin-daily-day-select')?.value);
+    if (!day) return;
+    if (!confirm(`Reset Day ${day} to the built-in catalog text? This deletes the Firestore override.`)) return;
+    try {
+      await resetReadingContentToDefault(day);
+      showToast(`Day ${day} reset to built-in content.`, 'success');
+      await loadDailyReadingEditor(day);
+      try { await renderDailyReading(); } catch (_) {}
+    } catch (err) {
+      clearReadingOverrideCache(day);
+      showToast('Using built-in content (no custom override found).', 'info');
+      await loadDailyReadingEditor(day);
+    }
+  });
+
+  document.getElementById('admin-daily-reload-btn')?.addEventListener('click', () => {
+    const day = Number(document.getElementById('admin-daily-day-select')?.value);
+    clearReadingOverrideCache(day);
+    loadDailyReadingEditor(day);
+  });
+}

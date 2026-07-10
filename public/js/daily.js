@@ -11,21 +11,107 @@ import {
   limit,
   updateDoc
 } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-import { dailyReadings } from '../daily_readings.js?v=2.0.21';
-import { auth, db } from './firebase.js?v=2.0.21';
-import { sanitizeHTML, getDayOfYear } from './utils.js?v=2.0.21';
-import { showToast } from './toast.js?v=2.0.21';
-import { state } from './state.js?v=2.0.21';
-import { awardXP, logActivity, recordActivity, saveState } from './user.js?v=2.0.21';
-import { notifyCommunityOfReflection } from './notifications.js?v=2.0.21';
+import { dailyReadings } from '../daily_readings.js?v=2.0.22';
+import { auth, db } from './firebase.js?v=2.0.22';
+import { sanitizeHTML, getDayOfYear } from './utils.js?v=2.0.22';
+import { showToast } from './toast.js?v=2.0.22';
+import { state } from './state.js?v=2.0.22';
+import { awardXP, logActivity, recordActivity, saveState } from './user.js?v=2.0.22';
+import { notifyCommunityOfReflection } from './notifications.js?v=2.0.22';
 
 const REFLECTION_MAX = 1200;
 
+/** In-memory cache of Firestore overrides keyed by day number string. */
+const readingOverrideCache = new Map();
+
+/** Static catalog entry for a calendar day-of-year slot (1-based in data). */
+export function getBaseReadingForDay(dayNumber) {
+  if (!dailyReadings || dailyReadings.length === 0) return null;
+  const found = dailyReadings.find(r => r.day === dayNumber);
+  if (found) return { ...found };
+  const index = ((dayNumber - 1) % dailyReadings.length + dailyReadings.length) % dailyReadings.length;
+  return { ...dailyReadings[index] };
+}
+
+/** Today's base reading (sync, no Firestore override). Prefer resolveTodaysReading(). */
 export function getTodaysReading() {
   if (!dailyReadings || dailyReadings.length === 0) return null;
   const dayOfYear = getDayOfYear();
   const index = (dayOfYear - 1) % dailyReadings.length;
-  return dailyReadings[index];
+  return { ...dailyReadings[index] };
+}
+
+/**
+ * Merge static daily_readings.js with optional Firestore override
+ * at daily_reading_content/{day}.
+ */
+export async function resolveReadingForDay(dayNumber) {
+  const base = getBaseReadingForDay(dayNumber);
+  if (!base) return null;
+  const key = String(base.day || dayNumber);
+  if (readingOverrideCache.has(key)) {
+    const cached = readingOverrideCache.get(key);
+    return cached ? { ...base, ...cached, day: base.day } : base;
+  }
+  try {
+    const snap = await getDoc(doc(db, 'daily_reading_content', key));
+    if (snap.exists()) {
+      const data = snap.data();
+      const override = {
+        title: data.title,
+        verse: data.verse,
+        reference: data.reference,
+        reflection: data.reflection,
+        question: data.question || '',
+        _fromFirestore: true,
+        _updatedAt: data.updatedAt || null,
+        _updatedBy: data.updatedBy || null
+      };
+      readingOverrideCache.set(key, override);
+      return { ...base, ...override, day: base.day };
+    }
+    readingOverrideCache.set(key, null);
+  } catch (err) {
+    console.warn('Could not load daily reading override:', err);
+  }
+  return base;
+}
+
+export async function resolveTodaysReading() {
+  if (!dailyReadings || dailyReadings.length === 0) return null;
+  const dayOfYear = getDayOfYear();
+  const index = (dayOfYear - 1) % dailyReadings.length;
+  const baseDay = dailyReadings[index].day;
+  return resolveReadingForDay(baseDay);
+}
+
+export function clearReadingOverrideCache(dayNumber) {
+  if (dayNumber == null) readingOverrideCache.clear();
+  else readingOverrideCache.delete(String(dayNumber));
+}
+
+export async function saveReadingContent(dayNumber, fields) {
+  const key = String(dayNumber);
+  const payload = {
+    day: dayNumber,
+    title: (fields.title || '').trim(),
+    verse: (fields.verse || '').trim(),
+    reference: (fields.reference || '').trim(),
+    reflection: (fields.reflection || '').trim(),
+    question: (fields.question || '').trim(),
+    updatedAt: new Date().toISOString(),
+    updatedBy: auth.currentUser?.email || auth.currentUser?.uid || 'admin'
+  };
+  await setDoc(doc(db, 'daily_reading_content', key), payload, { merge: true });
+  clearReadingOverrideCache(dayNumber);
+  return payload;
+}
+
+/** Reset a day to the static file content (delete Firestore override). */
+export async function resetReadingContentToDefault(dayNumber) {
+  const key = String(dayNumber);
+  await deleteDoc(doc(db, 'daily_reading_content', key));
+  clearReadingOverrideCache(dayNumber);
 }
 
 export function getLocalDateKey(date = new Date()) {
@@ -264,7 +350,7 @@ export async function renderDailyReading() {
   const container = document.getElementById('daily-reading-container');
   if (!container) return;
 
-  const reading = getTodaysReading();
+  const reading = await resolveTodaysReading();
   if (!reading) {
     container.innerHTML = '';
     return;

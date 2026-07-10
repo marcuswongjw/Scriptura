@@ -118,6 +118,27 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Editable daily reading content (overrides static daily_readings.js by day number)
+    match /daily_reading_content/{dayId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin()
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 200
+        && request.resource.data.verse is string
+        && request.resource.data.verse.size() > 0
+        && request.resource.data.verse.size() <= 2000
+        && request.resource.data.reference is string
+        && request.resource.data.reference.size() > 0
+        && request.resource.data.reference.size() <= 120
+        && request.resource.data.reflection is string
+        && request.resource.data.reflection.size() > 0
+        && request.resource.data.reflection.size() <= 4000
+        && (!('question' in request.resource.data)
+            || (request.resource.data.question is string
+                && request.resource.data.question.size() <= 800));
+    }
+
     // Reflections: public readable to all signed-in; private only to author/admin
     match /daily_reflections/{dateId}/entries/{userId} {
       allow read: if isSignedIn() && (

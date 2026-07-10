@@ -8,7 +8,7 @@
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#e11d48">
-  <link rel="stylesheet" href="style.css?v=2.0.21">
+  <link rel="stylesheet" href="style.css?v=2.0.22">
 </head>
 <body>
 
@@ -279,6 +279,7 @@
 
         <nav class="admin-tabs" aria-label="Admin sections">
           <button type="button" class="admin-tab active" data-admin-tab="overview">Overview</button>
+          <button type="button" class="admin-tab" data-admin-tab="daily">Daily reading</button>
           <button type="button" class="admin-tab" data-admin-tab="people">People</button>
           <button type="button" class="admin-tab" data-admin-tab="content">Content</button>
           <button type="button" class="admin-tab" data-admin-tab="moderation">Moderation</button>
@@ -340,6 +341,67 @@
           </div>
 
           <div id="admin-module-engagement-host"></div>
+        </div>
+
+        <!-- DAILY READING -->
+        <div id="admin-panel-daily" class="admin-tab-panel hidden">
+          <div class="admin-panel-card">
+            <div class="admin-panel-head-row">
+              <div>
+                <h3 class="admin-panel-title">Today’s daily reading</h3>
+                <p class="admin-panel-subtitle">
+                  Shown on <strong>Home</strong> for every learner. Edits save to Firestore and override the built-in catalog for that day number.
+                </p>
+              </div>
+              <span id="admin-daily-source-badge" class="admin-daily-badge">Built-in</span>
+            </div>
+
+            <div class="admin-daily-meta">
+              <div class="form-field">
+                <label for="admin-daily-day-select">Reading day (catalog slot)</label>
+                <select id="admin-daily-day-select" class="admin-daily-day-select"></select>
+              </div>
+              <p class="admin-muted" id="admin-daily-today-hint"></p>
+            </div>
+
+            <form id="admin-daily-form" class="admin-daily-form">
+              <div class="form-field">
+                <label for="admin-daily-title">Title</label>
+                <input type="text" id="admin-daily-title" required maxlength="200" placeholder="Reading title">
+              </div>
+              <div class="form-field">
+                <label for="admin-daily-reference">Scripture reference</label>
+                <input type="text" id="admin-daily-reference" required maxlength="120" placeholder="e.g. Psalm 23:1–3">
+              </div>
+              <div class="form-field">
+                <label for="admin-daily-verse">Verse text</label>
+                <textarea id="admin-daily-verse" rows="3" required maxlength="2000" placeholder="Scripture text…"></textarea>
+              </div>
+              <div class="form-field">
+                <label for="admin-daily-reflection">Reflection</label>
+                <textarea id="admin-daily-reflection" rows="6" required maxlength="4000" placeholder="Devotional reflection…"></textarea>
+              </div>
+              <div class="form-field">
+                <label for="admin-daily-question">Reflection question <span class="admin-optional">(optional)</span></label>
+                <textarea id="admin-daily-question" rows="2" maxlength="800" placeholder="Prompt for the learner…"></textarea>
+              </div>
+              <p class="admin-muted" id="admin-daily-updated-meta"></p>
+              <div class="admin-daily-actions">
+                <button type="submit" class="primary-btn" id="admin-daily-save-btn">Save daily reading</button>
+                <button type="button" class="secondary-btn" id="admin-daily-reset-btn">Reset to built-in</button>
+                <button type="button" class="secondary-btn" id="admin-daily-reload-btn">Reload</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="admin-panel-card">
+            <h3 class="admin-panel-title">Where learners see this</h3>
+            <ul class="admin-help-list">
+              <li><strong>Home</strong> tab → “Today’s Daily Reading” card (top of the page)</li>
+              <li>Community reflections for the calendar day sit under that card</li>
+              <li>Day number cycles through the catalog by day of year (1 → N, then repeats)</li>
+            </ul>
+          </div>
         </div>
 
         <!-- PEOPLE -->
@@ -1101,6 +1163,6 @@
     </button>
   </nav>
 
-  <script type="module" src="app.js?v=2.0.21"></script>
+  <script type="module" src="app.js?v=2.0.22"></script>
 </body>
 </html>
