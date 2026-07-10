@@ -1,15 +1,15 @@
 // Feature module: admin (Phase 2)
-import { auth, db } from './firebase.js?v=2.0.16';
+import { auth, db } from './firebase.js?v=2.0.17';
 import { doc, getDoc, setDoc, collection, getDocs, addDoc, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-import { concentrations, modules } from '../modules.js?v=2.0.16';
-import { sanitizeHTML } from './utils.js?v=2.0.16';
-import { showToast, showStatusEl } from './toast.js?v=2.0.16';
-import { state } from './state.js?v=2.0.16';
-import { renderCoursesCatalog } from './catalog.js?v=2.0.16';
-import { renderDashboard } from './dashboard.js?v=2.0.16';
-import { fetchRegisteredUsers } from './network.js?v=2.0.16';
-import { switchTab } from './routing.js?v=2.0.16';
-import { checkAdminNavVisibility, fetchAndMergeCustomModules, loadModuleSchedules, saveState } from './user.js?v=2.0.16';
+import { concentrations, modules } from '../modules.js?v=2.0.17';
+import { sanitizeHTML } from './utils.js?v=2.0.17';
+import { showToast, showStatusEl } from './toast.js?v=2.0.17';
+import { state } from './state.js?v=2.0.17';
+import { renderCoursesCatalog } from './catalog.js?v=2.0.17';
+import { renderDashboard } from './dashboard.js?v=2.0.17';
+import { fetchRegisteredUsers } from './network.js?v=2.0.17';
+import { switchTab } from './routing.js?v=2.0.17';
+import { checkAdminNavVisibility, fetchAndMergeCustomModules, loadModuleSchedules, saveState } from './user.js?v=2.0.17';
 
 export function handleTemplateToggle(e) {
   const templateBox = document.getElementById('publisher-template-box');

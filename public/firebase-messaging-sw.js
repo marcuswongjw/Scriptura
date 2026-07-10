@@ -29,7 +29,7 @@ messaging.onBackgroundMessage((payload) => {
 });
 
 // PWA Caching logic
-const CACHE_NAME = 'scriptura-pwa-cache-v1.0.16';
+const CACHE_NAME = 'scriptura-pwa-cache-v1.0.17';
 const ASSETS = [
   '/',
   '/index.html',

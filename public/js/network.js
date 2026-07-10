@@ -1,13 +1,13 @@
 // Feature module: network (Phase 2) — Community hub UI
-import { auth, db } from './firebase.js?v=2.0.16';
+import { auth, db } from './firebase.js?v=2.0.17';
 import { collection, getDocs, onSnapshot, addDoc, query, orderBy, limit, doc, updateDoc, arrayUnion, arrayRemove } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-import { modules } from '../modules.js?v=2.0.16';
-import { sanitizeHTML, debounce } from './utils.js?v=2.0.16';
-import { showToast } from './toast.js?v=2.0.16';
-import { el } from './dom.js?v=2.0.16';
-import { state } from './state.js?v=2.0.16';
-import { checkAdminNavVisibility, saveState, updateHeaderProfile } from './user.js?v=2.0.16';
-import { notifyCommunityOfEvent, getNotificationPrefs, setNotificationPrefs } from './notifications.js?v=2.0.16';
+import { modules } from '../modules.js?v=2.0.17';
+import { sanitizeHTML, debounce } from './utils.js?v=2.0.17';
+import { showToast } from './toast.js?v=2.0.17';
+import { el } from './dom.js?v=2.0.17';
+import { state } from './state.js?v=2.0.17';
+import { checkAdminNavVisibility, saveState, updateHeaderProfile } from './user.js?v=2.0.17';
+import { notifyCommunityOfEvent, getNotificationPrefs, setNotificationPrefs } from './notifications.js?v=2.0.17';
 
 /** Prefer stored country; default Singapore for untagged learners. */
 export function effectiveCountry(userOrCode) {
@@ -631,7 +631,11 @@ export function renderAvatarPresets() {
       wrapper.classList.add('selected');
       el.avatarPresetsContainer.dataset.selectedUrl = url;
       const preview = document.getElementById('profile-photo-preview');
-      if (preview) preview.classList.add('hidden');
+      if (preview) {
+        preview.src = url;
+        preview.classList.remove('hidden');
+        preview.dataset.dataUrl = '';
+      }
     });
 
     wrapper.appendChild(img);
@@ -643,6 +647,8 @@ export function setupPhotoUpload() {
   const uploadInput = document.getElementById('profile-photo-upload');
   const preview = document.getElementById('profile-photo-preview');
   if (!uploadInput || !preview) return;
+  if (uploadInput.dataset.wired) return;
+  uploadInput.dataset.wired = '1';
 
   uploadInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
@@ -661,6 +667,20 @@ export function setupPhotoUpload() {
     };
     reader.readAsDataURL(file);
   });
+
+  // Collapsible avatar presets
+  document.getElementById('profile-toggle-presets')?.addEventListener('click', () => {
+    const panel = document.getElementById('avatar-presets-panel');
+    const btn = document.getElementById('profile-toggle-presets');
+    if (!panel) return;
+    const open = panel.classList.toggle('hidden');
+    // toggle returns true if class is now present (= hidden)
+    if (btn) btn.textContent = panel.classList.contains('hidden') ? 'Or pick an avatar ▾' : 'Hide avatars ▴';
+  });
+
+  document.getElementById('profile-cancel-btn')?.addEventListener('click', () => {
+    el.profileDialog?.classList.add('hidden');
+  });
 }
 
 export function openProfileDialog() {
@@ -669,37 +689,45 @@ export function openProfileDialog() {
   el.profileNameInput.value = state.userState.name || auth.currentUser.displayName || '';
   el.profileEmailInput.value = state.userState.email || auth.currentUser.email || '';
   el.profileChurchInput.value = state.userState.church || '';
-  el.profileCountrySelect.value = effectiveCountry(state.userState);
+  const countryCode = effectiveCountry(state.userState);
+  if (el.profileCountrySelect) {
+    // If stored country isn't in the short list, fall back to OTHER
+    const hasOption = [...el.profileCountrySelect.options].some(o => o.value === countryCode);
+    el.profileCountrySelect.value = hasOption ? countryCode : 'OTHER';
+  }
 
   document.getElementById('profile-headline-input').value = state.userState.headline || '';
   document.getElementById('profile-goals-input').value = state.userState.goals || '';
   document.getElementById('profile-interests-input').value = state.userState.interests || '';
   document.getElementById('profile-social-input').value = state.userState.social || '';
+
   const roleSelect = document.getElementById('profile-role-select');
+  const roleSection = document.getElementById('profile-role-section');
   if (roleSelect) {
     roleSelect.value = state.userState.role || 'user';
-    if (state.userState.role !== 'admin') {
-      roleSelect.disabled = true;
-      roleSelect.closest('.form-field')?.classList.add('hidden');
-    } else {
-      roleSelect.disabled = false;
-      roleSelect.closest('.form-field')?.classList.remove('hidden');
-    }
+    const isAdmin = state.userState.role === 'admin';
+    roleSelect.disabled = !isAdmin;
+    if (roleSection) roleSection.classList.toggle('hidden', !isAdmin);
+    else roleSelect.closest('.form-field')?.classList.toggle('hidden', !isAdmin);
   }
 
   const preview = document.getElementById('profile-photo-preview');
   if (preview) {
-    if (state.userState.photo && state.userState.photo.startsWith('data:image')) {
-      preview.src = state.userState.photo;
-      preview.classList.remove('hidden');
-      preview.dataset.dataUrl = state.userState.photo;
-    } else {
-      preview.classList.add('hidden');
-      preview.dataset.dataUrl = '';
-    }
+    const photo = state.userState.photo
+      || auth.currentUser.photoURL
+      || `https://api.dicebear.com/7.x/bottts/svg?seed=${auth.currentUser.uid}`;
+    preview.src = photo;
+    preview.classList.remove('hidden');
+    preview.dataset.dataUrl = state.userState.photo?.startsWith('data:image') ? state.userState.photo : '';
   }
   const uploadInput = document.getElementById('profile-photo-upload');
   if (uploadInput) uploadInput.value = '';
+  if (el.avatarPresetsContainer) el.avatarPresetsContainer.dataset.selectedUrl = '';
+
+  const presetsPanel = document.getElementById('avatar-presets-panel');
+  if (presetsPanel) presetsPanel.classList.add('hidden');
+  const togglePresets = document.getElementById('profile-toggle-presets');
+  if (togglePresets) togglePresets.textContent = 'Or pick an avatar ▾';
 
   const prefs = getNotificationPrefs();
   const pd = document.getElementById('pref-daily-reminder');
@@ -711,6 +739,8 @@ export function openProfileDialog() {
 
   renderAvatarPresets();
   el.profileDialog.classList.remove('hidden');
+  // Focus first field for keyboard users
+  setTimeout(() => el.profileNameInput?.focus(), 50);
 }
 
 export async function handleProfileSave(e) {
