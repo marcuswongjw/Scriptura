@@ -7,6 +7,72 @@ import { state } from './state.js?v=2.0.24';
 import { switchTab } from './routing.js?v=2.0.24';
 import { awardXP, isModuleReleased, logActivity, logQuizAnswer, recordActivity, saveState } from './user.js?v=2.0.24';
 
+/** Highest slide index the learner may open (reached before, or completed = all). */
+function getFurthestUnlockedIndex() {
+  if (!state.activeModule) return 0;
+  const total = state.activeModule.slides.length;
+  const last = Math.max(0, total - 1);
+  const moduleId = state.activeModule.id;
+  if (state.userState.completedModules?.includes(moduleId)) return last;
+
+  if (!state.userState.lessonProgress) state.userState.lessonProgress = {};
+  const saved = Number(state.userState.lessonProgress[moduleId] || 0);
+  // completed path stores slides.length; clamp into valid indices
+  const savedIdx = Math.min(Math.max(0, saved), last);
+  return Math.max(savedIdx, state.currentSlideIndex || 0);
+}
+
+/** Persist furthest + exact resume position (same key: high-water mark of index). */
+function persistLessonProgress({ awardIfNew = true } = {}) {
+  if (!state.activeModule) return;
+  if (!state.userState.lessonProgress) state.userState.lessonProgress = {};
+  const moduleId = state.activeModule.id;
+  const previousProgress = Number(state.userState.lessonProgress[moduleId] || 0);
+  const idx = state.currentSlideIndex;
+
+  if (idx > previousProgress) {
+    state.userState.lessonProgress[moduleId] = idx;
+    if (awardIfNew) {
+      const slide = state.activeModule.slides[idx];
+      awardXP(10, 'slide_viewed');
+      logActivity('slide_viewed', {
+        moduleId,
+        slideIndex: idx,
+        slideTitle: slide?.title,
+      });
+    }
+    saveState();
+  } else if (idx !== previousProgress && previousProgress < state.activeModule.slides.length) {
+    // Keep high-water mark for unlock/resume; do not lower on back-nav.
+    // Resume still uses high-water (furthest reached).
+    saveState();
+  }
+}
+
+/**
+ * Jump to a slide by index. Only unlocked slides (already reached) are allowed
+ * so learners cannot skip unreached quizzes / content.
+ */
+export function goToSlide(targetIndex) {
+  if (!state.activeModule) return;
+  const total = state.activeModule.slides.length;
+  if (!Number.isFinite(targetIndex) || targetIndex < 0 || targetIndex >= total) return;
+
+  const furthest = getFurthestUnlockedIndex();
+  if (targetIndex > furthest) {
+    showToast('Finish earlier slides to unlock this one.', 'info');
+    return;
+  }
+  if (targetIndex === state.currentSlideIndex) return;
+
+  state.currentSlideIndex = targetIndex;
+  state.cardQuizSubIndex = 0;
+  state.selectedOptionIndex = null;
+  state.isQuizAnswered = false;
+  state.currentQuestionFirstAttempt = true;
+  renderSlide();
+}
+
 export function startModule(moduleId, pushState = true) {
   if (!isModuleReleased(moduleId)) {
     showToast('This course is not yet released!', 'warning');
@@ -17,7 +83,19 @@ export function startModule(moduleId, pushState = true) {
   state.activeModule = modules.find(m => m.id === moduleId);
   if (!state.activeModule) return;
 
-  state.currentSlideIndex = 0;
+  const total = state.activeModule.slides.length;
+  const last = Math.max(0, total - 1);
+  const isCompleted = state.userState.completedModules?.includes(moduleId);
+  if (!state.userState.lessonProgress) state.userState.lessonProgress = {};
+  const savedRaw = Number(state.userState.lessonProgress[moduleId] || 0);
+
+  // Resume incomplete lessons at furthest reached slide; completed restarts at 0 for review.
+  if (!isCompleted && savedRaw > 0) {
+    state.currentSlideIndex = Math.min(savedRaw, last);
+  } else {
+    state.currentSlideIndex = 0;
+  }
+
   state.cardQuizSubIndex = 0;
   state.selectedOptionIndex = null;
   state.isQuizAnswered = false;
@@ -41,6 +119,10 @@ export function startModule(moduleId, pushState = true) {
   el.header.classList.add('hidden');
   el.lessonView.classList.remove('hidden');
 
+  if (!isCompleted && state.currentSlideIndex > 0) {
+    showToast(`Resumed at slide ${state.currentSlideIndex + 1} of ${total}`, 'info');
+  }
+
   renderSlide();
   el.lessonContentArea.scrollTop = 0;
   window.scrollTo({ top: 0, behavior: 'instant' });
@@ -51,6 +133,18 @@ export function startModule(moduleId, pushState = true) {
 }
 
 export function closeLesson(pushState = true) {
+  // Ensure furthest progress is saved before leaving.
+  if (state.activeModule) {
+    if (!state.userState.lessonProgress) state.userState.lessonProgress = {};
+    const moduleId = state.activeModule.id;
+    if (!state.userState.completedModules?.includes(moduleId)) {
+      const prev = Number(state.userState.lessonProgress[moduleId] || 0);
+      const idx = state.currentSlideIndex || 0;
+      if (idx > prev) state.userState.lessonProgress[moduleId] = idx;
+      saveState();
+    }
+  }
+
   state.activeModule = null;
   el.lessonView.classList.add('hidden');
   el.lessonView.classList.remove('cardquiz-mode');
@@ -62,13 +156,20 @@ export function closeLesson(pushState = true) {
 export function renderProgressDots() {
   if (!state.activeModule) return;
   const total = state.activeModule.slides.length;
+  const furthest = getFurthestUnlockedIndex();
 
   const createDot = (idx) => {
     let cls = 'progress-dot';
     if (total > 10) cls += ' small';
     if (idx < state.currentSlideIndex) cls += ' done';
     else if (idx === state.currentSlideIndex) cls += ' current';
-    return `<div class="${cls}"></div>`;
+    if (idx <= furthest) cls += ' clickable';
+    else cls += ' locked';
+    const label = state.activeModule.slides[idx]?.title || `Slide ${idx + 1}`;
+    const title = idx <= furthest
+      ? `Go to slide ${idx + 1}: ${label}`
+      : `Locked — reach this slide first`;
+    return `<button type="button" class="${cls}" data-slide-index="${idx}" title="${title.replace(/"/g, '&quot;')}" aria-label="${title.replace(/"/g, '&quot;')}" ${idx > furthest ? 'disabled' : ''}></button>`;
   };
 
   let dotsHtml = '';
@@ -84,6 +185,14 @@ export function renderProgressDots() {
   }
 
   el.lessonDotsBar.innerHTML = dotsHtml;
+
+  el.lessonDotsBar.querySelectorAll('.progress-dot.clickable').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const idx = parseInt(btn.getAttribute('data-slide-index'), 10);
+      goToSlide(idx);
+    });
+  });
 
   const progressPercent = total > 1
     ? Math.round((state.currentSlideIndex / (total - 1)) * 100)
@@ -107,13 +216,12 @@ export function renderSlide() {
   renderProgressDots();
 
   if (!state.userState.lessonProgress) state.userState.lessonProgress = {};
-  const previousProgress = state.userState.lessonProgress[state.activeModule.id] || 0;
+  const previousProgress = Number(state.userState.lessonProgress[state.activeModule.id] || 0);
   if (state.currentSlideIndex > previousProgress) {
-    state.userState.lessonProgress[state.activeModule.id] = state.currentSlideIndex;
-    // Award XP the first time a slide is viewed.
-    awardXP(10, 'slide_viewed');
-    logActivity('slide_viewed', { moduleId: state.activeModule.id, slideIndex: state.currentSlideIndex, slideTitle: slide.title });
-    saveState();
+    persistLessonProgress({ awardIfNew: true });
+  } else {
+    // Still flush state periodically so cloud/local keep in sync while reviewing
+    // (no XP re-award).
   }
 
   el.prevSlideBtn.disabled = state.currentSlideIndex === 0;

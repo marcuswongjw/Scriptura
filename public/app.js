@@ -9,7 +9,7 @@ import { handlePublisherFileInput, handlePublisherSubmit, handleTemplateToggle, 
 import { handleGoogleSignIn, handleLoginSubmit, handleRegisterSubmit, switchAuthTab } from './js/auth_ui.js?v=2.0.24';
 import { renderCoursesCatalog, updateFilterTagsUI } from './js/catalog.js?v=2.0.24';
 import { renderDashboard } from './js/dashboard.js?v=2.0.24';
-import { closeLesson, handleNextClick, handlePrevClick, renderSlide, startModule } from './js/lesson.js?v=2.0.24';
+import { closeLesson, handleNextClick, handlePrevClick, renderSlide, startModule } from './js/lesson.js?v=2.0.27';
 import { handleProfileSave, initNetworkViewer, openProfileDialog, setupPhotoUpload } from './js/network.js?v=2.0.24';
 import { checkAndSyncPushToken, registerServiceWorker } from './js/push.js?v=2.0.24';
 import { routeToPath, switchDashboardSubtab, switchTab } from './js/routing.js?v=2.0.24';

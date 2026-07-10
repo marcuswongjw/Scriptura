@@ -4,7 +4,7 @@ import { conIcons } from './constants.js?v=2.0.24';
 import { showToast } from './toast.js?v=2.0.24';
 import { el } from './dom.js?v=2.0.24';
 import { state } from './state.js?v=2.0.24';
-import { startModule } from './lesson.js?v=2.0.24';
+import { startModule } from './lesson.js?v=2.0.27';
 import { switchTab } from './routing.js?v=2.0.24';
 import { isModuleReleased } from './user.js?v=2.0.24';
 

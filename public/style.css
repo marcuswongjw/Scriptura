@@ -1129,14 +1129,49 @@ img { display: block; max-width: 100%; }
   border-radius: 3px;
   transform: rotate(45deg);
   background: rgba(255,255,255,0.3);
-  transition: background 0.2s;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.15s;
   flex-shrink: 0;
+  border: none;
+  padding: 0;
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-block;
+  position: relative;
+  box-sizing: content-box;
+}
+
+/* Expand hit target without changing diamond size (mobile-friendly) */
+.progress-dot.clickable {
+  cursor: pointer;
+}
+.progress-dot.clickable::after {
+  content: '';
+  position: absolute;
+  inset: -10px;
+  transform: rotate(-45deg); /* cancel parent diamond so hit box is square */
+}
+.progress-dot.clickable:hover {
+  background: rgba(255,255,255,0.95);
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.35);
+}
+.progress-dot.clickable:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+.progress-dot.locked {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .progress-dot.small {
   width: 8px;
   height: 8px;
   border-radius: 1.5px;
+}
+.progress-dot.small.clickable::after {
+  inset: -8px;
 }
 
 .progress-dot.done    { background: rgba(255,255,255,0.85); }
