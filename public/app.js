@@ -1,117 +1,39 @@
-import { concentrations, modules } from './modules.js?v=2.0.11';
-import { dailyReadings } from './daily_readings.js?v=2.0.11';
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, setPersistence, browserSessionPersistence } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
-import { getFirestore, doc, getDoc, setDoc, collection, getDocs, onSnapshot, addDoc, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js';
+import { concentrations, modules } from './modules.js?v=2.0.12';
+import { dailyReadings } from './daily_readings.js?v=2.0.12';
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup,
+  setPersistence,
+  browserSessionPersistence
+} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+import {
+  doc,
+  getDoc,
+  setDoc,
+  collection,
+  getDocs,
+  onSnapshot,
+  addDoc,
+  query,
+  orderBy,
+  limit
+} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { getToken, onMessage } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js';
 
-// ==========================================================================
-// Firebase Initialization
-// ==========================================================================
-const firebaseConfig = {
-  projectId: "scriptura-study-2026",
-  appId: "1:672733276555:web:89c11cfd510ba13272678e",
-  storageBucket: "scriptura-study-2026.firebasestorage.app",
-  apiKey: "AIzaSyC4LtEjnfu8CzP6KSM_hVgJxhqWndJpFTo",
-  authDomain: "scriptura-study-2026.firebaseapp.com",
-  messagingSenderId: "672733276555"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const messaging = getMessaging(app);
-const VAPID_KEY = "BO-hBNUqSqDpYLSE8Oz2c0nNKtUDyK27fyzjoTdoiBMLZUGIENy9qcZzegNRFcGE-G_KVPwKC-zcNxnh6dan0xE";
-
-
-// ==========================================================================
-// Utility: HTML sanitization helper
-// ==========================================================================
-function sanitizeHTML(str) {
-  if (!str) return '';
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
-
-// ==========================================================================
-// Utility: Debounce helper
-// ==========================================================================
-function debounce(fn, delay = 300) {
-  let timer;
-  return function (...args) {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn.apply(this, args), delay);
-  };
-}
-
-// ==========================================================================
-// Toast Notification System
-// ==========================================================================
-const toastIcons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
-const toastTitles = { success: 'Success', error: 'Error', warning: 'Warning', info: 'Info' };
-
-function ensureToastContainer() {
-  let container = document.querySelector('.toast-container');
-  if (!container) {
-    container = document.createElement('div');
-    container.className = 'toast-container';
-    container.setAttribute('role', 'alert');
-    container.setAttribute('aria-live', 'polite');
-    document.body.appendChild(container);
-  }
-  return container;
-}
-
-function showToast(message, type = 'info', duration = 4000) {
-  const container = ensureToastContainer();
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  toast.setAttribute('role', 'alert');
-  toast.innerHTML = `
-    <span class="toast-icon" aria-hidden="true">${toastIcons[type] || 'ℹ'}</span>
-    <div class="toast-content">
-      <span class="toast-title">${toastTitles[type] || 'Info'}</span>
-      <span class="toast-message">${sanitizeHTML(message)}</span>
-    </div>
-    <button class="toast-close" aria-label="Close notification">✕</button>
-  `;
-  container.appendChild(toast);
-  const removeToast = () => {
-    toast.classList.add('toast-out');
-    setTimeout(() => toast.remove(), 250);
-  };
-  toast.querySelector('.toast-close').addEventListener('click', removeToast);
-  if (duration > 0) setTimeout(removeToast, duration);
-  return toast;
-}
+import { auth, db, messaging, VAPID_KEY } from './js/firebase.js?v=2.0.12';
+import { moduleIcons, conIcons, createDefaultUserState } from './js/constants.js?v=2.0.12';
+import { sanitizeHTML, debounce, formatDuration, formatMarkdown, getDayOfYear } from './js/utils.js?v=2.0.12';
+import { showToast, showStatus, showStatusEl } from './js/toast.js?v=2.0.12';
+import { el } from './js/dom.js?v=2.0.12';
 
 // ==========================================================================
 // Application State
 // ==========================================================================
-let userState = {
-  xp: 0,
-  streak: 0,
-  longestStreak: 0,
-  completedModules: [],
-  modulesStarted: [],
-  dailyReadingsCompleted: [],
-  lastDailyReadingDate: null,
-  lastActiveDate: null,
-  lastActiveAt: null,
-  translation: 'ESV',
-  quizStats: { correctFirstTry: 0, totalQuestions: 0 },
-  quizHistory: [],
-  country: '',
-  role: 'user',
-  headline: '',
-  goals: '',
-  interests: '',
-  social: '',
-  lessonProgress: {},
-  timeSpent: 0,
-  activityLog: []
-};
+let userState = createDefaultUserState();
 
 let sessionStartTime = Date.now();
 let swRegistration = null;
@@ -130,193 +52,6 @@ let catalogFilters = {
 };
 let moduleSchedules = {};
 let currentDashboardSubtab = 'studying';
-
-const moduleIcons = {
-  'beautiful-book': '📖',
-  'genesis-1': '🏛️',
-  'genesis-2': '🍎',
-  'genesis-3': '🌟',
-  'exodus-1': '📜',
-  'exodus-2': '⛺',
-  'leviticus': '🐂',
-  'numbers-1': '📊',
-  'numbers-2': '🐍',
-  'deuteronomy-1': '📜',
-  'deuteronomy-2': '🌅',
-  'joshua': '⚔️',
-  'judges': '⚖️',
-  'ruth': '🌾',
-  '1samuel': '👑',
-  '2samuel': '🏰',
-  '1kings': '👑',
-  '2kings': '🏰',
-  'joel': '🦗',
-  'hosea': '❤️',
-  'psalms': '🎵',
-  'proverbs': '💡',
-  '1chronicles': '📜',
-  '2chronicles': '🏰',
-  'ezra': '🏛️',
-  'nehemiah': '🧱',
-  'esther-1': '👑',
-  'esther-2': '🍷',
-  'job-1': '🌪️',
-  'job-2': '🐏',
-  'heaven-1': '🌤️',
-  'heaven-2': '🌅',
-  'heaven-3': '👑',
-};
-
-// Shared concentration icons map (used by catalog, onboarding, and stats)
-const conIcons = {
-  'foundations': '📖',
-  'genesis': '🏛️',
-  'exodus': '📜',
-  'leviticus': '🐂',
-  'numbers': '📊',
-  'deuteronomy': '🌅',
-  'joshua': '⚔️',
-  'judges': '⚖️',
-  'ruth': '🌾',
-  '1samuel': '👑',
-  '2samuel': '🏰',
-  '1kings': '👑',
-  '2kings': '🏰',
-  'joel': '🦗',
-  'hosea': '❤️',
-  'psalms': '🎵',
-  'proverbs': '💡',
-  '1chronicles': '📜',
-  '2chronicles': '🏰',
-  'ezra': '🏛️',
-  'nehemiah': '🧱',
-  'esther': '🍷',
-  'job': '🌪️',
-  'heaven': '🌤️'
-};
-
-// ==========================================================================
-// DOM Elements
-// ==========================================================================
-const el = {
-  // Top bar
-  header:          document.getElementById('main-header'),
-  userPill:        document.getElementById('user-pill'),
-  headerProfileTrigger: document.getElementById('header-profile-trigger'),
-  headerAvatar:    document.getElementById('header-avatar'),
-  userDisplayName: document.getElementById('user-display-name'),
-  signoutBtn:      document.getElementById('signout-btn'),
-  translationSelect: document.getElementById('translation-select'),
-
-  // Auth Portal
-  authPortal:      document.getElementById('auth-portal'),
-  tabLogin:        document.getElementById('tab-login'),
-  tabRegister:     document.getElementById('tab-register'),
-  loginForm:       document.getElementById('login-form'),
-  registerForm:    document.getElementById('register-form'),
-  loginEmail:      document.getElementById('login-email'),
-  loginPass:       document.getElementById('login-password'),
-  registerEmail:   document.getElementById('register-email'),
-  registerPass:    document.getElementById('register-password'),
-  registerName:    document.getElementById('register-name'),
-  registerCountry: document.getElementById('register-country'),
-  googleSignInBtn: document.getElementById('google-signin-btn'),
-  authError:       document.getElementById('auth-error'),
-
-  // Tab Views
-  viewHome:     document.getElementById('view-home'),
-  viewCourses:  document.getElementById('view-courses'),
-  viewNetwork:  document.getElementById('view-network'),
-  viewStats:    document.getElementById('view-stats'),
-  viewAdmin:    document.getElementById('view-admin'),
-  bottomNav:    document.getElementById('bottom-nav'),
-
-  // Dashboard Sub-tabs
-  subtabStudying:       document.getElementById('subtab-studying'),
-  subtabCurriculum:     document.getElementById('subtab-curriculum'),
-  subcontentStudying:   document.getElementById('subcontent-studying'),
-  subcontentCurriculum: document.getElementById('subcontent-curriculum'),
-  currentStudyContainer: document.getElementById('current-study-container'),
-  concentrationGrid:     document.getElementById('concentration-grid'),
-
-  // Courses View (Renovated)
-  courseSearch:         document.getElementById('course-search'),
-  filtersModal:         document.getElementById('filters-modal'),
-  openFiltersModalBtn:  document.getElementById('open-filters-modal-btn'),
-  closeFiltersModalBtn: document.getElementById('close-filters-modal'),
-  saveFiltersBtn:       document.getElementById('save-filters-btn'),
-  activeStatusBadge:    document.getElementById('active-status-badge'),
-  catalogGrid:          document.getElementById('catalog-grid'),
-
-  // Course Details
-  courseOnboarding:   document.getElementById('course-onboarding'),
-  closeOnboarding:    document.getElementById('close-onboarding'),
-  onboardTag:         document.getElementById('onboard-tag'),
-  onboardTitle:       document.getElementById('onboard-title'),
-  onboardDesc:        document.getElementById('onboard-desc'),
-  onboardIcon:        document.getElementById('onboard-icon'),
-  onboardBulletPoints: document.getElementById('onboard-bullet-points'),
-  onboardLessonCount: document.getElementById('onboard-lesson-count'),
-  startOnboardedLesson: document.getElementById('start-onboarded-lesson'),
-
-  // Network View
-  // Profile Modal (Enriched)
-  profileDialog:            document.getElementById('profile-dialog'),
-  closeProfileBtn:          document.getElementById('close-profile-btn'),
-  profileEditForm:          document.getElementById('profile-edit-form'),
-  avatarPresetsContainer:   document.getElementById('avatar-presets-container'),
-  profileNameInput:         document.getElementById('profile-name-input'),
-  profileEmailInput:        document.getElementById('profile-email-input'),
-  profileChurchInput:       document.getElementById('profile-church-input'),
-  profileCountrySelect:     document.getElementById('profile-country-select'),
-  btnToggleNotifications:   document.getElementById('btn-toggle-notifications'),
-  pushStatusText:           document.getElementById('push-status-text'),
-
-  // Event Modal
-  eventDialog:              document.getElementById('event-dialog'),
-  closeEventBtn:            document.getElementById('close-event-btn'),
-  eventCreateForm:          document.getElementById('event-create-form'),
-  eventTitleInput:          document.getElementById('event-title-input'),
-  eventDescInput:           document.getElementById('event-desc-input'),
-  eventTimeInput:           document.getElementById('event-time-input'),
-
-  // Network sub-views / controls
-  netNavItems:              document.querySelectorAll('.net-nav-item'),
-  netSubviews:              document.querySelectorAll('.net-subview'),
-  peopleSearch:             document.getElementById('people-search'),
-  peopleGrid:               document.getElementById('people-grid'),
-  createEventBtn:           document.getElementById('create-event-btn'),
-  eventsList:               document.getElementById('events-list'),
-  chatMessages:             document.getElementById('chat-messages'),
-  chatInputForm:            document.getElementById('chat-input-form'),
-  chatMessageInput:         document.getElementById('chat-message-input'),
-
-  // Stats View
-  statsCompletedVal: document.getElementById('stats-completed-val'),
-  statsStreakVal:    document.getElementById('stats-streak-val'),
-  statsAccuracyVal:  document.getElementById('stats-accuracy-val'),
-
-  // Lesson Screen
-  lessonView:        document.getElementById('lesson-view'),
-  lessonTopbar:      document.getElementById('lesson-topbar'),
-  lessonDotsBar:     document.getElementById('lesson-dots-bar'),
-  lessonProgressBar: document.getElementById('lesson-progress-bar'),
-  lessonContentArea: document.getElementById('lesson-content-area'),
-  takeawayBanner:    document.getElementById('takeaway-banner'),
-  takeawayIcon:      document.getElementById('takeaway-icon'),
-  takeawayText:      document.getElementById('takeaway-text'),
-  activeCard:        document.getElementById('active-card'),
-  aiTutorTrigger:    document.getElementById('ai-tutor-trigger'),
-  prevSlideBtn:      document.getElementById('prev-slide'),
-  closeLessonBtn:    document.getElementById('close-lesson'),
-  nextSlideBtn:      document.getElementById('next-slide'),
-  nextBtnText:       document.getElementById('next-btn-text'),
-
-  // AI Tutor Sheet
-  aiTutorModal:         document.getElementById('ai-tutor-modal'),
-  closeTutor:           document.getElementById('close-tutor'),
-  tutorExplanationText: document.getElementById('tutor-explanation-text')
-};
 
 // ==========================================================================
 // Auth Observer & Init
@@ -575,38 +310,13 @@ async function loadUserCloudData(user) {
   }
 }
 
-// ==========================================================================
-// Utility: Show status helper for publisher form
-// ==========================================================================
-function showStatus(msg, type) {
-  const statusEl = document.getElementById('publisher-status');
-  if (!statusEl) return;
-  showStatusEl(statusEl, msg, type);
-}
-
-function showStatusEl(el, msg, type) {
-  if (!el) return;
-  el.textContent = msg;
-  el.className = 'publisher-status';
-  if (type === 'success') {
-    el.style.color = 'var(--brand-green)';
-  } else if (type === 'error') {
-    el.style.color = '#b91c1c';
-  } else {
-    el.style.color = 'var(--gray-600)';
-  }
-  el.classList.remove('hidden');
-}
-
 function resetLocalState() {
   userState = {
-    xp: 0, streak: 0, longestStreak: 0, completedModules: [], modulesStarted: [],
-    dailyReadingsCompleted: [], lastDailyReadingDate: null,
-    lastActiveDate: null, lastActiveAt: null, translation: 'ESV',
-    quizStats: { correctFirstTry: 0, totalQuestions: 0 }, quizHistory: [],
-    country: '', name: '', photo: '', email: '', church: '', role: 'user',
-    headline: '', goals: '', interests: '', social: '', lessonProgress: {},
-    timeSpent: 0, activityLog: []
+    ...createDefaultUserState(),
+    name: '',
+    photo: '',
+    email: '',
+    church: ''
   };
   localStorage.removeItem('scriptura_local_migrated');
   localStorage.removeItem('scriptura_user_state');
@@ -650,14 +360,6 @@ function logQuizAnswer(moduleId, slideIndex, question, selectedAnswer, correctAn
   if (userState.quizHistory.length > 50) {
     userState.quizHistory = userState.quizHistory.slice(-50);
   }
-}
-
-function formatDuration(totalSeconds) {
-  if (!totalSeconds || totalSeconds <= 0) return '0m';
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  if (hours > 0) return `${hours}h ${minutes}m`;
-  return `${minutes}m`;
 }
 
 let stateDirty = false;
@@ -833,13 +535,6 @@ function switchDashboardSubtab(subtab) {
 // ==========================================================================
 // Daily Reading
 // ==========================================================================
-function getDayOfYear(date = new Date()) {
-  const start = new Date(date.getFullYear(), 0, 0);
-  const diff = date - start;
-  const oneDay = 1000 * 60 * 60 * 24;
-  return Math.floor(diff / oneDay);
-}
-
 function getTodaysReading() {
   if (!dailyReadings || dailyReadings.length === 0) return null;
   const dayOfYear = getDayOfYear();
@@ -3037,55 +2732,6 @@ function renderProgressDots() {
     ? Math.round((currentSlideIndex / (total - 1)) * 100)
     : (currentSlideIndex === 0 ? 0 : 100);
   el.lessonProgressBar.style.width = `${progressPercent}%`;
-}
-
-function formatMarkdown(content) {
-  if (!content) return '';
-  return content.split('\n\n').map(p => {
-    const lines = p.split('\n');
-    let isList = false;
-    let isNumbered = false;
-    const listItems = [];
-    const nonListItems = [];
-    
-    const applyInline = t => t
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      // Replace single asterisks that are not part of a ** pair.
-      .replace(/(^|[^*])\*([^*\n]+)\*([^*]|$)/g, '$1<em>$2</em>$3')
-      .replace(/^###\s*(.+)/, '<h3>$1</h3>')
-      .replace(/^##\s*(.+)/, '<h2>$1</h2>')
-      .replace(/^#\s*(.+)/, '<h1>$1</h1>')
-      .replace(/^> (.+)/, '<blockquote>$1</blockquote>');
-
-    lines.forEach(line => {
-      const trimmed = line.trim();
-      if (trimmed.match(/^\d+\.\s/)) {
-        isNumbered = true;
-        listItems.push(`<li>${applyInline(trimmed.replace(/^\d+\.\s/, ''))}</li>`);
-      } else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-        isList = true;
-        listItems.push(`<li>${applyInline(trimmed.substring(2))}</li>`);
-      } else if (trimmed.startsWith('> ')) {
-        nonListItems.push(`<blockquote>${applyInline(trimmed.substring(2))}</blockquote>`);
-      } else if (trimmed.startsWith('### ')) {
-        nonListItems.push(`<h3>${applyInline(trimmed.substring(4))}</h3>`);
-      } else if (trimmed.startsWith('## ')) {
-        nonListItems.push(`<h2>${applyInline(trimmed.substring(3))}</h2>`);
-      } else if (trimmed.startsWith('# ')) {
-        nonListItems.push(`<h1>${applyInline(trimmed.substring(2))}</h1>`);
-      } else {
-        nonListItems.push(applyInline(line));
-      }
-    });
-    
-    if (isNumbered) {
-      return `${nonListItems.length > 0 ? `<p>${nonListItems.join('<br>')}</p>` : ''}<ol>${listItems.join('')}</ol>`;
-    } else if (isList) {
-      return `${nonListItems.length > 0 ? `<p>${nonListItems.join('<br>')}</p>` : ''}<ul>${listItems.join('')}</ul>`;
-    } else {
-      return `<p>${nonListItems.join('<br>')}</p>`;
-    }
-  }).join('');
 }
 
 function renderSlide() {
