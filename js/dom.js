@@ -25,6 +25,10 @@ export const el = {
   registerCountry: document.getElementById('register-country'),
   googleSignInBtn: document.getElementById('google-signin-btn'),
   authError:       document.getElementById('auth-error'),
+  authGateMessage: document.getElementById('auth-gate-message'),
+  authBrowseBtn:   document.getElementById('auth-browse-btn'),
+  authCloseBtn:    document.getElementById('auth-close-btn'),
+  guestSignInBtn:  document.getElementById('guest-signin-btn'),
 
   // Tab Views
   viewHome:     document.getElementById('view-home'),
@@ -50,6 +54,7 @@ export const el = {
   saveFiltersBtn:       document.getElementById('save-filters-btn'),
   activeStatusBadge:    document.getElementById('active-status-badge'),
   catalogGrid:          document.getElementById('catalog-grid'),
+  guestCoursesBanner:   document.getElementById('guest-courses-banner'),
 
   // Course Details
   courseOnboarding:   document.getElementById('course-onboarding'),

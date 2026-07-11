@@ -1,14 +1,27 @@
 // Feature module: routing (Phase 2)
-import { el } from './dom.js?v=2.0.31';
-import { state } from './state.js?v=2.0.31';
-import { renderAdminDashboard } from './admin.js?v=2.0.31';
-import { openOnboarding, renderCoursesCatalog } from './catalog.js?v=2.0.31';
-import { renderCurriculumGrid, renderDashboard } from './dashboard.js?v=2.0.31';
-import { saveActiveLessonProgress, startModule } from './lesson.js?v=2.0.31';
-import { updateNetworkView } from './network.js?v=2.0.31';
-import { updateStatsDisplay } from './stats.js?v=2.0.31';
+import { el } from './dom.js?v=2.0.32';
+import { state } from './state.js?v=2.0.32';
+import { renderAdminDashboard } from './admin.js?v=2.0.32';
+import { openOnboarding, renderCoursesCatalog } from './catalog.js?v=2.0.32';
+import { renderCurriculumGrid, renderDashboard } from './dashboard.js?v=2.0.32';
+import { saveActiveLessonProgress, startModule } from './lesson.js?v=2.0.32';
+import { updateNetworkView } from './network.js?v=2.0.32';
+import { updateStatsDisplay } from './stats.js?v=2.0.32';
+import { isLoggedIn, requireAuth } from './auth_ui.js?v=2.0.32';
+
+/** Tabs guests may open without signing in */
+const GUEST_TABS = new Set(['courses']);
 
 export function switchTab(tabId, pushState = true) {
+  // Guests can browse courses only; other areas need an account.
+  if (!GUEST_TABS.has(tabId) && !isLoggedIn()) {
+    requireAuth(
+      { type: 'tab', tabId },
+      'Sign in to open this part of Scriptura.'
+    );
+    return;
+  }
+
   // Browser back / tab changes used to hide the lesson without saving progress.
   if (state.activeModule) {
     saveActiveLessonProgress();
@@ -66,6 +79,7 @@ export function routeToPath(path, pushState = true) {
     openOnboarding(moduleId, pushState);
   } else if (path.startsWith('/learn/')) {
     const moduleId = path.replace('/learn/', '');
+    // startModule will prompt for auth when guest
     startModule(moduleId, pushState);
   } else if (path === '/courses') {
     switchTab('courses', pushState);
@@ -75,8 +89,11 @@ export function routeToPath(path, pushState = true) {
     switchTab('stats', pushState);
   } else if (path === '/admin') {
     switchTab('admin', pushState);
+  } else if (path === '/' || path === '/home') {
+    // Guests land on the course catalog; signed-in users get Home
+    switchTab(isLoggedIn() ? 'home' : 'courses', pushState);
   } else {
-    switchTab('home', pushState);
+    switchTab(isLoggedIn() ? 'home' : 'courses', pushState);
   }
 }
 

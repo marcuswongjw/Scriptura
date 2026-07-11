@@ -1,22 +1,22 @@
 // Scriptura app entry — wires Phase 1 + Phase 2 modules
-import { auth } from './js/firebase.js?v=2.0.31';
+import { auth } from './js/firebase.js?v=2.0.32';
 import { signOut, onAuthStateChanged, setPersistence, browserSessionPersistence } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
-import { debounce } from './js/utils.js?v=2.0.31';
-import { showToast } from './js/toast.js?v=2.0.31';
-import { el } from './js/dom.js?v=2.0.31';
-import { state } from './js/state.js?v=2.0.31';
-import { handlePublisherFileInput, handlePublisherSubmit, handleTemplateToggle, wireVisualEditor } from './js/admin.js?v=2.0.31';
-import { handleGoogleSignIn, handleLoginSubmit, handleRegisterSubmit, switchAuthTab } from './js/auth_ui.js?v=2.0.31';
-import { renderCoursesCatalog, updateFilterTagsUI } from './js/catalog.js?v=2.0.31';
-import { renderDashboard } from './js/dashboard.js?v=2.0.31';
-import { closeLesson, handleNextClick, handlePrevClick, renderSlide, startModule } from './js/lesson.js?v=2.0.31';
-import { handleProfileSave, initNetworkViewer, openProfileDialog, setupPhotoUpload } from './js/network.js?v=2.0.31';
-import { checkAndSyncPushToken, registerServiceWorker } from './js/push.js?v=2.0.31';
-import { routeToPath, switchDashboardSubtab, switchTab } from './js/routing.js?v=2.0.31';
-import { updateStatsDisplay } from './js/stats.js?v=2.0.31';
-import { checkAdminNavVisibility, fetchAndMergeCustomModules, loadModuleSchedules, loadUserCloudData, resetLocalState, saveState, updateHeaderProfile, updateStreak } from './js/user.js?v=2.0.31';
-import { wireOnboarding, maybeShowOnboarding } from './js/onboarding.js?v=2.0.31';
-import { maybeSendDailyReadingReminder, surfaceUnreadNotifications } from './js/notifications.js?v=2.0.31';
+import { debounce } from './js/utils.js?v=2.0.32';
+import { showToast } from './js/toast.js?v=2.0.32';
+import { el } from './js/dom.js?v=2.0.32';
+import { state } from './js/state.js?v=2.0.32';
+import { handlePublisherFileInput, handlePublisherSubmit, handleTemplateToggle, wireVisualEditor } from './js/admin.js?v=2.0.32';
+import { handleGoogleSignIn, handleLoginSubmit, handleRegisterSubmit, hideAuthPortal, showAuthPortal, switchAuthTab } from './js/auth_ui.js?v=2.0.32';
+import { renderCoursesCatalog, updateFilterTagsUI } from './js/catalog.js?v=2.0.32';
+import { renderDashboard } from './js/dashboard.js?v=2.0.32';
+import { closeLesson, handleNextClick, handlePrevClick, renderSlide, startModule } from './js/lesson.js?v=2.0.32';
+import { handleProfileSave, initNetworkViewer, openProfileDialog, setupPhotoUpload } from './js/network.js?v=2.0.32';
+import { checkAndSyncPushToken, registerServiceWorker } from './js/push.js?v=2.0.32';
+import { routeToPath, switchDashboardSubtab, switchTab } from './js/routing.js?v=2.0.32';
+import { updateStatsDisplay } from './js/stats.js?v=2.0.32';
+import { checkAdminNavVisibility, fetchAndMergeCustomModules, loadModuleSchedules, loadUserCloudData, resetLocalState, saveState, updateHeaderProfile, updateStreak } from './js/user.js?v=2.0.32';
+import { wireOnboarding, maybeShowOnboarding } from './js/onboarding.js?v=2.0.32';
+import { maybeSendDailyReadingReminder, surfaceUnreadNotifications } from './js/notifications.js?v=2.0.32';
 
 async function init() {
   setupEventListeners();
@@ -31,7 +31,9 @@ async function init() {
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       el.userPill.classList.remove('hidden');
-      el.authPortal.classList.add('hidden');
+      if (el.guestSignInBtn) el.guestSignInBtn.classList.add('hidden');
+      hideAuthPortal();
+      document.body.classList.remove('guest-mode');
 
       // Load custom courses first, then module schedules and user data
       await fetchAndMergeCustomModules();
@@ -48,7 +50,17 @@ async function init() {
       renderCoursesCatalog();
       renderDashboard();
       
-      routeToPath(window.location.pathname, false);
+      // Resume action that required login (e.g. start lesson from guest browse)
+      const intent = state.pendingAuthIntent;
+      state.pendingAuthIntent = null;
+      if (intent?.type === 'startModule' && intent.moduleId) {
+        startModule(intent.moduleId, true, { forceRestart: !!intent.forceRestart });
+      } else if (intent?.type === 'tab' && intent.tabId) {
+        switchTab(intent.tabId, true);
+      } else {
+        routeToPath(window.location.pathname, false);
+      }
+
       initNetworkViewer();
       
       // Sync push token if permission was previously granted
@@ -61,9 +73,39 @@ async function init() {
       maybeSendDailyReadingReminder();
       surfaceUnreadNotifications().catch(() => {});
     } else {
+      // Guest mode: browse courses without signing in
       el.userPill.classList.add('hidden');
-      el.authPortal.classList.remove('hidden');
+      if (el.guestSignInBtn) el.guestSignInBtn.classList.remove('hidden');
+      document.body.classList.add('guest-mode');
+      hideAuthPortal();
       resetLocalState();
+      checkAdminNavVisibility();
+
+      try {
+        await fetchAndMergeCustomModules();
+      } catch (_) { /* optional for guests */ }
+      try {
+        await loadModuleSchedules();
+      } catch (_) { /* optional for guests */ }
+
+      renderCoursesCatalog();
+
+      const path = window.location.pathname || '/';
+      if (path.startsWith('/courses')) {
+        routeToPath(path, false);
+      } else if (path.startsWith('/learn/')) {
+        // Deep link to a lesson → show catalog + auth gate for that module
+        const moduleId = path.replace('/learn/', '').replace(/\/$/, '');
+        switchTab('courses', false);
+        if (moduleId) {
+          showAuthPortal({
+            intent: { type: 'startModule', moduleId },
+            message: 'Sign in to start this lesson and save your progress.',
+          });
+        }
+      } else {
+        switchTab('courses', false);
+      }
     }
   });
 }
@@ -76,6 +118,27 @@ function setupEventListeners() {
   el.googleSignInBtn.addEventListener('click', handleGoogleSignIn);
   el.tabLogin.addEventListener('click', () => switchAuthTab('login'));
   el.tabRegister.addEventListener('click', () => switchAuthTab('register'));
+
+  if (el.guestSignInBtn) {
+    el.guestSignInBtn.addEventListener('click', () => {
+      showAuthPortal({ message: 'Sign in to save progress and unlock the full app.' });
+    });
+  }
+  if (el.authBrowseBtn) {
+    el.authBrowseBtn.addEventListener('click', () => {
+      hideAuthPortal();
+      switchTab('courses', true);
+    });
+  }
+  if (el.authCloseBtn) {
+    el.authCloseBtn.addEventListener('click', () => hideAuthPortal());
+  }
+  // Click backdrop to dismiss when browsing as guest
+  if (el.authPortal) {
+    el.authPortal.addEventListener('click', (e) => {
+      if (e.target === el.authPortal && !auth.currentUser) hideAuthPortal();
+    });
+  }
 
   el.subtabStudying.addEventListener('click', () => switchDashboardSubtab('studying'));
   el.subtabCurriculum.addEventListener('click', () => switchDashboardSubtab('curriculum'));

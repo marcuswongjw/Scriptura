@@ -1866,6 +1866,9 @@ img { display: block; max-width: 100%; }
   justify-content: center;
   padding: 1rem;
 }
+.auth-overlay.hidden {
+  display: none;
+}
 
 .auth-card {
   background: #fff;
@@ -1877,7 +1880,91 @@ img { display: block; max-width: 100%; }
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  position: relative;
 }
+
+.auth-close-btn {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: var(--gray-100);
+  color: var(--gray-600);
+  font-size: 1rem;
+  cursor: pointer;
+  line-height: 1;
+}
+.auth-close-btn:hover {
+  background: var(--gray-200);
+  color: var(--gray-900);
+}
+
+.auth-gate-message {
+  margin: 0;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--r-md);
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.4;
+}
+.auth-gate-message.hidden { display: none; }
+
+.auth-browse-btn {
+  background: none;
+  border: none;
+  color: var(--brand-coral);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 0.25rem;
+}
+.auth-browse-btn:hover { color: var(--brand-coral-dark); }
+
+.guest-signin-btn {
+  background: var(--brand-coral);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 0.45rem 0.95rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
+}
+.guest-signin-btn:hover { opacity: 0.92; }
+.guest-signin-btn.hidden { display: none; }
+
+/* Guest mode: soft-dim tabs that require login (still clickable → auth gate) */
+body.guest-mode .nav-item[data-tab="home"],
+body.guest-mode .nav-item[data-tab="network"],
+body.guest-mode .nav-item[data-tab="stats"],
+body.guest-mode .nav-item[data-tab="admin"] {
+  opacity: 0.55;
+}
+
+.guest-courses-banner {
+  margin: 0.75rem 0 0;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--r-md);
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+.guest-courses-banner.hidden { display: none; }
+body.guest-mode .guest-courses-banner { display: block; }
+body:not(.guest-mode) .guest-courses-banner { display: none !important; }
 
 .auth-logo {
   font-family: var(--font-display);

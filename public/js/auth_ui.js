@@ -1,8 +1,8 @@
 // Feature module: auth_ui (Phase 2)
-import { auth } from './firebase.js?v=2.0.31';
+import { auth } from './firebase.js?v=2.0.32';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
-import { el } from './dom.js?v=2.0.31';
-import { state } from './state.js?v=2.0.31';
+import { el } from './dom.js?v=2.0.32';
+import { state } from './state.js?v=2.0.32';
 
 export function showAuthError(msg) {
   el.authError.textContent = msg;
@@ -12,6 +12,50 @@ export function showAuthError(msg) {
 export function clearAuthError() {
   el.authError.textContent = '';
   el.authError.classList.add('hidden');
+}
+
+/**
+ * Show login/register overlay.
+ * @param {{ message?: string, intent?: object }} [opts]
+ *   intent is stored on state.pendingAuthIntent and resumed after successful auth.
+ */
+export function showAuthPortal(opts = {}) {
+  clearAuthError();
+  if (opts.intent) state.pendingAuthIntent = opts.intent;
+  if (opts.message && el.authGateMessage) {
+    el.authGateMessage.textContent = opts.message;
+    el.authGateMessage.classList.remove('hidden');
+  } else if (el.authGateMessage) {
+    el.authGateMessage.textContent = '';
+    el.authGateMessage.classList.add('hidden');
+  }
+  // Guests can dismiss and keep browsing courses
+  if (el.authBrowseBtn) el.authBrowseBtn.classList.remove('hidden');
+  if (el.authCloseBtn) el.authCloseBtn.classList.remove('hidden');
+  el.authPortal.classList.remove('hidden');
+  el.authPortal.setAttribute('aria-hidden', 'false');
+}
+
+/** Hide overlay so guests can browse the course catalog. */
+export function hideAuthPortal() {
+  clearAuthError();
+  el.authPortal.classList.add('hidden');
+  el.authPortal.setAttribute('aria-hidden', 'true');
+  if (el.authGateMessage) el.authGateMessage.classList.add('hidden');
+}
+
+export function isLoggedIn() {
+  return !!auth.currentUser;
+}
+
+/** If not signed in, open auth and optionally stash intent. Returns false when blocked. */
+export function requireAuth(intent, message) {
+  if (auth.currentUser) return true;
+  showAuthPortal({
+    intent: intent || null,
+    message: message || 'Sign in to start this lesson and save your progress.',
+  });
+  return false;
 }
 
 export async function handleLoginSubmit(e) {

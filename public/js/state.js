@@ -1,5 +1,5 @@
 // Shared mutable application state (Phase 2)
-import { createDefaultUserState } from './constants.js?v=2.0.31';
+import { createDefaultUserState } from './constants.js?v=2.0.32';
 
 export const state = {
   userState: createDefaultUserState(),
@@ -29,6 +29,8 @@ export const state = {
   unsubscribeChat: null,
   editorSlides: [],
   pendingRegistrationDetails: null,
+  /** After login: { type: 'startModule', moduleId, forceRestart? } | { type: 'tab', tabId } */
+  pendingAuthIntent: null,
   countryMetadata: {
     SG: { name: 'Singapore', flag: '🇸🇬', region: 'Southeast Asia' },
     PH: { name: 'Philippines', flag: '🇵🇭', region: 'Southeast Asia' },

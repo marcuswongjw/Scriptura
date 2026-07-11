@@ -1,12 +1,12 @@
 // Feature module: catalog (Phase 2)
-import { concentrations, modules } from '../modules.js?v=2.0.31';
-import { conIcons } from './constants.js?v=2.0.31';
-import { showToast } from './toast.js?v=2.0.31';
-import { el } from './dom.js?v=2.0.31';
-import { state } from './state.js?v=2.0.31';
-import { startModule } from './lesson.js?v=2.0.31';
-import { switchTab } from './routing.js?v=2.0.31';
-import { isModuleReleased } from './user.js?v=2.0.31';
+import { concentrations, modules } from '../modules.js?v=2.0.32';
+import { conIcons } from './constants.js?v=2.0.32';
+import { showToast } from './toast.js?v=2.0.32';
+import { el } from './dom.js?v=2.0.32';
+import { state } from './state.js?v=2.0.32';
+import { startModule } from './lesson.js?v=2.0.32';
+import { switchTab } from './routing.js?v=2.0.32';
+import { isModuleReleased } from './user.js?v=2.0.32';
 
 export function updateFilterTagsUI() {
   document.querySelectorAll('.filter-tag-btn').forEach(btn => {
@@ -283,7 +283,11 @@ export function openOnboarding(concentrationId, pushState = true) {
   const nextInProgress = !isAllComplete && nextProgress > 0;
 
   el.startOnboardedLesson.setAttribute('data-id', nextUpLesson.id);
-  if (isAllComplete) {
+  // Guests can preview course details; starting still requires sign-in (startModule gates).
+  const isGuest = document.body.classList.contains('guest-mode');
+  if (isGuest) {
+    el.startOnboardedLesson.textContent = 'SIGN IN TO START';
+  } else if (isAllComplete) {
     el.startOnboardedLesson.textContent = 'REVIEW COURSE';
   } else if (nextInProgress) {
     el.startOnboardedLesson.textContent = 'RESUME';
@@ -294,8 +298,8 @@ export function openOnboarding(concentrationId, pushState = true) {
   // Restart when there is something to reset (in progress or completed / review).
   if (el.restartOnboardedLesson) {
     el.restartOnboardedLesson.setAttribute('data-id', nextUpLesson.id);
-    const showRestart = nextInProgress || isAllComplete
-      || state.userState.completedModules.includes(nextUpLesson.id);
+    const showRestart = !isGuest && (nextInProgress || isAllComplete
+      || state.userState.completedModules.includes(nextUpLesson.id));
     el.restartOnboardedLesson.classList.toggle('hidden', !showRestart);
   }
 

@@ -1,11 +1,12 @@
 // Feature module: lesson (Phase 2)
-import { modules } from '../modules.js?v=2.0.31';
-import { formatMarkdown, sanitizeHTML } from './utils.js?v=2.0.31';
-import { showToast } from './toast.js?v=2.0.31';
-import { el } from './dom.js?v=2.0.31';
-import { state } from './state.js?v=2.0.31';
-import { switchTab } from './routing.js?v=2.0.31';
-import { awardXP, isModuleReleased, logActivity, logQuizAnswer, recordActivity, saveState } from './user.js?v=2.0.31';
+import { modules } from '../modules.js?v=2.0.32';
+import { formatMarkdown, sanitizeHTML } from './utils.js?v=2.0.32';
+import { showToast } from './toast.js?v=2.0.32';
+import { el } from './dom.js?v=2.0.32';
+import { state } from './state.js?v=2.0.32';
+import { switchTab } from './routing.js?v=2.0.32';
+import { awardXP, isModuleReleased, logActivity, logQuizAnswer, recordActivity, saveState } from './user.js?v=2.0.32';
+import { requireAuth } from './auth_ui.js?v=2.0.32';
 
 function ensureQuizClearedMap() {
   if (!state.userState.lessonQuizCleared || typeof state.userState.lessonQuizCleared !== 'object') {
@@ -105,6 +106,14 @@ export function goToSlide(targetIndex) {
  * @param {{ forceRestart?: boolean }} [options]
  */
 export function startModule(moduleId, pushState = true, options = {}) {
+  // Guests may browse the catalog and course details; starting a lesson needs an account.
+  if (!requireAuth(
+    { type: 'startModule', moduleId, forceRestart: options.forceRestart === true },
+    'Sign in to start this lesson and save your progress.'
+  )) {
+    return;
+  }
+
   if (!isModuleReleased(moduleId)) {
     showToast('This course is not yet released!', 'warning');
     switchTab('courses');
