@@ -26,6 +26,7 @@ const ROOT_FILES = [
   'icon-192.png',
   'icon-512.png',
 ];
+// content/ includes module-index.js + modules/*.js
 
 const ROOT_DIRS = ['js', 'content'];
 

@@ -1,12 +1,12 @@
 // Feature module: lesson (Phase 2)
-import { modules } from '../modules.js?v=2.0.32';
-import { formatMarkdown, sanitizeHTML } from './utils.js?v=2.0.32';
-import { showToast } from './toast.js?v=2.0.32';
-import { el } from './dom.js?v=2.0.32';
-import { state } from './state.js?v=2.0.32';
-import { switchTab } from './routing.js?v=2.0.32';
-import { awardXP, isModuleReleased, logActivity, logQuizAnswer, recordActivity, saveState } from './user.js?v=2.0.32';
-import { requireAuth } from './auth_ui.js?v=2.0.32';
+import { ensureModuleLoaded, modules } from '../modules.js?v=2.0.33';
+import { formatMarkdown, sanitizeHTML } from './utils.js?v=2.0.33';
+import { showToast } from './toast.js?v=2.0.33';
+import { el } from './dom.js?v=2.0.33';
+import { state } from './state.js?v=2.0.33';
+import { switchTab } from './routing.js?v=2.0.33';
+import { awardXP, isModuleReleased, logActivity, logQuizAnswer, recordActivity, saveState } from './user.js?v=2.0.33';
+import { requireAuth } from './auth_ui.js?v=2.0.33';
 
 function ensureQuizClearedMap() {
   if (!state.userState.lessonQuizCleared || typeof state.userState.lessonQuizCleared !== 'object') {
@@ -105,7 +105,7 @@ export function goToSlide(targetIndex) {
  * @param {boolean} [pushState=true]
  * @param {{ forceRestart?: boolean }} [options]
  */
-export function startModule(moduleId, pushState = true, options = {}) {
+export async function startModule(moduleId, pushState = true, options = {}) {
   // Guests may browse the catalog and course details; starting a lesson needs an account.
   if (!requireAuth(
     { type: 'startModule', moduleId, forceRestart: options.forceRestart === true },
@@ -120,8 +120,22 @@ export function startModule(moduleId, pushState = true, options = {}) {
     return;
   }
 
-  state.activeModule = modules.find(m => m.id === moduleId);
-  if (!state.activeModule) return;
+  // Lazy-load full slides for this book/chunk (catalog only had metadata)
+  showToast('Loading lesson…', 'info');
+  let mod;
+  try {
+    mod = await ensureModuleLoaded(moduleId);
+  } catch (err) {
+    console.error(err);
+    showToast('Could not load lesson content. Check your connection.', 'error');
+    return;
+  }
+  if (!mod || !Array.isArray(mod.slides) || mod.slides.length === 0) {
+    showToast('Lesson content is missing or empty.', 'error');
+    return;
+  }
+
+  state.activeModule = mod;
 
   const forceRestart = options.forceRestart === true;
   const total = state.activeModule.slides.length;

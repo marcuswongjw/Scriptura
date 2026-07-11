@@ -1,16 +1,16 @@
 // Feature module: admin (Phase 2)
-import { auth, db } from './firebase.js?v=2.0.32';
+import { auth, db } from './firebase.js?v=2.0.33';
 import { doc, getDoc, setDoc, collection, getDocs, addDoc, query, orderBy, limit, where, updateDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-import { concentrations, modules } from '../modules.js?v=2.0.32';
-import { sanitizeHTML, getDayOfYear } from './utils.js?v=2.0.32';
-import { showToast, showStatusEl } from './toast.js?v=2.0.32';
-import { state } from './state.js?v=2.0.32';
-import { renderCoursesCatalog } from './catalog.js?v=2.0.32';
-import { renderDashboard } from './dashboard.js?v=2.0.32';
-import { fetchRegisteredUsers } from './network.js?v=2.0.32';
-import { switchTab } from './routing.js?v=2.0.32';
-import { checkAdminNavVisibility, fetchAndMergeCustomModules, loadModuleSchedules, saveState } from './user.js?v=2.0.32';
-import { dailyReadings } from '../daily_readings.js?v=2.0.32';
+import { concentrations, ensureAllModulesLoaded, ensureModuleLoaded, modules } from '../modules.js?v=2.0.33';
+import { sanitizeHTML, getDayOfYear } from './utils.js?v=2.0.33';
+import { showToast, showStatusEl } from './toast.js?v=2.0.33';
+import { state } from './state.js?v=2.0.33';
+import { renderCoursesCatalog } from './catalog.js?v=2.0.33';
+import { renderDashboard } from './dashboard.js?v=2.0.33';
+import { fetchRegisteredUsers } from './network.js?v=2.0.33';
+import { switchTab } from './routing.js?v=2.0.33';
+import { checkAdminNavVisibility, fetchAndMergeCustomModules, loadModuleSchedules, saveState } from './user.js?v=2.0.33';
+import { dailyReadings } from '../daily_readings.js?v=2.0.33';
 import {
   getBaseReadingForDay,
   resolveReadingForDay,
@@ -19,7 +19,7 @@ import {
   resetReadingContentToDefault,
   clearReadingOverrideCache,
   renderDailyReading
-} from './daily.js?v=2.0.32';
+} from './daily.js?v=2.0.33';
 
 export function handleTemplateToggle(e) {
   const templateBox = document.getElementById('publisher-template-box');
@@ -466,7 +466,9 @@ export async function renderAdminDashboard() {
         modules.forEach(m => {
           const isLCompleted = learner.completedModules ? learner.completedModules.includes(m.id) : false;
           const progressVal = learner.lessonProgress ? (learner.lessonProgress[m.id] || 0) : 0;
-          const totalSlides = m.slides ? m.slides.length : 0;
+          const totalSlides = Array.isArray(m.slides) && m.slides.length
+            ? m.slides.length
+            : (m.slideCount || 0);
 
           let pct = 0;
           let progressText = 'Not started';
@@ -566,8 +568,16 @@ export async function renderAdminDashboard() {
 // ==========================================================================
 // Visual Course Editor Controllers
 // ==========================================================================
-export function openVisualEditor(moduleId) {
-  const mod = modules.find(m => m.id === moduleId);
+export async function openVisualEditor(moduleId) {
+  showToast('Loading module content…', 'info');
+  let mod;
+  try {
+    mod = await ensureModuleLoaded(moduleId);
+  } catch (err) {
+    console.error(err);
+    showToast('Could not load module content.', 'error');
+    return;
+  }
   if (!mod) {
     showToast('Module not found.', 'error');
     return;

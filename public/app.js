@@ -1,22 +1,22 @@
 // Scriptura app entry — wires Phase 1 + Phase 2 modules
-import { auth } from './js/firebase.js?v=2.0.32';
+import { auth } from './js/firebase.js?v=2.0.33';
 import { signOut, onAuthStateChanged, setPersistence, browserSessionPersistence } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
-import { debounce } from './js/utils.js?v=2.0.32';
-import { showToast } from './js/toast.js?v=2.0.32';
-import { el } from './js/dom.js?v=2.0.32';
-import { state } from './js/state.js?v=2.0.32';
-import { handlePublisherFileInput, handlePublisherSubmit, handleTemplateToggle, wireVisualEditor } from './js/admin.js?v=2.0.32';
-import { handleGoogleSignIn, handleLoginSubmit, handleRegisterSubmit, hideAuthPortal, showAuthPortal, switchAuthTab } from './js/auth_ui.js?v=2.0.32';
-import { renderCoursesCatalog, updateFilterTagsUI } from './js/catalog.js?v=2.0.32';
-import { renderDashboard } from './js/dashboard.js?v=2.0.32';
-import { closeLesson, handleNextClick, handlePrevClick, renderSlide, startModule } from './js/lesson.js?v=2.0.32';
-import { handleProfileSave, initNetworkViewer, openProfileDialog, setupPhotoUpload } from './js/network.js?v=2.0.32';
-import { checkAndSyncPushToken, registerServiceWorker } from './js/push.js?v=2.0.32';
-import { routeToPath, switchDashboardSubtab, switchTab } from './js/routing.js?v=2.0.32';
-import { updateStatsDisplay } from './js/stats.js?v=2.0.32';
-import { checkAdminNavVisibility, fetchAndMergeCustomModules, loadModuleSchedules, loadUserCloudData, resetLocalState, saveState, updateHeaderProfile, updateStreak } from './js/user.js?v=2.0.32';
-import { wireOnboarding, maybeShowOnboarding } from './js/onboarding.js?v=2.0.32';
-import { maybeSendDailyReadingReminder, surfaceUnreadNotifications } from './js/notifications.js?v=2.0.32';
+import { debounce } from './js/utils.js?v=2.0.33';
+import { showToast } from './js/toast.js?v=2.0.33';
+import { el } from './js/dom.js?v=2.0.33';
+import { state } from './js/state.js?v=2.0.33';
+import { handlePublisherFileInput, handlePublisherSubmit, handleTemplateToggle, wireVisualEditor } from './js/admin.js?v=2.0.33';
+import { handleGoogleSignIn, handleLoginSubmit, handleRegisterSubmit, hideAuthPortal, showAuthPortal, switchAuthTab } from './js/auth_ui.js?v=2.0.33';
+import { renderCoursesCatalog, updateFilterTagsUI } from './js/catalog.js?v=2.0.33';
+import { renderDashboard } from './js/dashboard.js?v=2.0.33';
+import { closeLesson, handleNextClick, handlePrevClick, renderSlide, startModule } from './js/lesson.js?v=2.0.33';
+import { handleProfileSave, initNetworkViewer, openProfileDialog, setupPhotoUpload } from './js/network.js?v=2.0.33';
+import { checkAndSyncPushToken, registerServiceWorker } from './js/push.js?v=2.0.33';
+import { routeToPath, switchDashboardSubtab, switchTab } from './js/routing.js?v=2.0.33';
+import { updateStatsDisplay } from './js/stats.js?v=2.0.33';
+import { checkAdminNavVisibility, fetchAndMergeCustomModules, loadModuleSchedules, loadUserCloudData, resetLocalState, saveState, updateHeaderProfile, updateStreak } from './js/user.js?v=2.0.33';
+import { wireOnboarding, maybeShowOnboarding } from './js/onboarding.js?v=2.0.33';
+import { maybeSendDailyReadingReminder, surfaceUnreadNotifications } from './js/notifications.js?v=2.0.33';
 
 async function init() {
   setupEventListeners();
@@ -34,23 +34,14 @@ async function init() {
       if (el.guestSignInBtn) el.guestSignInBtn.classList.add('hidden');
       hideAuthPortal();
       document.body.classList.remove('guest-mode');
-
-      // Load custom courses first, then module schedules and user data
-      await fetchAndMergeCustomModules();
-      await loadModuleSchedules();
-      await loadUserCloudData(user);
       state.sessionStartTime = Date.now();
-      
+
+      // Paint UI immediately with local catalog metadata (no wait for Firestore)
       checkAdminNavVisibility();
       updateHeaderProfile();
-      updateStreak();
-      updateStatsDisplay();
-      
-      // Update UI displays to reflect custom modules
       renderCoursesCatalog();
       renderDashboard();
-      
-      // Resume action that required login (e.g. start lesson from guest browse)
+
       const intent = state.pendingAuthIntent;
       state.pendingAuthIntent = null;
       if (intent?.type === 'startModule' && intent.moduleId) {
@@ -61,40 +52,46 @@ async function init() {
         routeToPath(window.location.pathname, false);
       }
 
-      initNetworkViewer();
-      
-      // Sync push token if permission was previously granted
-      if (Notification.permission === 'granted') {
-        checkAndSyncPushToken();
-      }
-
-      wireOnboarding();
-      maybeShowOnboarding();
-      maybeSendDailyReadingReminder();
-      surfaceUnreadNotifications().catch(() => {});
+      // Cloud data in background — refresh UI when ready
+      (async () => {
+        try {
+          await Promise.all([
+            fetchAndMergeCustomModules(),
+            loadModuleSchedules(),
+            loadUserCloudData(user),
+          ]);
+        } catch (err) {
+          console.error('Background cloud load failed:', err);
+        }
+        checkAdminNavVisibility();
+        updateHeaderProfile();
+        updateStreak();
+        updateStatsDisplay();
+        renderCoursesCatalog();
+        renderDashboard();
+        initNetworkViewer();
+        if (Notification.permission === 'granted') {
+          checkAndSyncPushToken();
+        }
+        wireOnboarding();
+        maybeShowOnboarding();
+        maybeSendDailyReadingReminder();
+        surfaceUnreadNotifications().catch(() => {});
+      })();
     } else {
-      // Guest mode: browse courses without signing in
+      // Guest mode: browse courses without signing in — paint first, cloud second
       el.userPill.classList.add('hidden');
       if (el.guestSignInBtn) el.guestSignInBtn.classList.remove('hidden');
       document.body.classList.add('guest-mode');
       hideAuthPortal();
       resetLocalState();
       checkAdminNavVisibility();
-
-      try {
-        await fetchAndMergeCustomModules();
-      } catch (_) { /* optional for guests */ }
-      try {
-        await loadModuleSchedules();
-      } catch (_) { /* optional for guests */ }
-
       renderCoursesCatalog();
 
       const path = window.location.pathname || '/';
       if (path.startsWith('/courses')) {
         routeToPath(path, false);
       } else if (path.startsWith('/learn/')) {
-        // Deep link to a lesson → show catalog + auth gate for that module
         const moduleId = path.replace('/learn/', '').replace(/\/$/, '');
         switchTab('courses', false);
         if (moduleId) {
@@ -106,6 +103,14 @@ async function init() {
       } else {
         switchTab('courses', false);
       }
+
+      // Optional cloud enrichment without blocking first paint
+      Promise.all([
+        fetchAndMergeCustomModules().catch(() => {}),
+        loadModuleSchedules().catch(() => {}),
+      ]).then(() => {
+        renderCoursesCatalog();
+      });
     }
   });
 }

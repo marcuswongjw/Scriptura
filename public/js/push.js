@@ -1,11 +1,11 @@
 // Feature module: push (Phase 2)
-import { auth, db, messaging, VAPID_KEY } from './firebase.js?v=2.0.32';
+import { auth, db, messaging, VAPID_KEY } from './firebase.js?v=2.0.33';
 import { doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 import { getToken, onMessage } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js';
-import { showToast } from './toast.js?v=2.0.32';
-import { el } from './dom.js?v=2.0.32';
-import { state } from './state.js?v=2.0.32';
-import { routeToPath } from './routing.js?v=2.0.32';
+import { showToast } from './toast.js?v=2.0.33';
+import { el } from './dom.js?v=2.0.33';
+import { state } from './state.js?v=2.0.33';
+import { routeToPath } from './routing.js?v=2.0.33';
 
 export function registerServiceWorker() {
   if ('serviceWorker' in navigator) {

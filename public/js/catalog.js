@@ -1,12 +1,12 @@
 // Feature module: catalog (Phase 2)
-import { concentrations, modules } from '../modules.js?v=2.0.32';
-import { conIcons } from './constants.js?v=2.0.32';
-import { showToast } from './toast.js?v=2.0.32';
-import { el } from './dom.js?v=2.0.32';
-import { state } from './state.js?v=2.0.32';
-import { startModule } from './lesson.js?v=2.0.32';
-import { switchTab } from './routing.js?v=2.0.32';
-import { isModuleReleased } from './user.js?v=2.0.32';
+import { concentrations, loadModuleChunk, modules } from '../modules.js?v=2.0.33';
+import { conIcons } from './constants.js?v=2.0.33';
+import { showToast } from './toast.js?v=2.0.33';
+import { el } from './dom.js?v=2.0.33';
+import { state } from './state.js?v=2.0.33';
+import { startModule } from './lesson.js?v=2.0.33';
+import { switchTab } from './routing.js?v=2.0.33';
+import { isModuleReleased } from './user.js?v=2.0.33';
 
 export function updateFilterTagsUI() {
   document.querySelectorAll('.filter-tag-btn').forEach(btn => {
@@ -350,6 +350,10 @@ export function openOnboarding(concentrationId, pushState = true) {
   });
 
   el.courseOnboarding.classList.remove('hidden');
+
+  // Prefetch lesson chunks for this course so "Start" feels instant
+  const chunks = new Set(conLessons.map(m => m._chunk).filter(Boolean));
+  Promise.all([...chunks].map(c => loadModuleChunk(c))).catch(() => {});
 
   if (pushState) {
     history.pushState({ concentrationId }, '', `/courses/${concentrationId}`);

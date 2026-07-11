@@ -1,13 +1,13 @@
 // Feature module: routing (Phase 2)
-import { el } from './dom.js?v=2.0.32';
-import { state } from './state.js?v=2.0.32';
-import { renderAdminDashboard } from './admin.js?v=2.0.32';
-import { openOnboarding, renderCoursesCatalog } from './catalog.js?v=2.0.32';
-import { renderCurriculumGrid, renderDashboard } from './dashboard.js?v=2.0.32';
-import { saveActiveLessonProgress, startModule } from './lesson.js?v=2.0.32';
-import { updateNetworkView } from './network.js?v=2.0.32';
-import { updateStatsDisplay } from './stats.js?v=2.0.32';
-import { isLoggedIn, requireAuth } from './auth_ui.js?v=2.0.32';
+import { el } from './dom.js?v=2.0.33';
+import { state } from './state.js?v=2.0.33';
+import { renderAdminDashboard } from './admin.js?v=2.0.33';
+import { openOnboarding, renderCoursesCatalog } from './catalog.js?v=2.0.33';
+import { renderCurriculumGrid, renderDashboard } from './dashboard.js?v=2.0.33';
+import { saveActiveLessonProgress, startModule } from './lesson.js?v=2.0.33';
+import { updateNetworkView } from './network.js?v=2.0.33';
+import { updateStatsDisplay } from './stats.js?v=2.0.33';
+import { isLoggedIn, requireAuth } from './auth_ui.js?v=2.0.33';
 
 /** Tabs guests may open without signing in */
 const GUEST_TABS = new Set(['courses']);

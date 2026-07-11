@@ -11,8 +11,16 @@ Study content is split for maintainability (the old single `modules.js` was 6k+ 
 | Path | Purpose |
 |------|---------|
 | `content/concentrations.js` | Course groupings (`concentrations` array) |
-| `content/modules/*.js` | Module + slide data by book/group (e.g. `genesis.js`, `wisdom.js`) |
-| `modules.js` | Thin barrel that re-exports `concentrations` and merges all module arrays |
+| `content/module-index.js` | Lightweight metadata for all modules (no slides) — used at startup |
+| `content/modules/*.js` | Full module + slide data (lazy-loaded when a lesson starts) |
+| `modules.js` | Exports `concentrations`, stub `modules[]`, and `ensureModuleLoaded()` |
+
+After editing full content files, refresh the index:
+
+```bash
+npm run build:module-index
+npm run sync:public
+```
 
 App code still imports from `modules.js` — you do not need to change imports when adding content.
 

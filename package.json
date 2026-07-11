@@ -5,6 +5,7 @@
   "scripts": {
     "sync:public": "node scripts/sync-public.mjs",
     "normalize:card-quiz": "node scripts/normalize-card-quiz.mjs",
-    "predeploy": "npm run sync:public"
+    "build:module-index": "node scripts/build-module-index.mjs",
+    "predeploy": "npm run build:module-index && npm run sync:public"
   }
 }
